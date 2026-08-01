@@ -15,7 +15,7 @@
       <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon">□</span>Wochenplanung</button>
       <button [class.active]="activeView() === 'vehicles'" (click)="showView('vehicles')"><span class="nav__icon">▣</span>Fahrzeuge</button>
       <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon">▤</span>Dienstpläne</button>
-      <a href="#drivers"><span class="nav__icon">♙</span>Fahrer</a>
+      <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon">♙</span>Fahrer</button>
       <a href="#absence"><span class="nav__icon">⊠</span>Abwesenheiten</a>
       <a href="#trips"><span class="nav__icon">♧</span>Sonderfahrten</a>
       <a href="#messages"><span class="nav__icon">✉</span>Nachrichten</a>
@@ -303,6 +303,91 @@
               <div class="duty-detail-actions">
                 <button class="button">Duplizieren</button>
                 <button class="button button--primary" (click)="saveDutyPlan()">{{ dutyPlanSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    } @else if (activeView() === 'drivers') {
+      <section class="drivers-page">
+        <div class="drivers-intro">
+          <div>
+            <span class="eyebrow">Personalverwaltung</span>
+            <h2>Fahrer</h2>
+            <p>Verwalten Sie Fahrer, Einsatzzeiten und erforderliche Nachweise.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Fahrer hinzufügen</button>
+        </div>
+
+        <div class="driver-metrics">
+          <article><span class="driver-metric-icon driver-metric-icon--blue">♙</span><div><b>7</b><small>Fahrer gesamt</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--green">✓</span><div><b>5</b><small>Im Einsatz</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--cyan">○</span><div><b>1</b><small>Verfügbar</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--rose">⊘</span><div><b>1</b><small>Abwesend</small></div></article>
+        </div>
+
+        <div class="driver-layout">
+          <section class="dashboard-card driver-list-card">
+            <div class="driver-toolbar">
+              <label class="driver-search"><span>⌕</span><input [ngModel]="driverSearch()" (ngModelChange)="driverSearch.set($event)" placeholder="Fahrer, Fahrzeug oder E-Mail suchen" /></label>
+              <select [ngModel]="driverStatus()" (ngModelChange)="driverStatus.set($event)" aria-label="Fahrerstatus filtern">
+                <option>Alle Status</option><option>Im Einsatz</option><option>Verfügbar</option><option>Abwesend</option>
+              </select>
+            </div>
+            <div class="driver-table-head"><span>Fahrer</span><span>Status</span><span>Heutiger Einsatz</span><span>Wochenzeit</span><span></span></div>
+            <div class="driver-list">
+              @for (driver of filteredDrivers(); track driver.id) {
+                <button class="driver-row" [class.driver-row--selected]="selectedDriverId() === driver.id" (click)="selectDriver(driver)">
+                  <span class="driver-identity"><i class="driver-list-avatar driver-list-avatar--{{ driver.color }}">{{ driver.initials }}</i><span><b>{{ driver.name }}</b><small>{{ driver.email }}</small></span></span>
+                  <span class="driver-status driver-status--{{ driver.status === 'Im Einsatz' ? 'active' : driver.status === 'Verfügbar' ? 'ready' : 'absent' }}"><i></i>{{ driver.status }}</span>
+                  <span class="driver-assignment"><b>{{ driver.vehicle }}</b><small>{{ driver.shift }}</small></span>
+                  <span class="driver-hours"><b>{{ driver.weeklyHours }}h / {{ driver.targetHours }}h</b><i><span [style.width.%]="driver.weeklyHours / driver.targetHours * 100"></span></i></span>
+                  <span class="driver-chevron">›</span>
+                </button>
+              } @empty {
+                <div class="driver-empty"><span>⌕</span><strong>Keine Fahrer gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="driver-footer"><span>{{ filteredDrivers().length }} von {{ drivers.length }} Fahrern</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
+          </section>
+
+          <aside class="dashboard-card driver-detail-card">
+            <div class="driver-detail-head">
+              <span class="driver-detail-avatar driver-list-avatar--{{ selectedDriver().color }}">{{ selectedDriver().initials }}</span>
+              <div><span>Fahrer</span><h3>{{ selectedDriver().name }}</h3><p>{{ selectedDriver().email }}</p></div>
+              <span class="driver-status driver-status--{{ selectedDriver().status === 'Im Einsatz' ? 'active' : selectedDriver().status === 'Verfügbar' ? 'ready' : 'absent' }}"><i></i>{{ selectedDriver().status }}</span>
+            </div>
+            <div class="driver-detail-body">
+              <h4>Kontaktdaten</h4>
+              <dl class="driver-data">
+                <div><dt>Telefon</dt><dd>{{ selectedDriver().phone }}</dd></div>
+                <div><dt>E-Mail</dt><dd>{{ selectedDriver().email }}</dd></div>
+                <div><dt>Führerscheinklasse</dt><dd>{{ selectedDriver().license }}</dd></div>
+                <div><dt>Mehrarbeit</dt><dd [class.negative-hours]="selectedDriver().overtime.startsWith('−')" [class.positive-hours]="!selectedDriver().overtime.startsWith('−')">{{ selectedDriver().overtime }}</dd></div>
+              </dl>
+
+              <h4>Heutiger Einsatz</h4>
+              <div class="driver-current-shift" [class.driver-current-shift--empty]="selectedDriver().vehicle === '–'">
+                <span>▣</span><div><b>{{ selectedDriver().vehicle === '–' ? 'Kein Fahrzeug zugewiesen' : selectedDriver().vehicle }}</b><small>{{ selectedDriver().shift }}</small></div>
+                @if (selectedDriver().vehicle !== '–') { <button (click)="showView('planning')">Plan →</button> }
+              </div>
+
+              <h4>Wochenarbeitszeit</h4>
+              <div class="driver-workload">
+                <div><strong>{{ selectedDriver().weeklyHours }}h</strong><span>von {{ selectedDriver().targetHours }}h</span><em>{{ selectedDriver().weeklyHours / selectedDriver().targetHours * 100 | number:'1.0-0' }}%</em></div>
+                <i><span [style.width.%]="selectedDriver().weeklyHours / selectedDriver().targetHours * 100"></span></i>
+                <small>Aktuelle Kalenderwoche · Mo – So</small>
+              </div>
+
+              <h4>Nachweise & Prüfungen</h4>
+              <div class="driver-documents">
+                <div><span class="document-icon">◇</span><p><b>Führerschein</b><small>Klasse {{ selectedDriver().license }}</small></p><p><em>{{ selectedDriver().licenseExpiry }}</em><small class="document-valid">Gültig</small></p></div>
+                <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'olanovski'">{{ selectedDriver().id === 'olanovski' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
+              </div>
+
+              <div class="driver-detail-actions">
+                <button class="button" (click)="showView('planning')">Einsatz planen</button>
+                <button class="button button--primary" (click)="saveDriver()">{{ driverSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
             </div>
           </aside>

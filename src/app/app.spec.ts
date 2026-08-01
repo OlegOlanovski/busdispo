@@ -122,4 +122,35 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.duty-row')).toHaveLength(1);
     expect(compiled.querySelector('.duty-row')?.textContent).toContain('Standard RH 515');
   });
+
+  it('should open the driver management view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const driversButton = compiled.querySelector('.nav button:nth-child(5)') as HTMLButtonElement;
+
+    driversButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Fahrer');
+    expect(compiled.querySelectorAll('.driver-row')).toHaveLength(7);
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Olanovski');
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Nachweise & Prüfungen');
+  });
+
+  it('should filter drivers by vehicle search', async () => {
+    window.history.replaceState(null, '', '#drivers');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const searchInput = compiled.querySelector('.driver-search input') as HTMLInputElement;
+
+    searchInput.value = 'DAU-RH 102';
+    searchInput.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.driver-row')).toHaveLength(1);
+    expect(compiled.querySelector('.driver-row')?.textContent).toContain('Koch');
+  });
 });

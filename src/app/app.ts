@@ -47,6 +47,24 @@ interface DutyPlan {
   tone: 'blue' | 'violet' | 'green' | 'orange' | 'cyan';
 }
 
+interface Driver {
+  id: string;
+  name: string;
+  initials: string;
+  phone: string;
+  email: string;
+  status: 'Im Einsatz' | 'Verfügbar' | 'Abwesend';
+  vehicle: string;
+  shift: string;
+  weeklyHours: number;
+  targetHours: number;
+  overtime: string;
+  license: string;
+  licenseExpiry: string;
+  medicalCheck: string;
+  color: 'blue' | 'violet' | 'green' | 'orange' | 'cyan' | 'rose';
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -54,14 +72,16 @@ interface DutyPlan {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules'>(
+  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers'>(
     window.location.hash === '#overview'
       ? 'overview'
       : window.location.hash === '#vehicles'
         ? 'vehicles'
         : window.location.hash === '#schedules'
           ? 'schedules'
-          : 'planning',
+          : window.location.hash === '#drivers'
+            ? 'drivers'
+            : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
@@ -76,6 +96,10 @@ export class App {
   protected readonly dutyPlanSearch = signal('');
   protected readonly dutyPlanStatus = signal('Alle Status');
   protected readonly dutyPlanSaved = signal(false);
+  protected readonly selectedDriverId = signal('olanovski');
+  protected readonly driverSearch = signal('');
+  protected readonly driverStatus = signal('Alle Status');
+  protected readonly driverSaved = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -112,6 +136,16 @@ export class App {
     { id: 'standard-rh94', name: 'Standard RH 94', route: 'Adenau → Mayen', start: '08:00', end: '16:10', duration: '8h 10m', breakTime: '30m', stops: ['Adenau', 'Kelberg', 'Boos', 'Mayen Ost'], weekdays: 'Mo – Sa', assignedVehicles: 1, status: 'Aktiv', tone: 'orange' },
     { id: 'school-service', name: 'Schulverkehr Daun', route: 'Daun → Gillenfeld', start: '06:40', end: '08:15', duration: '1h 35m', breakTime: '–', stops: ['Daun ZOB', 'Rengen', 'Mehren', 'Gillenfeld Schule'], weekdays: 'Mo – Fr', assignedVehicles: 2, status: 'Entwurf', tone: 'cyan' },
     { id: 'winter-relief', name: 'Winter Verstärker', route: 'Kelberg → Nürburgring', start: '05:50', end: '09:20', duration: '3h 30m', breakTime: '–', stops: ['Kelberg', 'Nürburg', 'Nürburgring'], weekdays: 'Mo – Fr', assignedVehicles: 0, status: 'Archiviert', tone: 'blue' },
+  ];
+
+  protected readonly drivers: Driver[] = [
+    { id: 'koch', name: 'Koch', initials: 'K', phone: '+49 6592 410 221', email: 'koch@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 102', shift: '06:05 – 14:20', weeklyHours: 32, targetHours: 40, overtime: '+2h 15m', license: 'D, DE', licenseExpiry: '18.03.2028', medicalCheck: '12.01.2027', color: 'green' },
+    { id: 'zeyen', name: 'Zeyen B.', initials: 'ZB', phone: '+49 6592 410 228', email: 'zeyen@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 515', shift: '07:30 – 15:45', weeklyHours: 33, targetHours: 40, overtime: '+1h 40m', license: 'D, DE', licenseExpiry: '09.11.2027', medicalCheck: '22.04.2027', color: 'blue' },
+    { id: 'block', name: 'Block', initials: 'B', phone: '+49 6592 410 235', email: 'block@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 94', shift: '08:00 – 16:10', weeklyHours: 32.5, targetHours: 40, overtime: '−0h 30m', license: 'D, DE', licenseExpiry: '27.08.2029', medicalCheck: '04.03.2027', color: 'orange' },
+    { id: 'olanovski', name: 'Olanovski', initials: 'O', phone: '+49 6592 410 244', email: 'olanovski@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 91', shift: '06:05 – 14:24', weeklyHours: 33.3, targetHours: 40, overtime: '+3h 05m', license: 'D, DE', licenseExpiry: '16.12.2027', medicalCheck: '18.09.2026', color: 'violet' },
+    { id: 'spinger', name: 'Spinger', initials: 'S', phone: '+49 6592 410 251', email: 'spinger@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 11', shift: '06:30 – 14:40', weeklyHours: 32.7, targetHours: 40, overtime: '+0h 55m', license: 'D, DE', licenseExpiry: '05.05.2028', medicalCheck: '30.11.2026', color: 'cyan' },
+    { id: 'vater-ilias', name: 'Vater Ilias', initials: 'VI', phone: '+49 6592 410 267', email: 'ilias@busdispo.de', status: 'Verfügbar', vehicle: '–', shift: 'Kein Einsatz', weeklyHours: 24, targetHours: 40, overtime: '−1h 20m', license: 'D, DE', licenseExpiry: '14.02.2029', medicalCheck: '08.06.2027', color: 'rose' },
+    { id: 'kyriakos', name: 'Kyriakos', initials: 'K', phone: '+49 6592 410 273', email: 'kyriakos@busdispo.de', status: 'Abwesend', vehicle: '–', shift: 'Krank', weeklyHours: 16, targetHours: 40, overtime: '+0h 10m', license: 'D, DE', licenseExpiry: '25.07.2028', medicalCheck: '11.10.2026', color: 'orange' },
   ];
 
   protected readonly shifts: Shift[] = [
@@ -155,7 +189,9 @@ export class App {
         ? 'Fahrzeuge'
         : this.activeView() === 'schedules'
           ? 'Dienstpläne'
-        : 'Wochenplanung',
+          : this.activeView() === 'drivers'
+            ? 'Fahrer'
+            : 'Wochenplanung',
   );
 
   protected readonly filteredVehicles = computed(() => {
@@ -186,6 +222,20 @@ export class App {
     () => this.dutyPlans.find((plan) => plan.id === this.selectedDutyPlanId()) ?? this.dutyPlans[0],
   );
 
+  protected readonly filteredDrivers = computed(() => {
+    const query = this.driverSearch().trim().toLocaleLowerCase('de');
+    const status = this.driverStatus();
+    return this.drivers.filter(
+      (driver) =>
+        (status === 'Alle Status' || driver.status === status) &&
+        (!query || `${driver.name} ${driver.vehicle} ${driver.email}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedDriver = computed(
+    () => this.drivers.find((driver) => driver.id === this.selectedDriverId()) ?? this.drivers[3],
+  );
+
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
   protected readonly dateRange = computed(() => {
     if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
@@ -201,7 +251,7 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
-  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules'): void {
+  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers'): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
     window.history.replaceState(null, '', `#${view}`);
@@ -233,6 +283,19 @@ export class App {
   protected saveDutyPlan(): void {
     this.dutyPlanSaved.set(true);
     window.setTimeout(() => this.dutyPlanSaved.set(false), 2400);
+  }
+
+  protected selectDriver(driver: Driver): void {
+    this.selectedDriverId.set(driver.id);
+    this.driverSaved.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.driver-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected saveDriver(): void {
+    this.driverSaved.set(true);
+    window.setTimeout(() => this.driverSaved.set(false), 2400);
   }
 
   protected selectShift(shift: Shift): void {
