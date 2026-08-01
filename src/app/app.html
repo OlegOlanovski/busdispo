@@ -16,7 +16,7 @@
       <button [class.active]="activeView() === 'vehicles'" (click)="showView('vehicles')"><span class="nav__icon">▣</span>Fahrzeuge</button>
       <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon">▤</span>Dienstpläne</button>
       <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon">♙</span>Fahrer</button>
-      <a href="#absence"><span class="nav__icon">⊠</span>Abwesenheiten</a>
+      <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
       <a href="#trips"><span class="nav__icon">♧</span>Sonderfahrten</a>
       <a href="#messages"><span class="nav__icon">✉</span>Nachrichten</a>
       <a href="#stats"><span class="nav__icon">▥</span>Statistiken</a>
@@ -130,7 +130,7 @@
             </div>
           </section>
           <section class="dashboard-card overview-absence-card">
-            <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button>Alle anzeigen&nbsp; →</button></div>
+            <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button (click)="showView('absence')">Alle anzeigen&nbsp; →</button></div>
             <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Kyriakos</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
             <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Blum/Böhnke</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
           </section>
@@ -388,6 +388,87 @@
               <div class="driver-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
                 <button class="button button--primary" (click)="saveDriver()">{{ driverSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    } @else if (activeView() === 'absence') {
+      <section class="absences-page">
+        <div class="absences-intro">
+          <div>
+            <span class="eyebrow">Abwesenheitsverwaltung</span>
+            <h2>Abwesenheiten</h2>
+            <p>Erfassen Sie Urlaub, Krankheit und weitere Abwesenheiten Ihrer Fahrer.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Abwesenheit erfassen</button>
+        </div>
+
+        <div class="absence-metrics">
+          <article><span class="absence-metric-icon absence-metric-icon--blue">⊠</span><div><b>6</b><small>Einträge gesamt</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--rose">!</span><div><b>2</b><small>Aktuell abwesend</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--orange">◌</span><div><b>3</b><small>Geplant</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--green">✓</span><div><b>1</b><small>Beendet</small></div></article>
+        </div>
+
+        <div class="absence-layout">
+          <section class="dashboard-card absence-list-card">
+            <div class="absence-toolbar">
+              <label class="absence-search"><span>⌕</span><input [ngModel]="absenceSearch()" (ngModelChange)="absenceSearch.set($event)" placeholder="Fahrer, Art oder Bemerkung suchen" /></label>
+              <select [ngModel]="absenceType()" (ngModelChange)="absenceType.set($event)" aria-label="Abwesenheitsart filtern">
+                <option>Alle Arten</option><option>Krank</option><option>Urlaub</option><option>Fortbildung</option><option>Sonstige</option>
+              </select>
+            </div>
+            <div class="absence-table-head"><span>Fahrer</span><span>Art</span><span>Zeitraum</span><span>Dauer</span><span>Status</span><span></span></div>
+            <div class="absence-list">
+              @for (absence of filteredAbsences(); track absence.id) {
+                <button class="absence-row" [class.absence-row--selected]="selectedAbsenceId() === absence.id" (click)="selectAbsence(absence)">
+                  <span class="absence-identity"><i class="absence-list-avatar absence-list-avatar--{{ absence.color }}">{{ absence.initials }}</i><span><b>{{ absence.driver }}</b><small>{{ absence.note }}</small></span></span>
+                  <span class="absence-type absence-type--{{ absence.type === 'Krank' ? 'sick' : absence.type === 'Urlaub' ? 'vacation' : absence.type === 'Fortbildung' ? 'training' : 'other' }}">{{ absence.type }}</span>
+                  <span class="absence-period"><b>{{ absence.start }}</b><small>bis {{ absence.end }}</small></span>
+                  <span class="absence-duration">{{ absence.duration }}</span>
+                  <span class="absence-status absence-status--{{ absence.status === 'Aktiv' ? 'active' : absence.status === 'Geplant' ? 'planned' : 'finished' }}"><i></i>{{ absence.status }}</span>
+                  <span class="absence-chevron">›</span>
+                </button>
+              } @empty {
+                <div class="absence-empty"><span>⌕</span><strong>Keine Abwesenheiten gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="absence-footer"><span>{{ filteredAbsences().length }} von {{ absences.length }} Abwesenheiten</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
+          </section>
+
+          <aside class="dashboard-card absence-detail-card">
+            <div class="absence-detail-head">
+              <span class="absence-detail-avatar absence-list-avatar--{{ selectedAbsence().color }}">{{ selectedAbsence().initials }}</span>
+              <div><span>Abwesenheit</span><h3>{{ selectedAbsence().driver }}</h3><p>{{ selectedAbsence().type }} · {{ selectedAbsence().duration }}</p></div>
+              <span class="absence-status absence-status--{{ selectedAbsence().status === 'Aktiv' ? 'active' : selectedAbsence().status === 'Geplant' ? 'planned' : 'finished' }}"><i></i>{{ selectedAbsence().status }}</span>
+            </div>
+            <div class="absence-detail-body">
+              <h4>Zeitraum</h4>
+              <div class="absence-date-range"><div><span>Von</span><strong>{{ selectedAbsence().start }}</strong></div><i>→</i><div><span>Bis</span><strong>{{ selectedAbsence().end }}</strong></div></div>
+              <dl class="absence-data">
+                <div><dt>Kalendertage</dt><dd>{{ selectedAbsence().duration }}</dd></div>
+                <div><dt>Arbeitstage</dt><dd>{{ selectedAbsence().workingDays }}</dd></div>
+                <div><dt>Abwesenheitsart</dt><dd>{{ selectedAbsence().type }}</dd></div>
+                <div><dt>Status</dt><dd>{{ selectedAbsence().status }}</dd></div>
+              </dl>
+
+              <h4>Bemerkung</h4>
+              <div class="absence-note"><span>≡</span><p>{{ selectedAbsence().note }}</p></div>
+
+              <h4>Auswirkung auf die Planung</h4>
+              <div class="absence-conflict" [class.absence-conflict--clear]="selectedAbsence().conflicts === 0">
+                <span>{{ selectedAbsence().conflicts === 0 ? '✓' : '!' }}</span>
+                <div><b>{{ selectedAbsence().conflicts === 0 ? 'Keine offenen Konflikte' : selectedAbsence().conflicts + ' betroffene Einsätze' }}</b><small>{{ selectedAbsence().conflicts === 0 ? 'Die Wochenplanung ist vollständig abgedeckt.' : 'Für diese Einsätze wird eine Vertretung benötigt.' }}</small></div>
+                @if (selectedAbsence().conflicts > 0) { <button (click)="showView('planning')">Prüfen →</button> }
+              </div>
+
+              <h4>Betroffener Fahrer</h4>
+              <div class="absence-driver-link"><span class="absence-list-avatar absence-list-avatar--{{ selectedAbsence().color }}">{{ selectedAbsence().initials }}</span><div><b>{{ selectedAbsence().driver }}</b><small>Fahrerdetails und Einsatzhistorie</small></div><button (click)="showView('drivers')">Anzeigen →</button></div>
+
+              <div class="absence-detail-actions">
+                <button class="button" (click)="showView('planning')">Wochenplanung</button>
+                <button class="button button--primary" (click)="saveAbsence()">{{ absenceSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
             </div>
           </aside>

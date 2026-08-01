@@ -153,4 +153,36 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.driver-row')).toHaveLength(1);
     expect(compiled.querySelector('.driver-row')?.textContent).toContain('Koch');
   });
+
+  it('should open the absence management view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const absenceButton = compiled.querySelector('.nav button:nth-child(6)') as HTMLButtonElement;
+
+    absenceButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Abwesenheiten');
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(6);
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Blum/Böhnke');
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Auswirkung auf die Planung');
+  });
+
+  it('should filter absences by type', async () => {
+    window.history.replaceState(null, '', '#absence');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const typeFilter = compiled.querySelector('.absence-toolbar select') as HTMLSelectElement;
+
+    typeFilter.value = 'Urlaub';
+    typeFilter.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(2);
+    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Blum/Böhnke');
+    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Zeyen B.');
+  });
 });

@@ -65,6 +65,21 @@ interface Driver {
   color: 'blue' | 'violet' | 'green' | 'orange' | 'cyan' | 'rose';
 }
 
+interface Absence {
+  id: string;
+  driver: string;
+  initials: string;
+  type: 'Krank' | 'Urlaub' | 'Fortbildung' | 'Sonstige';
+  start: string;
+  end: string;
+  duration: string;
+  workingDays: number;
+  status: 'Aktiv' | 'Geplant' | 'Beendet';
+  note: string;
+  conflicts: number;
+  color: 'blue' | 'violet' | 'green' | 'orange' | 'rose';
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -72,7 +87,7 @@ interface Driver {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers'>(
+  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence'>(
     window.location.hash === '#overview'
       ? 'overview'
       : window.location.hash === '#vehicles'
@@ -81,7 +96,9 @@ export class App {
           ? 'schedules'
           : window.location.hash === '#drivers'
             ? 'drivers'
-            : 'planning',
+            : window.location.hash === '#absence'
+              ? 'absence'
+              : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
@@ -100,6 +117,10 @@ export class App {
   protected readonly driverSearch = signal('');
   protected readonly driverStatus = signal('Alle Status');
   protected readonly driverSaved = signal(false);
+  protected readonly selectedAbsenceId = signal('blum-vacation');
+  protected readonly absenceSearch = signal('');
+  protected readonly absenceType = signal('Alle Arten');
+  protected readonly absenceSaved = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -148,6 +169,15 @@ export class App {
     { id: 'kyriakos', name: 'Kyriakos', initials: 'K', phone: '+49 6592 410 273', email: 'kyriakos@busdispo.de', status: 'Abwesend', vehicle: '–', shift: 'Krank', weeklyHours: 16, targetHours: 40, overtime: '+0h 10m', license: 'D, DE', licenseExpiry: '25.07.2028', medicalCheck: '11.10.2026', color: 'orange' },
   ];
 
+  protected readonly absences: Absence[] = [
+    { id: 'kyriakos-sick', driver: 'Kyriakos', initials: 'K', type: 'Krank', start: '25.07.2026', end: '25.07.2026', duration: '1 Tag', workingDays: 1, status: 'Aktiv', note: 'Krankmeldung liegt vor.', conflicts: 1, color: 'rose' },
+    { id: 'blum-vacation', driver: 'Blum/Böhnke', initials: 'BB', type: 'Urlaub', start: '20.07.2026', end: '08.08.2026', duration: '20 Tage', workingDays: 15, status: 'Aktiv', note: 'Genehmigter Sommerurlaub.', conflicts: 3, color: 'blue' },
+    { id: 'koch-training', driver: 'Koch', initials: 'K', type: 'Fortbildung', start: '03.08.2026', end: '04.08.2026', duration: '2 Tage', workingDays: 2, status: 'Geplant', note: 'Schulung Fahrgastsicherheit.', conflicts: 2, color: 'green' },
+    { id: 'zeyen-vacation', driver: 'Zeyen B.', initials: 'ZB', type: 'Urlaub', start: '10.08.2026', end: '14.08.2026', duration: '5 Tage', workingDays: 5, status: 'Geplant', note: 'Genehmigter Erholungsurlaub.', conflicts: 0, color: 'violet' },
+    { id: 'spinger-other', driver: 'Spinger', initials: 'S', type: 'Sonstige', start: '18.08.2026', end: '18.08.2026', duration: '1 Tag', workingDays: 1, status: 'Geplant', note: 'Behördentermin.', conflicts: 1, color: 'orange' },
+    { id: 'block-training', driver: 'Block', initials: 'B', type: 'Fortbildung', start: '06.07.2026', end: '07.07.2026', duration: '2 Tage', workingDays: 2, status: 'Beendet', note: 'Eco-Training erfolgreich abgeschlossen.', conflicts: 0, color: 'green' },
+  ];
+
   protected readonly shifts: Shift[] = [
     { id: 'rh102-thu', vehicle: 'DAU-RH 102', day: 3, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
     { id: 'rh102-fri', vehicle: 'DAU-RH 102', day: 4, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
@@ -191,7 +221,9 @@ export class App {
           ? 'Dienstpläne'
           : this.activeView() === 'drivers'
             ? 'Fahrer'
-            : 'Wochenplanung',
+            : this.activeView() === 'absence'
+              ? 'Abwesenheiten'
+              : 'Wochenplanung',
   );
 
   protected readonly filteredVehicles = computed(() => {
@@ -236,6 +268,20 @@ export class App {
     () => this.drivers.find((driver) => driver.id === this.selectedDriverId()) ?? this.drivers[3],
   );
 
+  protected readonly filteredAbsences = computed(() => {
+    const query = this.absenceSearch().trim().toLocaleLowerCase('de');
+    const type = this.absenceType();
+    return this.absences.filter(
+      (absence) =>
+        (type === 'Alle Arten' || absence.type === type) &&
+        (!query || `${absence.driver} ${absence.type} ${absence.note}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedAbsence = computed(
+    () => this.absences.find((absence) => absence.id === this.selectedAbsenceId()) ?? this.absences[1],
+  );
+
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
   protected readonly dateRange = computed(() => {
     if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
@@ -251,7 +297,7 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
-  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers'): void {
+  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence'): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
     window.history.replaceState(null, '', `#${view}`);
@@ -296,6 +342,19 @@ export class App {
   protected saveDriver(): void {
     this.driverSaved.set(true);
     window.setTimeout(() => this.driverSaved.set(false), 2400);
+  }
+
+  protected selectAbsence(absence: Absence): void {
+    this.selectedAbsenceId.set(absence.id);
+    this.absenceSaved.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.absence-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected saveAbsence(): void {
+    this.absenceSaved.set(true);
+    window.setTimeout(() => this.absenceSaved.set(false), 2400);
   }
 
   protected selectShift(shift: Shift): void {
