@@ -185,4 +185,36 @@ describe('App', () => {
     expect(compiled.querySelector('.absence-list')?.textContent).toContain('Blum/Böhnke');
     expect(compiled.querySelector('.absence-list')?.textContent).toContain('Zeyen B.');
   });
+
+  it('should open the special trip management view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const tripsButton = compiled.querySelector('.nav button:nth-child(7)') as HTMLButtonElement;
+
+    tripsButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Sonderfahrten');
+    expect(compiled.querySelectorAll('.special-trip-row')).toHaveLength(6);
+    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Ausflug Rheinbach');
+    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Jugendfreizeit Hönningen');
+  });
+
+  it('should filter special trips by status', async () => {
+    window.history.replaceState(null, '', '#trips');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const statusFilter = compiled.querySelector('.special-trip-toolbar select') as HTMLSelectElement;
+
+    statusFilter.value = 'Offen';
+    statusFilter.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.special-trip-row')).toHaveLength(2);
+    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Schulausflug Cochem');
+    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Messe-Transfer Koblenz');
+  });
 });

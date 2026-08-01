@@ -17,7 +17,7 @@
       <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon">▤</span>Dienstpläne</button>
       <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon">♙</span>Fahrer</button>
       <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
-      <a href="#trips"><span class="nav__icon">♧</span>Sonderfahrten</a>
+      <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon">♧</span>Sonderfahrten</button>
       <a href="#messages"><span class="nav__icon">✉</span>Nachrichten</a>
       <a href="#stats"><span class="nav__icon">▥</span>Statistiken</a>
       <a href="#settings"><span class="nav__icon">⚙</span>Einstellungen</a>
@@ -113,7 +113,7 @@
             </section>
 
             <section class="dashboard-card upcoming-card">
-              <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div></div>
+              <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
               <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Hönningen → Rheinbach</p></div><em>12:15</em></article>
               <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Düsseldorf → Mehren</p></div><em>23:00</em></article>
             </section>
@@ -469,6 +469,96 @@
               <div class="absence-detail-actions">
                 <button class="button" (click)="showView('planning')">Wochenplanung</button>
                 <button class="button button--primary" (click)="saveAbsence()">{{ absenceSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    } @else if (activeView() === 'trips') {
+      <section class="special-trips-page">
+        <div class="special-trips-intro">
+          <div>
+            <span class="eyebrow">Auftragsfahrten</span>
+            <h2>Sonderfahrten</h2>
+            <p>Planen Sie Tagesfahrten, Transfers und individuelle Kundenaufträge.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Sonderfahrt anlegen</button>
+        </div>
+
+        <div class="special-trip-metrics">
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--blue">♧</span><div><b>6</b><small>Fahrten gesamt</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--green">✓</span><div><b>3</b><small>Geplant</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--orange">!</span><div><b>2</b><small>Zuweisung offen</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--violet">♙</span><div><b>256</b><small>Fahrgäste gesamt</small></div></article>
+        </div>
+
+        <div class="special-trip-layout">
+          <section class="dashboard-card special-trip-list-card">
+            <div class="special-trip-toolbar">
+              <label class="special-trip-search"><span>⌕</span><input [ngModel]="specialTripSearch()" (ngModelChange)="specialTripSearch.set($event)" placeholder="Fahrt, Strecke, Kunde oder Fahrer suchen" /></label>
+              <select [ngModel]="specialTripStatus()" (ngModelChange)="specialTripStatus.set($event)" aria-label="Sonderfahrtstatus filtern">
+                <option>Alle Status</option><option>Geplant</option><option>Offen</option><option>Abgeschlossen</option>
+              </select>
+            </div>
+            <div class="special-trip-table-head"><span>Auftrag</span><span>Datum</span><span>Strecke</span><span>Zuweisung</span><span>Status</span><span></span></div>
+            <div class="special-trip-list">
+              @for (trip of filteredSpecialTrips(); track trip.id) {
+                <button class="special-trip-row" [class.special-trip-row--selected]="selectedSpecialTripId() === trip.id" (click)="selectSpecialTrip(trip)">
+                  <span class="special-trip-identity"><i class="special-trip-type-icon special-trip-type-icon--{{ trip.tone }}">♧</i><span><b>{{ trip.title }}</b><small>{{ trip.type }} · {{ trip.passengers }} Fahrgäste</small></span></span>
+                  <span class="special-trip-date"><b>{{ trip.date }}</b><small>{{ trip.start }} – {{ trip.end }}</small></span>
+                  <span class="special-trip-route"><b>{{ trip.from }}</b><small>→ {{ trip.to }}</small></span>
+                  <span class="special-trip-assignment"><b>{{ trip.vehicle }}</b><small>{{ trip.driver }}</small></span>
+                  <span class="special-trip-status special-trip-status--{{ trip.status === 'Geplant' ? 'planned' : trip.status === 'Offen' ? 'open' : 'finished' }}"><i></i>{{ trip.status }}</span>
+                  <span class="special-trip-chevron">›</span>
+                </button>
+              } @empty {
+                <div class="special-trip-empty"><span>⌕</span><strong>Keine Sonderfahrten gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="special-trip-footer"><span>{{ filteredSpecialTrips().length }} von {{ specialTrips.length }} Sonderfahrten</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
+          </section>
+
+          <aside class="dashboard-card special-trip-detail-card">
+            <div class="special-trip-detail-head">
+              <span class="special-trip-detail-icon special-trip-type-icon--{{ selectedSpecialTrip().tone }}">♧</span>
+              <div><span>Sonderfahrt</span><h3>{{ selectedSpecialTrip().title }}</h3><p>{{ selectedSpecialTrip().type }} · {{ selectedSpecialTrip().date }}</p></div>
+              <span class="special-trip-status special-trip-status--{{ selectedSpecialTrip().status === 'Geplant' ? 'planned' : selectedSpecialTrip().status === 'Offen' ? 'open' : 'finished' }}"><i></i>{{ selectedSpecialTrip().status }}</span>
+            </div>
+            <div class="special-trip-detail-body">
+              <h4>Fahrtdaten</h4>
+              <dl class="special-trip-data">
+                <div><dt>Datum</dt><dd>{{ selectedSpecialTrip().date }}</dd></div>
+                <div><dt>Fahrzeit</dt><dd>{{ selectedSpecialTrip().start }} – {{ selectedSpecialTrip().end }}</dd></div>
+                <div><dt>Fahrgäste</dt><dd>{{ selectedSpecialTrip().passengers }}</dd></div>
+                <div><dt>Fahrtart</dt><dd>{{ selectedSpecialTrip().type }}</dd></div>
+              </dl>
+
+              <h4>Route</h4>
+              <div class="special-trip-route-line">
+                @for (stop of selectedSpecialTrip().stops; track stop; let first = $first; let last = $last; let index = $index) {
+                  <div [class.special-trip-route-line__edge]="first || last">
+                    <span>{{ index + 1 }}</span>
+                    <p><b>{{ stop }}</b><small>{{ first ? selectedSpecialTrip().start + ' · Abfahrt' : last ? selectedSpecialTrip().end + ' · Ankunft' : 'Zwischenhalt' }}</small></p>
+                  </div>
+                }
+              </div>
+
+              <h4>Zuweisung</h4>
+              <div class="special-trip-resources" [class.special-trip-resources--open]="selectedSpecialTrip().status === 'Offen'">
+                <div><span>▣</span><p><b>{{ selectedSpecialTrip().vehicle }}</b><small>Fahrzeug</small></p></div>
+                <div><span>♙</span><p><b>{{ selectedSpecialTrip().driver }}</b><small>Fahrer</small></p></div>
+                @if (selectedSpecialTrip().status === 'Offen') { <button (click)="showView('planning')">Jetzt planen →</button> }
+              </div>
+
+              <h4>Auftraggeber</h4>
+              <div class="special-trip-customer"><span>{{ selectedSpecialTrip().customer.charAt(0) }}</span><div><b>{{ selectedSpecialTrip().customer }}</b><small>{{ selectedSpecialTrip().contact }} · {{ selectedSpecialTrip().phone }}</small></div></div>
+
+              <h4>Bemerkung</h4>
+              <div class="special-trip-note"><span>≡</span><p>{{ selectedSpecialTrip().note }}</p></div>
+
+              <div class="special-trip-detail-actions">
+                <button class="button" (click)="showView('planning')">Wochenplanung</button>
+                <button class="button button--primary" (click)="saveSpecialTrip()">{{ specialTripSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
             </div>
           </aside>

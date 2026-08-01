@@ -3,6 +3,7 @@ import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 type ShiftTone = 'green' | 'blue' | 'amber' | 'violet' | 'cyan' | 'orange' | 'rose';
+type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips';
 
 interface Shift {
   id: string;
@@ -80,6 +81,27 @@ interface Absence {
   color: 'blue' | 'violet' | 'green' | 'orange' | 'rose';
 }
 
+interface SpecialTrip {
+  id: string;
+  title: string;
+  type: 'Tagesfahrt' | 'Transferfahrt' | 'Vereinsfahrt' | 'Klassenfahrt';
+  date: string;
+  start: string;
+  end: string;
+  from: string;
+  to: string;
+  stops: string[];
+  driver: string;
+  vehicle: string;
+  passengers: number;
+  customer: string;
+  contact: string;
+  phone: string;
+  status: 'Geplant' | 'Offen' | 'Abgeschlossen';
+  note: string;
+  tone: 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'cyan';
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -87,7 +109,7 @@ interface Absence {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence'>(
+  protected readonly activeView = signal<AppView>(
     window.location.hash === '#overview'
       ? 'overview'
       : window.location.hash === '#vehicles'
@@ -98,6 +120,8 @@ export class App {
             ? 'drivers'
             : window.location.hash === '#absence'
               ? 'absence'
+              : window.location.hash === '#trips'
+                ? 'trips'
               : 'planning',
   );
   protected readonly menuOpen = signal(false);
@@ -121,6 +145,10 @@ export class App {
   protected readonly absenceSearch = signal('');
   protected readonly absenceType = signal('Alle Arten');
   protected readonly absenceSaved = signal(false);
+  protected readonly selectedSpecialTripId = signal('rheinbach-day-trip');
+  protected readonly specialTripSearch = signal('');
+  protected readonly specialTripStatus = signal('Alle Status');
+  protected readonly specialTripSaved = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -178,6 +206,15 @@ export class App {
     { id: 'block-training', driver: 'Block', initials: 'B', type: 'Fortbildung', start: '06.07.2026', end: '07.07.2026', duration: '2 Tage', workingDays: 2, status: 'Beendet', note: 'Eco-Training erfolgreich abgeschlossen.', conflicts: 0, color: 'green' },
   ];
 
+  protected readonly specialTrips: SpecialTrip[] = [
+    { id: 'rheinbach-day-trip', title: 'Ausflug Rheinbach', type: 'Tagesfahrt', date: '25.07.2026', start: '12:15', end: '19:15', from: 'Hönningen Zeltlagerplatz', to: 'Rheinbach Schwimmbad', stops: ['Hönningen Zeltlagerplatz', 'Adenau Markt', 'Rheinbach Schwimmbad'], driver: 'Kyriakos', vehicle: 'DAU-RH 11', passengers: 44, customer: 'Jugendfreizeit Hönningen', contact: 'Anna Schmitz', phone: '+49 2691 440 218', status: 'Geplant', note: 'Rückfahrt nach Ende des Schwimmbadbesuchs. Gepäckraum freihalten.', tone: 'rose' },
+    { id: 'duesseldorf-transfer', title: 'Flughafentransfer', type: 'Transferfahrt', date: '26.07.2026', start: '23:00', end: '02:00', from: 'Düsseldorf Innenstadt', to: 'Mehren Ortsmitte', stops: ['Düsseldorf Innenstadt', 'Flughafen Düsseldorf', 'Mehren Ortsmitte'], driver: 'Vater Ilias', vehicle: 'DAU-RH 8', passengers: 31, customer: 'Reisegruppe Vulkaneifel', contact: 'Markus Weber', phone: '+49 6592 880 146', status: 'Geplant', note: 'Nachtfahrt. Flugankunft vor Abfahrt telefonisch bestätigen.', tone: 'blue' },
+    { id: 'trier-club-trip', title: 'Vereinsausflug Trier', type: 'Vereinsfahrt', date: '01.08.2026', start: '08:30', end: '20:45', from: 'Daun ZOB', to: 'Trier Porta Nigra', stops: ['Daun ZOB', 'Gerolstein Bahnhof', 'Trier Porta Nigra'], driver: 'Olanovski', vehicle: 'DAU-RH 91', passengers: 49, customer: 'Sportverein Daun 1921', contact: 'Peter Lenz', phone: '+49 6592 731 009', status: 'Geplant', note: 'Ein Zustieg in Gerolstein. Rückfahrt um 19:00 Uhr.', tone: 'violet' },
+    { id: 'cochem-school-trip', title: 'Schulausflug Cochem', type: 'Klassenfahrt', date: '04.08.2026', start: '07:45', end: '16:30', from: 'Gillenfeld Schule', to: 'Cochem Reichsburg', stops: ['Gillenfeld Schule', 'Ulmen Busbahnhof', 'Cochem Reichsburg'], driver: 'Noch offen', vehicle: 'DAU-RH 515', passengers: 53, customer: 'Grundschule Gillenfeld', contact: 'Laura Klein', phone: '+49 6573 340 112', status: 'Offen', note: 'Begleitpersonen: 4. Fahrerzuweisung noch erforderlich.', tone: 'orange' },
+    { id: 'koblenz-transfer', title: 'Messe-Transfer Koblenz', type: 'Transferfahrt', date: '08.08.2026', start: '06:10', end: '18:20', from: 'Dockweiler', to: 'Koblenz Messegelände', stops: ['Dockweiler', 'Daun ZOB', 'Koblenz Messegelände'], driver: 'Noch offen', vehicle: 'Noch offen', passengers: 38, customer: 'Wirtschaftsforum Eifel', contact: 'Sabine Roth', phone: '+49 261 920 884', status: 'Offen', note: 'Fahrzeug und Fahrer müssen noch eingeplant werden.', tone: 'cyan' },
+    { id: 'mayen-day-trip', title: 'Seniorenfahrt Mayen', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Kelberg Rathaus', to: 'Mayen Marktplatz', stops: ['Kelberg Rathaus', 'Boos Kirche', 'Mayen Marktplatz'], driver: 'Koch', vehicle: 'DAU-RH 102', passengers: 41, customer: 'Seniorenkreis Kelberg', contact: 'Maria Becker', phone: '+49 2692 618 330', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
+  ];
+
   protected readonly shifts: Shift[] = [
     { id: 'rh102-thu', vehicle: 'DAU-RH 102', day: 3, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
     { id: 'rh102-fri', vehicle: 'DAU-RH 102', day: 4, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
@@ -221,9 +258,11 @@ export class App {
           ? 'Dienstpläne'
           : this.activeView() === 'drivers'
             ? 'Fahrer'
-            : this.activeView() === 'absence'
-              ? 'Abwesenheiten'
-              : 'Wochenplanung',
+          : this.activeView() === 'absence'
+            ? 'Abwesenheiten'
+            : this.activeView() === 'trips'
+              ? 'Sonderfahrten'
+            : 'Wochenplanung',
   );
 
   protected readonly filteredVehicles = computed(() => {
@@ -282,6 +321,20 @@ export class App {
     () => this.absences.find((absence) => absence.id === this.selectedAbsenceId()) ?? this.absences[1],
   );
 
+  protected readonly filteredSpecialTrips = computed(() => {
+    const query = this.specialTripSearch().trim().toLocaleLowerCase('de');
+    const status = this.specialTripStatus();
+    return this.specialTrips.filter(
+      (trip) =>
+        (status === 'Alle Status' || trip.status === status) &&
+        (!query || `${trip.title} ${trip.type} ${trip.from} ${trip.to} ${trip.customer} ${trip.driver} ${trip.vehicle}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedSpecialTrip = computed(
+    () => this.specialTrips.find((trip) => trip.id === this.selectedSpecialTripId()) ?? this.specialTrips[0],
+  );
+
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
   protected readonly dateRange = computed(() => {
     if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
@@ -297,7 +350,7 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
-  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence'): void {
+  protected showView(view: AppView): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
     window.history.replaceState(null, '', `#${view}`);
@@ -355,6 +408,19 @@ export class App {
   protected saveAbsence(): void {
     this.absenceSaved.set(true);
     window.setTimeout(() => this.absenceSaved.set(false), 2400);
+  }
+
+  protected selectSpecialTrip(trip: SpecialTrip): void {
+    this.selectedSpecialTripId.set(trip.id);
+    this.specialTripSaved.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.special-trip-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected saveSpecialTrip(): void {
+    this.specialTripSaved.set(true);
+    window.setTimeout(() => this.specialTripSaved.set(false), 2400);
   }
 
   protected selectShift(shift: Shift): void {
