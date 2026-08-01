@@ -14,7 +14,7 @@
       <button [class.active]="activeView() === 'overview'" (click)="showView('overview')"><span class="nav__icon">⌂</span>Übersicht</button>
       <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon">□</span>Wochenplanung</button>
       <button [class.active]="activeView() === 'vehicles'" (click)="showView('vehicles')"><span class="nav__icon">▣</span>Fahrzeuge</button>
-      <a href="#schedules"><span class="nav__icon">▤</span>Dienstpläne</a>
+      <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon">▤</span>Dienstpläne</button>
       <a href="#drivers"><span class="nav__icon">♙</span>Fahrer</a>
       <a href="#absence"><span class="nav__icon">⊠</span>Abwesenheiten</a>
       <a href="#trips"><span class="nav__icon">♧</span>Sonderfahrten</a>
@@ -218,6 +218,91 @@
               <div class="vehicle-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
                 <button class="button button--primary" (click)="saveVehicle()">{{ vehicleSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    } @else if (activeView() === 'schedules') {
+      <section class="duty-page">
+        <div class="duty-intro">
+          <div>
+            <span class="eyebrow">Dienstplanverwaltung</span>
+            <h2>Dienstpläne</h2>
+            <p>Erstellen und verwalten Sie wiederkehrende Fahrpläne und Linienabläufe.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Dienstplan erstellen</button>
+        </div>
+
+        <div class="duty-metrics">
+          <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>6</b><small>Dienstpläne gesamt</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>4</b><small>Aktive Pläne</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--orange">◌</span><div><b>1</b><small>Entwurf</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--gray">▦</span><div><b>1</b><small>Archiviert</small></div></article>
+        </div>
+
+        <div class="duty-layout">
+          <section class="dashboard-card duty-list-card">
+            <div class="duty-toolbar">
+              <label class="duty-search"><span>⌕</span><input [ngModel]="dutyPlanSearch()" (ngModelChange)="dutyPlanSearch.set($event)" placeholder="Dienstplan oder Route suchen" /></label>
+              <select [ngModel]="dutyPlanStatus()" (ngModelChange)="dutyPlanStatus.set($event)" aria-label="Dienstplanstatus filtern">
+                <option>Alle Status</option><option>Aktiv</option><option>Entwurf</option><option>Archiviert</option>
+              </select>
+            </div>
+            <div class="duty-table-head"><span>Dienstplan</span><span>Zeitraum</span><span>Gültig</span><span>Status</span><span></span></div>
+            <div class="duty-list">
+              @for (plan of filteredDutyPlans(); track plan.id) {
+                <button class="duty-row" [class.duty-row--selected]="selectedDutyPlanId() === plan.id" (click)="selectDutyPlan(plan)">
+                  <span class="duty-identity"><i class="duty-plan-icon duty-plan-icon--{{ plan.tone }}">▤</i><span><b>{{ plan.name }}</b><small>{{ plan.route }}</small></span></span>
+                  <span class="duty-time"><b>{{ plan.start }} – {{ plan.end }}</b><small>{{ plan.duration }} · Pause {{ plan.breakTime }}</small></span>
+                  <span class="duty-days">{{ plan.weekdays }}</span>
+                  <span class="duty-status duty-status--{{ plan.status === 'Aktiv' ? 'active' : plan.status === 'Entwurf' ? 'draft' : 'archived' }}"><i></i>{{ plan.status }}</span>
+                  <span class="duty-chevron">›</span>
+                </button>
+              } @empty {
+                <div class="duty-empty"><span>⌕</span><strong>Keine Dienstpläne gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="duty-footer"><span>{{ filteredDutyPlans().length }} von {{ dutyPlans.length }} Dienstplänen</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
+          </section>
+
+          <aside class="dashboard-card duty-detail-card">
+            <div class="duty-detail-head">
+              <span class="duty-plan-icon duty-plan-icon--{{ selectedDutyPlan().tone }}">▤</span>
+              <div><span>Dienstplan</span><h3>{{ selectedDutyPlan().name }}</h3><p>{{ selectedDutyPlan().route }}</p></div>
+              <span class="duty-status duty-status--{{ selectedDutyPlan().status === 'Aktiv' ? 'active' : selectedDutyPlan().status === 'Entwurf' ? 'draft' : 'archived' }}"><i></i>{{ selectedDutyPlan().status }}</span>
+            </div>
+            <div class="duty-detail-body">
+              <h4>Planübersicht</h4>
+              <dl class="duty-data">
+                <div><dt>Arbeitszeit</dt><dd>{{ selectedDutyPlan().start }} – {{ selectedDutyPlan().end }}</dd></div>
+                <div><dt>Dauer</dt><dd>{{ selectedDutyPlan().duration }}</dd></div>
+                <div><dt>Pause</dt><dd>{{ selectedDutyPlan().breakTime }}</dd></div>
+                <div><dt>Gültigkeit</dt><dd>{{ selectedDutyPlan().weekdays }}</dd></div>
+              </dl>
+
+              <h4>Linienverlauf</h4>
+              <div class="stop-timeline">
+                @for (stop of selectedDutyPlan().stops; track stop; let first = $first; let last = $last; let index = $index) {
+                  <div class="stop-item" [class.stop-item--edge]="first || last">
+                    <span>{{ index + 1 }}</span>
+                    <div><b>{{ stop }}</b><small>{{ first ? selectedDutyPlan().start + ' · Start' : last ? selectedDutyPlan().end + ' · Ende' : 'Zwischenhalt' }}</small></div>
+                  </div>
+                }
+              </div>
+
+              <h4>Einsatztage</h4>
+              <div class="weekday-row">
+                @for (day of ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']; track day; let index = $index) {
+                  <span [class.weekday--active]="index < 5 || (selectedDutyPlan().weekdays.includes('Sa') && index === 5)">{{ day }}</span>
+                }
+              </div>
+
+              <div class="duty-usage"><span>▣</span><div><b>{{ selectedDutyPlan().assignedVehicles }} Fahrzeug{{ selectedDutyPlan().assignedVehicles === 1 ? '' : 'e' }} zugewiesen</b><small>In der aktuellen Wochenplanung verwendet</small></div><button (click)="showView('planning')">Anzeigen →</button></div>
+
+              <div class="duty-detail-actions">
+                <button class="button">Duplizieren</button>
+                <button class="button button--primary" (click)="saveDutyPlan()">{{ dutyPlanSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
             </div>
           </aside>

@@ -32,6 +32,21 @@ interface FleetVehicle extends Vehicle {
   safetyInspection: string;
 }
 
+interface DutyPlan {
+  id: string;
+  name: string;
+  route: string;
+  start: string;
+  end: string;
+  duration: string;
+  breakTime: string;
+  stops: string[];
+  weekdays: string;
+  assignedVehicles: number;
+  status: 'Aktiv' | 'Entwurf' | 'Archiviert';
+  tone: 'blue' | 'violet' | 'green' | 'orange' | 'cyan';
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -39,12 +54,14 @@ interface FleetVehicle extends Vehicle {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles'>(
+  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles' | 'schedules'>(
     window.location.hash === '#overview'
       ? 'overview'
       : window.location.hash === '#vehicles'
         ? 'vehicles'
-        : 'planning',
+        : window.location.hash === '#schedules'
+          ? 'schedules'
+          : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
@@ -55,6 +72,10 @@ export class App {
   protected readonly vehicleSearch = signal('');
   protected readonly vehicleStatus = signal('Alle Status');
   protected readonly vehicleSaved = signal(false);
+  protected readonly selectedDutyPlanId = signal('standard-rh91');
+  protected readonly dutyPlanSearch = signal('');
+  protected readonly dutyPlanStatus = signal('Alle Status');
+  protected readonly dutyPlanSaved = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -82,6 +103,15 @@ export class App {
     { id: 'DAU-RH 91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Olanovski', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
     { id: 'DAU-RH 11', seats: 56, model: 'IVECO Crossway', year: 2018, mileage: '312.090 km', status: 'Werkstatt', driver: '–', inspection: '05.08.2026', safetyInspection: '05.08.2026' },
     { id: 'DAU-RH 8', seats: 53, model: 'Setra S 415 LE', year: 2023, mileage: '74.620 km', status: 'Verfügbar', driver: 'Vater Ilias', inspection: '21.04.2027', safetyInspection: '21.10.2026' },
+  ];
+
+  protected readonly dutyPlans: DutyPlan[] = [
+    { id: 'standard-rh91', name: 'Standard RH 91', route: 'Mannbach → Kötterichen', start: '06:05', end: '14:24', duration: '8h 19m', breakTime: '30m', stops: ['Mannbach', 'Auel Kirche', 'Dockweiler', 'Gerolstein', 'Trier', 'Kötterichen'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
+    { id: 'standard-rh102', name: 'Standard RH 102', route: 'Gerolstein → Daun', start: '06:05', end: '14:20', duration: '8h 15m', breakTime: '30m', stops: ['Gerolstein', 'Pelm', 'Dockweiler', 'Daun ZOB'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'green' },
+    { id: 'standard-rh515', name: 'Standard RH 515', route: 'Ulmen → Cochem', start: '07:30', end: '15:45', duration: '8h 15m', breakTime: '45m', stops: ['Ulmen', 'Büchel', 'Faid', 'Cochem Bahnhof'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'blue' },
+    { id: 'standard-rh94', name: 'Standard RH 94', route: 'Adenau → Mayen', start: '08:00', end: '16:10', duration: '8h 10m', breakTime: '30m', stops: ['Adenau', 'Kelberg', 'Boos', 'Mayen Ost'], weekdays: 'Mo – Sa', assignedVehicles: 1, status: 'Aktiv', tone: 'orange' },
+    { id: 'school-service', name: 'Schulverkehr Daun', route: 'Daun → Gillenfeld', start: '06:40', end: '08:15', duration: '1h 35m', breakTime: '–', stops: ['Daun ZOB', 'Rengen', 'Mehren', 'Gillenfeld Schule'], weekdays: 'Mo – Fr', assignedVehicles: 2, status: 'Entwurf', tone: 'cyan' },
+    { id: 'winter-relief', name: 'Winter Verstärker', route: 'Kelberg → Nürburgring', start: '05:50', end: '09:20', duration: '3h 30m', breakTime: '–', stops: ['Kelberg', 'Nürburg', 'Nürburgring'], weekdays: 'Mo – Fr', assignedVehicles: 0, status: 'Archiviert', tone: 'blue' },
   ];
 
   protected readonly shifts: Shift[] = [
@@ -123,6 +153,8 @@ export class App {
       ? 'Übersicht'
       : this.activeView() === 'vehicles'
         ? 'Fahrzeuge'
+        : this.activeView() === 'schedules'
+          ? 'Dienstpläne'
         : 'Wochenplanung',
   );
 
@@ -140,6 +172,20 @@ export class App {
     () => this.fleetVehicles.find((vehicle) => vehicle.id === this.selectedVehicleId()) ?? this.fleetVehicles[3],
   );
 
+  protected readonly filteredDutyPlans = computed(() => {
+    const query = this.dutyPlanSearch().trim().toLocaleLowerCase('de');
+    const status = this.dutyPlanStatus();
+    return this.dutyPlans.filter(
+      (plan) =>
+        (status === 'Alle Status' || plan.status === status) &&
+        (!query || `${plan.name} ${plan.route}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedDutyPlan = computed(
+    () => this.dutyPlans.find((plan) => plan.id === this.selectedDutyPlanId()) ?? this.dutyPlans[0],
+  );
+
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
   protected readonly dateRange = computed(() => {
     if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
@@ -155,7 +201,7 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
-  protected showView(view: 'overview' | 'planning' | 'vehicles'): void {
+  protected showView(view: 'overview' | 'planning' | 'vehicles' | 'schedules'): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
     window.history.replaceState(null, '', `#${view}`);
@@ -174,6 +220,19 @@ export class App {
   protected saveVehicle(): void {
     this.vehicleSaved.set(true);
     window.setTimeout(() => this.vehicleSaved.set(false), 2400);
+  }
+
+  protected selectDutyPlan(plan: DutyPlan): void {
+    this.selectedDutyPlanId.set(plan.id);
+    this.dutyPlanSaved.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.duty-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected saveDutyPlan(): void {
+    this.dutyPlanSaved.set(true);
+    window.setTimeout(() => this.dutyPlanSaved.set(false), 2400);
   }
 
   protected selectShift(shift: Shift): void {

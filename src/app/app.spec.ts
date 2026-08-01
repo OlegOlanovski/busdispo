@@ -3,6 +3,7 @@ import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
+    window.history.replaceState(null, '', '#planning');
     await TestBed.configureTestingModule({
       imports: [App],
     }).compileComponents();
@@ -89,5 +90,36 @@ describe('App', () => {
 
     expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(1);
     expect(compiled.querySelector('.fleet-row')?.textContent).toContain('DAU-RH 11');
+  });
+
+  it('should open the duty plan management view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const schedulesButton = compiled.querySelector('.nav button:nth-child(4)') as HTMLButtonElement;
+
+    schedulesButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Dienstpläne');
+    expect(compiled.querySelectorAll('.duty-row')).toHaveLength(6);
+    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Standard RH 91');
+    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Linienverlauf');
+  });
+
+  it('should filter duty plans by route search', async () => {
+    window.history.replaceState(null, '', '#schedules');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const searchInput = compiled.querySelector('.duty-search input') as HTMLInputElement;
+
+    searchInput.value = 'Cochem';
+    searchInput.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.duty-row')).toHaveLength(1);
+    expect(compiled.querySelector('.duty-row')?.textContent).toContain('Standard RH 515');
   });
 });
