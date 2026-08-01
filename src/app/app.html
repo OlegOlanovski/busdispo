@@ -13,7 +13,7 @@
     <nav class="nav" aria-label="Hauptnavigation">
       <button [class.active]="activeView() === 'overview'" (click)="showView('overview')"><span class="nav__icon">⌂</span>Übersicht</button>
       <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon">□</span>Wochenplanung</button>
-      <a href="#vehicles"><span class="nav__icon">▣</span>Fahrzeuge</a>
+      <button [class.active]="activeView() === 'vehicles'" (click)="showView('vehicles')"><span class="nav__icon">▣</span>Fahrzeuge</button>
       <a href="#schedules"><span class="nav__icon">▤</span>Dienstpläne</a>
       <a href="#drivers"><span class="nav__icon">♙</span>Fahrer</a>
       <a href="#absence"><span class="nav__icon">⊠</span>Abwesenheiten</a>
@@ -125,7 +125,7 @@
             <div class="dashboard-heading"><div><h3>Schnellzugriff</h3><p>Häufige Aufgaben</p></div></div>
             <div class="quick-actions">
               <button (click)="showView('planning')"><span>+</span><b>Einsatz planen</b><small>Neue Zuweisung erstellen</small></button>
-              <button><span>▣</span><b>Fahrzeug anlegen</b><small>Fuhrpark verwalten</small></button>
+              <button (click)="showView('vehicles')"><span>▣</span><b>Fahrzeug anlegen</b><small>Fuhrpark verwalten</small></button>
               <button><span>♙</span><b>Fahrer hinzufügen</b><small>Personal verwalten</small></button>
             </div>
           </section>
@@ -134,6 +134,93 @@
             <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Kyriakos</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
             <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Blum/Böhnke</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
           </section>
+        </div>
+      </section>
+    } @else if (activeView() === 'vehicles') {
+      <section class="vehicles-page">
+        <div class="vehicles-intro">
+          <div>
+            <span class="eyebrow">Fuhrparkverwaltung</span>
+            <h2>Fahrzeuge</h2>
+            <p>Verwalten Sie Ihren Fuhrpark, Wartungen und Fahrzeugzuweisungen.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Fahrzeug hinzufügen</button>
+        </div>
+
+        <div class="fleet-metrics">
+          <article><span class="fleet-metric-icon fleet-metric-icon--blue">▣</span><div><b>6</b><small>Fahrzeuge gesamt</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--green">✓</span><div><b>4</b><small>Im Einsatz</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--cyan">○</span><div><b>1</b><small>Verfügbar</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--orange">⚙</span><div><b>1</b><small>In der Werkstatt</small></div></article>
+        </div>
+
+        <div class="fleet-layout">
+          <section class="dashboard-card fleet-list-card">
+            <div class="fleet-toolbar">
+              <label class="fleet-search"><span>⌕</span><input [ngModel]="vehicleSearch()" (ngModelChange)="vehicleSearch.set($event)" placeholder="Fahrzeug, Modell oder Fahrer suchen" /></label>
+              <select [ngModel]="vehicleStatus()" (ngModelChange)="vehicleStatus.set($event)" aria-label="Status filtern">
+                <option>Alle Status</option><option>Einsatz</option><option>Verfügbar</option><option>Werkstatt</option>
+              </select>
+            </div>
+            <div class="fleet-table-head"><span>Fahrzeug</span><span>Status</span><span>Fahrer</span><span>Nächste HU</span><span></span></div>
+            <div class="fleet-list">
+              @for (vehicle of filteredVehicles(); track vehicle.id) {
+                <button class="fleet-row" [class.fleet-row--selected]="selectedVehicleId() === vehicle.id" (click)="selectVehicle(vehicle)">
+                  <span class="fleet-identity"><i>▣</i><span><b>{{ vehicle.id }}</b><small>{{ vehicle.model }} · {{ vehicle.year }}</small></span></span>
+                  <span class="vehicle-status vehicle-status--{{ vehicle.status === 'Einsatz' ? 'active' : vehicle.status === 'Verfügbar' ? 'ready' : 'service' }}"><i></i>{{ vehicle.status }}</span>
+                  <span class="fleet-driver"><i>♙</i>{{ vehicle.driver }}</span>
+                  <span class="fleet-inspection">{{ vehicle.inspection }}</span>
+                  <span class="fleet-chevron">›</span>
+                </button>
+              } @empty {
+                <div class="fleet-empty"><span>⌕</span><strong>Keine Fahrzeuge gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="fleet-footer"><span>{{ filteredVehicles().length }} von {{ fleetVehicles.length }} Fahrzeugen</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
+          </section>
+
+          <aside class="dashboard-card vehicle-detail-card">
+            <div class="vehicle-detail-head">
+              <div class="vehicle-hero-icon">▣</div>
+              <div><span>Fahrzeug</span><h3>{{ selectedVehicle().id }}</h3><p>{{ selectedVehicle().model }}</p></div>
+              <span class="vehicle-status vehicle-status--{{ selectedVehicle().status === 'Einsatz' ? 'active' : selectedVehicle().status === 'Verfügbar' ? 'ready' : 'service' }}"><i></i>{{ selectedVehicle().status }}</span>
+            </div>
+            <div class="vehicle-detail-body">
+              <h4>Fahrzeugdaten</h4>
+              <dl class="vehicle-data">
+                <div><dt>Baujahr</dt><dd>{{ selectedVehicle().year }}</dd></div>
+                <div><dt>Sitzplätze</dt><dd>{{ selectedVehicle().seats }}</dd></div>
+                <div><dt>Kilometerstand</dt><dd>{{ selectedVehicle().mileage }}</dd></div>
+                <div><dt>Kennzeichen</dt><dd>{{ selectedVehicle().id }}</dd></div>
+              </dl>
+
+              <h4>Aktuelle Zuweisung</h4>
+              <div class="current-assignment">
+                <span class="driver-avatar">{{ selectedVehicle().driver === '–' ? '?' : selectedVehicle().driver.charAt(0) }}</span>
+                <div><strong>{{ selectedVehicle().driver === '–' ? 'Nicht zugewiesen' : selectedVehicle().driver }}</strong><small>{{ selectedVehicle().driver === '–' ? 'Fahrzeug derzeit in Wartung' : 'Heute · 06:05 – 14:24' }}</small></div>
+                @if (selectedVehicle().driver !== '–') { <button (click)="showView('planning')">Plan →</button> }
+              </div>
+
+              <h4>Prüftermine</h4>
+              <div class="vehicle-condition inspection-grid">
+                <div class="inspection-item">
+                  <span class="inspection-icon">HU</span>
+                  <div><b>Nächste HU</b><small>Hauptuntersuchung</small></div>
+                  <div><em>{{ selectedVehicle().inspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DAU-RH 11' || selectedVehicle().id === 'DAU-RH 91'">{{ selectedVehicle().id === 'DAU-RH 11' ? 'In 4 Tagen' : selectedVehicle().id === 'DAU-RH 91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
+                </div>
+                <div class="inspection-item">
+                  <span class="inspection-icon inspection-icon--sp">SP</span>
+                  <div><b>Nächste SP</b><small>Sicherheitsprüfung</small></div>
+                  <div><em>{{ selectedVehicle().safetyInspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DAU-RH 11' || selectedVehicle().id === 'DAU-RH 515'">{{ selectedVehicle().id === 'DAU-RH 11' ? 'In 4 Tagen' : selectedVehicle().id === 'DAU-RH 515' ? 'Morgen' : 'Fristgerecht' }}</small></div>
+                </div>
+              </div>
+
+              <div class="vehicle-detail-actions">
+                <button class="button" (click)="showView('planning')">Einsatz planen</button>
+                <button class="button button--primary" (click)="saveVehicle()">{{ vehicleSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
     } @else {

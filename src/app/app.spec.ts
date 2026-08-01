@@ -57,4 +57,37 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
     expect(compiled.querySelector('.schedule-card')).toBeTruthy();
   });
+
+  it('should open the vehicle management view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const vehiclesButton = compiled.querySelector('.nav button:nth-child(3)') as HTMLButtonElement;
+
+    vehiclesButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Fahrzeuge');
+    expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(6);
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('DAU-RH 91');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste HU');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste SP');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).not.toContain('Tankfüllung');
+  });
+
+  it('should filter the fleet by search text', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const searchInput = compiled.querySelector('.fleet-search input') as HTMLInputElement;
+
+    searchInput.value = 'Crossway';
+    searchInput.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(1);
+    expect(compiled.querySelector('.fleet-row')?.textContent).toContain('DAU-RH 11');
+  });
 });

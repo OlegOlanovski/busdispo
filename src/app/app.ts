@@ -22,6 +22,16 @@ interface Vehicle {
   seats: number;
 }
 
+interface FleetVehicle extends Vehicle {
+  model: string;
+  year: number;
+  mileage: string;
+  status: 'Einsatz' | 'Verfügbar' | 'Werkstatt';
+  driver: string;
+  inspection: string;
+  safetyInspection: string;
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -29,14 +39,22 @@ interface Vehicle {
   styleUrl: './app.scss',
 })
 export class App {
-  protected readonly activeView = signal<'overview' | 'planning'>(
-    window.location.hash === '#overview' ? 'overview' : 'planning',
+  protected readonly activeView = signal<'overview' | 'planning' | 'vehicles'>(
+    window.location.hash === '#overview'
+      ? 'overview'
+      : window.location.hash === '#vehicles'
+        ? 'vehicles'
+        : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
   protected readonly published = signal(false);
   protected readonly saved = signal(false);
   protected readonly selectedShiftId = signal('rh91-thu');
+  protected readonly selectedVehicleId = signal('DAU-RH 91');
+  protected readonly vehicleSearch = signal('');
+  protected readonly vehicleStatus = signal('Alle Status');
+  protected readonly vehicleSaved = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -55,6 +73,15 @@ export class App {
     { id: 'DAU-RH 91', seats: 52 },
     { id: 'DAU-RH 11', seats: 56 },
     { id: 'DAU-RH 8', seats: 53 },
+  ];
+
+  protected readonly fleetVehicles: FleetVehicle[] = [
+    { id: 'DAU-RH 102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Koch', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
+    { id: 'DAU-RH 515', seats: 58, model: 'MAN Lion\'s Intercity', year: 2022, mileage: '128.740 km', status: 'Einsatz', driver: 'Zeyen B.', inspection: '02.02.2027', safetyInspection: '02.08.2026' },
+    { id: 'DAU-RH 94', seats: 52, model: 'Setra S 415 UL', year: 2019, mileage: '267.810 km', status: 'Einsatz', driver: 'Block', inspection: '28.09.2026', safetyInspection: '28.08.2026' },
+    { id: 'DAU-RH 91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Olanovski', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
+    { id: 'DAU-RH 11', seats: 56, model: 'IVECO Crossway', year: 2018, mileage: '312.090 km', status: 'Werkstatt', driver: '–', inspection: '05.08.2026', safetyInspection: '05.08.2026' },
+    { id: 'DAU-RH 8', seats: 53, model: 'Setra S 415 LE', year: 2023, mileage: '74.620 km', status: 'Verfügbar', driver: 'Vater Ilias', inspection: '21.04.2027', safetyInspection: '21.10.2026' },
   ];
 
   protected readonly shifts: Shift[] = [
@@ -92,7 +119,25 @@ export class App {
   );
 
   protected readonly pageTitle = computed(() =>
-    this.activeView() === 'overview' ? 'Übersicht' : 'Wochenplanung',
+    this.activeView() === 'overview'
+      ? 'Übersicht'
+      : this.activeView() === 'vehicles'
+        ? 'Fahrzeuge'
+        : 'Wochenplanung',
+  );
+
+  protected readonly filteredVehicles = computed(() => {
+    const query = this.vehicleSearch().trim().toLocaleLowerCase('de');
+    const status = this.vehicleStatus();
+    return this.fleetVehicles.filter(
+      (vehicle) =>
+        (status === 'Alle Status' || vehicle.status === status) &&
+        (!query || `${vehicle.id} ${vehicle.model} ${vehicle.driver}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedVehicle = computed(
+    () => this.fleetVehicles.find((vehicle) => vehicle.id === this.selectedVehicleId()) ?? this.fleetVehicles[3],
   );
 
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
@@ -110,12 +155,25 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
-  protected showView(view: 'overview' | 'planning'): void {
+  protected showView(view: 'overview' | 'planning' | 'vehicles'): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
     window.history.replaceState(null, '', `#${view}`);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+  }
+
+  protected selectVehicle(vehicle: FleetVehicle): void {
+    this.selectedVehicleId.set(vehicle.id);
+    this.vehicleSaved.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.vehicle-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected saveVehicle(): void {
+    this.vehicleSaved.set(true);
+    window.setTimeout(() => this.vehicleSaved.set(false), 2400);
   }
 
   protected selectShift(shift: Shift): void {
