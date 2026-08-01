@@ -1,4 +1,4 @@
-<div class="app-shell">
+<div class="app-shell" [class.app-shell--driver]="activeView() === 'driver-portal'">
   <aside class="sidebar" [class.sidebar--open]="menuOpen()">
     <div class="brand">
       <div class="brand__mark" aria-hidden="true">
@@ -19,7 +19,7 @@
       <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
       <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon">♧</span>Sonderfahrten</button>
       <button [class.active]="activeView() === 'messages'" (click)="showView('messages')"><span class="nav__icon">✉</span>Nachrichten @if (unreadMessageCount() > 0) { <span class="nav__badge">{{ unreadMessageCount() }}</span> }</button>
-      <a href="#stats"><span class="nav__icon">▥</span>Statistiken</a>
+      <button [class.active]="activeView() === 'stats'" (click)="showView('stats')"><span class="nav__icon">▥</span>Statistiken</button>
       <a href="#settings"><span class="nav__icon">⚙</span>Einstellungen</a>
     </nav>
 
@@ -50,7 +50,65 @@
       </div>
     </header>
 
-    @if (activeView() === 'overview') {
+    @if (activeView() === 'driver-portal') {
+      <section class="driver-portal">
+        <header class="driver-portal-header">
+          <div class="driver-portal-brand"><div class="brand__mark" aria-hidden="true"><span></span><span></span><span></span></div><div><strong>BusDispo</strong><small>Fahrerportal</small></div></div>
+          <div class="driver-portal-user"><span>O</span><div><b>Olanovski</b><small>Fahrer</small></div><button (click)="showView('drivers')" aria-label="Fahrerportal verlassen">Abmelden</button></div>
+        </header>
+
+        <main class="driver-portal-content">
+          <div class="driver-portal-welcome">
+            <div><span>Donnerstag, 23. Juli 2026</span><h1>Guten Morgen, Olanovski</h1><p>Hier ist Ihr heutiger Einsatz.</p></div>
+            <span class="driver-shift-status driver-shift-status--{{ driverShiftState() }}"><i></i>{{ driverShiftState() === 'ready' ? 'Bereit' : driverShiftState() === 'active' ? 'Schicht aktiv' : 'Abgeschlossen' }}</span>
+          </div>
+
+          <section class="driver-assignment-card">
+            <div class="driver-assignment-date"><span>23</span><small>JUL</small></div>
+            <div class="driver-assignment-main"><span>HEUTIGER EINSATZ</span><h2>Standard RH 91</h2><p>Mannbach → Kötterichen</p></div>
+            <div class="driver-assignment-facts"><div><span>◷</span><p><small>Arbeitszeit</small><b>06:05 – 14:24</b></p></div><div><span>▣</span><p><small>Fahrzeug</small><b>DAU-RH 91</b></p></div><div><span>↗</span><p><small>Strecke</small><b>167 km geplant</b></p></div></div>
+          </section>
+
+          @if (driverShiftState() === 'ready') {
+            <section class="driver-form-card driver-start-card">
+              <div class="driver-card-heading"><span>1</span><div><h2>Schicht starten</h2><p>Bitte prüfen Sie Fahrzeug und Dokumente vor der Abfahrt.</p></div></div>
+              <label class="driver-field"><span>Aktueller Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverStartMileage()" (ngModelChange)="driverStartMileage.set($event)" /><em>km</em></div><small>Letzter Stand: 221.450 km</small></label>
+              <div class="driver-checklist"><h3>Abfahrtskontrolle</h3><label><input type="checkbox" [ngModel]="driverVehicleChecked()" (ngModelChange)="driverVehicleChecked.set($event)" /><span>✓</span><p><b>Fahrzeug kontrolliert</b><small>Licht, Reifen und sichtbare Schäden geprüft</small></p></label><label><input type="checkbox" [ngModel]="driverDocumentsChecked()" (ngModelChange)="driverDocumentsChecked.set($event)" /><span>✓</span><p><b>Dokumente vorhanden</b><small>Führerschein und Fahrzeugpapiere geprüft</small></p></label></div>
+              <button class="driver-primary-action" [disabled]="!canStartDriverShift()" (click)="startDriverShift()"><span>▶</span> Schicht starten</button>
+            </section>
+          } @else if (driverShiftState() === 'active') {
+            <section class="driver-active-banner"><span>▶</span><div><b>Ihre Schicht läuft</b><small>Gestartet um 06:05 Uhr · Kilometerstand {{ driverStartMileage() | number:'1.0-0' }} km</small></div><em>AKTIV</em></section>
+
+            <section class="driver-form-card driver-route-card">
+              <div class="driver-card-heading"><span>↗</span><div><h2>Heutiger Routenverlauf</h2><p>Standard RH 91 · 6 Stationen</p></div></div>
+              <div class="driver-route-list">@for (stop of driverPortalStops; track stop.time; let first = $first; let last = $last) { <div [class.driver-route-stop--edge]="first || last"><time>{{ stop.time }}</time><span></span><p><b>{{ stop.place }}</b><small>{{ stop.meta }}</small></p></div> }</div>
+            </section>
+
+            <section class="driver-form-card driver-report-card">
+              <div class="driver-card-heading"><span>!</span><div><h2>Unterwegs melden</h2><p>Informieren Sie die Disposition direkt.</p></div></div>
+              <div class="driver-report-actions"><button [class.active]="driverReportMode() === 'delay'" (click)="driverReportMode.set(driverReportMode() === 'delay' ? 'none' : 'delay')"><span>◷</span><b>Verspätung</b><small>Zeit melden</small></button><button [class.active]="driverReportMode() === 'issue'" (click)="driverReportMode.set(driverReportMode() === 'issue' ? 'none' : 'issue')"><span>⚠</span><b>Problem</b><small>Mangel melden</small></button><button (click)="showView('messages')"><span>✉</span><b>Nachricht</b><small>Disposition</small></button></div>
+              @if (driverReportMode() === 'delay') { <div class="driver-inline-report"><label>Aktuelle Verspätung<select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event)"><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option><option>Mehr als 30 Minuten</option></select></label><button (click)="driverReportMode.set('none')">Verspätung senden</button></div> }
+              @if (driverReportMode() === 'issue') { <div class="driver-inline-report"><label>Art des Problems<select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event)"><option>Technischer Mangel</option><option>Unfall / Schaden</option><option>Fahrgastproblem</option><option>Straßensperrung</option></select></label><button (click)="driverReportMode.set('none')">Problem senden</button></div> }
+            </section>
+
+            <section class="driver-form-card driver-finish-card">
+              <div class="driver-card-heading"><span>✓</span><div><h2>Schicht beenden</h2><p>Erfassen Sie die tatsächlichen Abschlussdaten.</p></div></div>
+              <label class="driver-field"><span>Endgültiger Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverEndMileage()" (ngModelChange)="driverEndMileage.set($event)" placeholder="z. B. 221617" /><em>km</em></div>@if (canCompleteDriverShift()) { <small class="driver-distance-result">Gefahrene Strecke: <b>{{ drivenDistance() }} km</b></small> } @else { <small>Muss größer als {{ driverStartMileage() | number:'1.0-0' }} km sein</small> }</label>
+              <div class="driver-field-grid"><label class="driver-field"><span>Verspätung</span><select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event)"><option>Keine Verspätung</option><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option></select></label><label class="driver-field"><span>Fahrzeugzustand</span><select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event)"><option>Keine Mängel</option><option>Mangel gemeldet</option><option>Werkstatt erforderlich</option></select></label></div>
+              <label class="driver-field"><span>Bemerkung</span><textarea rows="3" [ngModel]="driverShiftNote()" (ngModelChange)="driverShiftNote.set($event)" placeholder="Optionale Hinweise für die Disposition"></textarea></label>
+              <button class="driver-primary-action driver-primary-action--finish" [disabled]="!canCompleteDriverShift()" (click)="completeDriverShift()"><span>✓</span> Schicht abschließen</button>
+            </section>
+          } @else {
+            <section class="driver-complete-card">
+              <span class="driver-complete-check">✓</span><h2>Schicht erfolgreich abgeschlossen</h2><p>Ihr Bericht wurde an die Disposition übermittelt.</p>
+              <div class="driver-complete-summary"><div><small>Arbeitszeit</small><b>8h 19m</b></div><div><small>Gefahrene Strecke</small><b>{{ drivenDistance() }} km</b></div><div><small>Fahrzeug</small><b>DAU-RH 91</b></div><div><small>Endstand</small><b>{{ driverEndMileage() | number:'1.0-0' }} km</b></div></div>
+              <div class="driver-complete-notice"><span>✉</span><div><b>Disposition informiert</b><small>Der Kilometerstand und Ihre Angaben fließen nach Prüfung in die Statistik ein.</small></div></div>
+              <button class="driver-secondary-action" (click)="resetDriverShiftDemo()">Demo erneut starten</button>
+            </section>
+          }
+        </main>
+      </section>
+    } @else if (activeView() === 'overview') {
       <section class="overview-page">
         <div class="overview-intro">
           <div>
@@ -99,25 +157,11 @@
             </div>
           </section>
 
-          <div class="overview-side">
-            <section class="dashboard-card planning-status-card">
-              <div class="dashboard-heading"><div><h3>Planungsstatus</h3><p>KW 30</p></div><button (click)="showView('planning')">Details&nbsp; →</button></div>
-              <div class="planning-chart">
-                <div class="donut"><div><strong>92%</strong><span>geplant</span></div></div>
-                <div class="chart-legend">
-                  <div><span><i class="legend-dot legend-dot--blue"></i>Geplant</span><b>13</b></div>
-                  <div><span><i class="legend-dot legend-dot--orange"></i>Offen</span><b>2</b></div>
-                  <div><span><i class="legend-dot legend-dot--gray"></i>Frei</span><b>27</b></div>
-                </div>
-              </div>
-            </section>
-
-            <section class="dashboard-card upcoming-card">
-              <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
-              <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Hönningen → Rheinbach</p></div><em>12:15</em></article>
-              <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Düsseldorf → Mehren</p></div><em>23:00</em></article>
-            </section>
-          </div>
+          <section class="dashboard-card upcoming-card">
+            <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
+            <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Hönningen → Rheinbach</p></div><em>12:15</em></article>
+            <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Düsseldorf → Mehren</p></div><em>23:00</em></article>
+          </section>
         </div>
 
         <div class="overview-bottom-grid">
@@ -385,6 +429,8 @@
                 <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'olanovski'">{{ selectedDriver().id === 'olanovski' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
               </div>
 
+              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span>▣</span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als Olanovski testen</small></div><i>→</i></button>
+
               <div class="driver-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
                 <button class="button button--primary" (click)="saveDriver()">{{ driverSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
@@ -635,6 +681,74 @@
               </div>
 
               @if (messageSent()) { <div class="message-sent"><span>✓</span> Antwort wurde gesendet.</div> }
+            </div>
+          </section>
+        </div>
+      </section>
+    } @else if (activeView() === 'stats') {
+      <section class="statistics-page">
+        <div class="statistics-intro">
+          <div>
+            <span class="eyebrow">Auswertung</span>
+            <h2>Statistiken</h2>
+            <p>Analysieren Sie Auslastung, Fahrleistung und Arbeitszeiten Ihres Betriebs.</p>
+          </div>
+          <div class="statistics-actions">
+            <select [ngModel]="statisticsPeriod()" (ngModelChange)="statisticsPeriod.set($event)" aria-label="Auswertungszeitraum wählen">
+              <option>Diese Woche</option><option>Dieser Monat</option><option>Dieses Jahr</option>
+            </select>
+            <button class="button">↓&nbsp; Bericht exportieren</button>
+          </div>
+        </div>
+
+        <div class="statistics-range"><span>◷</span>{{ selectedStatistics().range }}<em>Datenstand: heute, 12:45 Uhr</em></div>
+
+        <div class="stat-metrics">
+          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--blue">▣</span><div><small>Fuhrparkauslastung</small><strong>{{ selectedStatistics().utilization }}%</strong><em class="stat-positive">↑ 4,2% zum Vergleichszeitraum</em></div></article>
+          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--green">✓</span><div><small>Gefahrene Einsätze</small><strong>{{ selectedStatistics().completedTrips }}</strong><em class="stat-positive">↑ 6 erfolgreich abgeschlossen</em></div></article>
+          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--violet">↗</span><div><small>Gefahrene Strecke</small><strong>{{ selectedStatistics().distance }}</strong><em>Alle Fahrzeuge zusammen</em></div></article>
+          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--orange">◷</span><div><small>Arbeitszeit Fahrer</small><strong>{{ selectedStatistics().workHours }}</strong><em>Inklusive Sonderfahrten</em></div></article>
+        </div>
+
+        <div class="statistics-chart-grid">
+          <section class="dashboard-card trip-trend-card">
+            <div class="statistics-card-head"><div><h3>Gefahrene Einsätze</h3><p>Verteilung im gewählten Zeitraum</p></div><span>Gesamt&nbsp; <b>{{ selectedStatistics().completedTrips }}</b></span></div>
+            <div class="trip-trend-chart" aria-label="Diagramm gefahrener Einsätze">
+              @for (item of selectedStatistics().trend; track item.label) {
+                <div class="trip-trend-column"><div><span [style.height.%]="item.value"><b>{{ item.count }}</b></span></div><small>{{ item.label }}</small></div>
+              }
+            </div>
+          </section>
+
+          <section class="dashboard-card punctuality-card">
+            <div class="statistics-card-head"><div><h3>Pünktlichkeit</h3><p>Ankunft innerhalb von 5 Minuten</p></div></div>
+            <div class="punctuality-content">
+              <div class="punctuality-ring" [style.--punctuality]="selectedStatistics().punctuality + '%'" [style.background]="'conic-gradient(#20a05a 0 ' + selectedStatistics().punctuality + '%, #e7ebf0 ' + selectedStatistics().punctuality + '% 100%)'"><span><b>{{ selectedStatistics().punctuality }}%</b><small>pünktlich</small></span></div>
+              <div class="trip-type-legend">
+                @for (type of selectedStatistics().tripTypes; track type.label) { <div><span [style.background]="type.color"></span><p><b>{{ type.label }}</b><small>{{ type.value }}% Anteil</small></p></div> }
+              </div>
+            </div>
+            <div class="trip-type-strip" [style.background]="selectedStatistics().tripTypeGradient"></div>
+          </section>
+        </div>
+
+        <div class="statistics-detail-grid">
+          <section class="dashboard-card vehicle-stat-card">
+            <div class="statistics-card-head"><div><h3>Fahrzeugauslastung</h3><p>Fahrleistung nach Fahrzeug</p></div><button (click)="showView('vehicles')">Fuhrpark&nbsp; →</button></div>
+            <div class="vehicle-stat-head"><span>Fahrzeug</span><span>Auslastung</span><span>Fahrten</span><span>Strecke</span></div>
+            <div class="vehicle-stat-list">
+              @for (vehicle of selectedStatistics().vehicles; track vehicle.name) {
+                <div class="vehicle-stat-row"><span><i>▣</i><span><b>{{ vehicle.name }}</b><small>{{ vehicle.model }}</small></span></span><span class="vehicle-stat-progress"><b>{{ vehicle.utilization }}%</b><i><span [style.width.%]="vehicle.utilization"></span></i></span><strong>{{ vehicle.trips }}</strong><em>{{ vehicle.distance }}</em></div>
+              }
+            </div>
+          </section>
+
+          <section class="dashboard-card driver-stat-card">
+            <div class="statistics-card-head"><div><h3>Arbeitszeit Fahrer</h3><p>Soll- und Ist-Zeiten</p></div><button (click)="showView('drivers')">Fahrer&nbsp; →</button></div>
+            <div class="driver-stat-list">
+              @for (driver of selectedStatistics().drivers; track driver.name; let index = $index) {
+                <div class="driver-stat-row"><span class="driver-stat-rank">{{ index + 1 }}</span><div><p><b>{{ driver.name }}</b><em>{{ driver.trips }} Fahrten</em></p><i><span [class.driver-stat-overtime]="driver.hours > driver.target" [style.width.%]="driver.hours / driver.target * 100 > 100 ? 100 : driver.hours / driver.target * 100"></span></i><small>{{ driver.hours }}h von {{ driver.target }}h</small></div><strong [class.stat-hours-over]="driver.hours > driver.target">{{ driver.hours / driver.target * 100 | number:'1.0-0' }}%</strong></div>
+              }
             </div>
           </section>
         </div>

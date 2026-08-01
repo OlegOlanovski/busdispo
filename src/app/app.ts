@@ -3,7 +3,10 @@ import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 type ShiftTone = 'green' | 'blue' | 'amber' | 'violet' | 'cyan' | 'orange' | 'rose';
-type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips' | 'messages';
+type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips' | 'messages' | 'stats' | 'driver-portal';
+type StatisticsPeriod = 'Diese Woche' | 'Dieser Monat' | 'Dieses Jahr';
+type DriverShiftState = 'ready' | 'active' | 'completed';
+type DriverReportMode = 'none' | 'delay' | 'issue';
 
 interface Shift {
   id: string;
@@ -118,6 +121,20 @@ interface MessageThread {
   tone: 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'cyan';
 }
 
+interface StatisticsSnapshot {
+  range: string;
+  utilization: number;
+  completedTrips: number;
+  distance: string;
+  workHours: string;
+  punctuality: number;
+  trend: { label: string; value: number; count: number }[];
+  tripTypes: { label: string; value: number; color: string }[];
+  tripTypeGradient: string;
+  vehicles: { name: string; model: string; utilization: number; trips: number; distance: string }[];
+  drivers: { name: string; hours: number; target: number; trips: number }[];
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -140,7 +157,11 @@ export class App {
                 ? 'trips'
                 : window.location.hash === '#messages'
                   ? 'messages'
-                  : 'planning',
+                  : window.location.hash === '#stats'
+                    ? 'stats'
+                    : window.location.hash === '#driver-portal'
+                      ? 'driver-portal'
+                      : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
@@ -173,6 +194,16 @@ export class App {
   protected readonly unreadMessageIds = signal(['olanovski-delay', 'rheinbach-passengers', 'rh11-service']);
   protected readonly messageReply = signal('');
   protected readonly messageSent = signal(false);
+  protected readonly statisticsPeriod = signal<StatisticsPeriod>('Diese Woche');
+  protected readonly driverShiftState = signal<DriverShiftState>('ready');
+  protected readonly driverReportMode = signal<DriverReportMode>('none');
+  protected readonly driverStartMileage = signal('221450');
+  protected readonly driverEndMileage = signal('');
+  protected readonly driverVehicleChecked = signal(false);
+  protected readonly driverDocumentsChecked = signal(false);
+  protected readonly driverDelay = signal('Keine Verspätung');
+  protected readonly driverIssue = signal('Keine Mängel');
+  protected readonly driverShiftNote = signal('');
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -249,6 +280,33 @@ export class App {
     { id: 'cochem-request', sender: 'Laura Klein', initials: 'LK', role: 'Grundschule Gillenfeld', subject: 'Abfahrtszeit Schulausflug', preview: 'Könnten wir die Abfahrt am 4. August auf 07:30 Uhr vorziehen?', date: '29.07.2026', time: '12:10', category: 'Kunde', body: ['Guten Tag,', 'für den Schulausflug nach Cochem würden wir die Abfahrt gerne von 07:45 Uhr auf 07:30 Uhr vorziehen.', 'Wäre diese Änderung für Sie möglich? Die Teilnehmerzahl bleibt unverändert.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
   ];
 
+  protected readonly statisticsSnapshots: Record<StatisticsPeriod, StatisticsSnapshot> = {
+    'Diese Woche': {
+      range: '20.07. – 26.07.2026', utilization: 83, completedTrips: 28, distance: '4.860 km', workHours: '228,5 h', punctuality: 94,
+      trend: [{ label: 'Mo', value: 57, count: 4 }, { label: 'Di', value: 71, count: 5 }, { label: 'Mi', value: 71, count: 5 }, { label: 'Do', value: 86, count: 6 }, { label: 'Fr', value: 86, count: 6 }, { label: 'Sa', value: 29, count: 2 }, { label: 'So', value: 0, count: 0 }],
+      tripTypes: [{ label: 'Linienfahrten', value: 79, color: '#1677e8' }, { label: 'Sonderfahrten', value: 14, color: '#8b5bd7' }, { label: 'Transfers', value: 7, color: '#25a66a' }],
+      tripTypeGradient: 'conic-gradient(#1677e8 0 79%, #8b5bd7 79% 93%, #25a66a 93% 100%)',
+      vehicles: [{ name: 'DAU-RH 102', model: 'Mercedes-Benz Intouro', utilization: 96, trips: 7, distance: '1.120 km' }, { name: 'DAU-RH 515', model: 'MAN Lion\'s Intercity', utilization: 91, trips: 6, distance: '986 km' }, { name: 'DAU-RH 91', model: 'Mercedes-Benz Intouro', utilization: 88, trips: 6, distance: '914 km' }, { name: 'DAU-RH 94', model: 'Setra S 415 UL', utilization: 82, trips: 5, distance: '835 km' }, { name: 'DAU-RH 8', model: 'Setra S 415 LE', utilization: 67, trips: 4, distance: '1.005 km' }, { name: 'DAU-RH 11', model: 'IVECO Crossway', utilization: 42, trips: 2, distance: '312 km' }],
+      drivers: [{ name: 'Olanovski', hours: 41, target: 40, trips: 6 }, { name: 'Zeyen B.', hours: 39, target: 40, trips: 6 }, { name: 'Koch', hours: 38, target: 40, trips: 7 }, { name: 'Block', hours: 36, target: 40, trips: 5 }, { name: 'Spinger', hours: 34, target: 40, trips: 4 }, { name: 'Vater Ilias', hours: 28, target: 40, trips: 3 }],
+    },
+    'Dieser Monat': {
+      range: 'Juli 2026', utilization: 86, completedTrips: 124, distance: '19.840 km', workHours: '918 h', punctuality: 92,
+      trend: [{ label: 'KW 27', value: 78, count: 29 }, { label: 'KW 28', value: 86, count: 32 }, { label: 'KW 29', value: 92, count: 35 }, { label: 'KW 30', value: 75, count: 28 }],
+      tripTypes: [{ label: 'Linienfahrten', value: 76, color: '#1677e8' }, { label: 'Sonderfahrten', value: 16, color: '#8b5bd7' }, { label: 'Transfers', value: 8, color: '#25a66a' }],
+      tripTypeGradient: 'conic-gradient(#1677e8 0 76%, #8b5bd7 76% 92%, #25a66a 92% 100%)',
+      vehicles: [{ name: 'DAU-RH 102', model: 'Mercedes-Benz Intouro', utilization: 97, trips: 29, distance: '4.580 km' }, { name: 'DAU-RH 515', model: 'MAN Lion\'s Intercity', utilization: 93, trips: 27, distance: '4.210 km' }, { name: 'DAU-RH 91', model: 'Mercedes-Benz Intouro', utilization: 89, trips: 25, distance: '3.860 km' }, { name: 'DAU-RH 94', model: 'Setra S 415 UL', utilization: 84, trips: 22, distance: '3.510 km' }, { name: 'DAU-RH 8', model: 'Setra S 415 LE', utilization: 71, trips: 18, distance: '2.890 km' }, { name: 'DAU-RH 11', model: 'IVECO Crossway', utilization: 49, trips: 11, distance: '790 km' }],
+      drivers: [{ name: 'Olanovski', hours: 169, target: 160, trips: 26 }, { name: 'Koch', hours: 158, target: 160, trips: 29 }, { name: 'Zeyen B.', hours: 156, target: 160, trips: 27 }, { name: 'Block', hours: 149, target: 160, trips: 22 }, { name: 'Spinger', hours: 143, target: 160, trips: 20 }, { name: 'Vater Ilias', hours: 128, target: 160, trips: 16 }],
+    },
+    'Dieses Jahr': {
+      range: 'Januar – Dezember 2026', utilization: 81, completedTrips: 1386, distance: '221.460 km', workHours: '10.742 h', punctuality: 93,
+      trend: [{ label: 'Jan', value: 65, count: 98 }, { label: 'Feb', value: 69, count: 105 }, { label: 'Mär', value: 78, count: 119 }, { label: 'Apr', value: 82, count: 126 }, { label: 'Mai', value: 88, count: 135 }, { label: 'Jun', value: 91, count: 141 }, { label: 'Jul', value: 80, count: 124 }, { label: 'Aug', value: 87, count: 133 }, { label: 'Sep', value: 92, count: 142 }, { label: 'Okt', value: 89, count: 137 }, { label: 'Nov', value: 84, count: 128 }, { label: 'Dez', value: 72, count: 98 }],
+      tripTypes: [{ label: 'Linienfahrten', value: 74, color: '#1677e8' }, { label: 'Sonderfahrten', value: 18, color: '#8b5bd7' }, { label: 'Transfers', value: 8, color: '#25a66a' }],
+      tripTypeGradient: 'conic-gradient(#1677e8 0 74%, #8b5bd7 74% 92%, #25a66a 92% 100%)',
+      vehicles: [{ name: 'DAU-RH 102', model: 'Mercedes-Benz Intouro', utilization: 94, trips: 304, distance: '48.260 km' }, { name: 'DAU-RH 515', model: 'MAN Lion\'s Intercity', utilization: 91, trips: 291, distance: '44.810 km' }, { name: 'DAU-RH 91', model: 'Mercedes-Benz Intouro', utilization: 86, trips: 273, distance: '42.190 km' }, { name: 'DAU-RH 94', model: 'Setra S 415 UL', utilization: 79, trips: 248, distance: '39.640 km' }, { name: 'DAU-RH 8', model: 'Setra S 415 LE', utilization: 68, trips: 181, distance: '31.740 km' }, { name: 'DAU-RH 11', model: 'IVECO Crossway', utilization: 54, trips: 132, distance: '14.820 km' }],
+      drivers: [{ name: 'Olanovski', hours: 1812, target: 1920, trips: 286 }, { name: 'Koch', hours: 1784, target: 1920, trips: 298 }, { name: 'Zeyen B.', hours: 1756, target: 1920, trips: 291 }, { name: 'Block', hours: 1698, target: 1920, trips: 254 }, { name: 'Spinger', hours: 1642, target: 1920, trips: 242 }, { name: 'Vater Ilias', hours: 1510, target: 1920, trips: 215 }],
+    },
+  };
+
   protected readonly shifts: Shift[] = [
     { id: 'rh102-thu', vehicle: 'DAU-RH 102', day: 3, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
     { id: 'rh102-fri', vehicle: 'DAU-RH 102', day: 4, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
@@ -279,6 +337,15 @@ export class App {
     ['12:47 – 14:24', 'Darscheid', 'Kötterichen', '–', 'Ende'],
   ];
 
+  protected readonly driverPortalStops = [
+    { time: '06:05', place: 'Mannbach', meta: 'Abfahrt · Start' },
+    { time: '06:50', place: 'Auel Kirche', meta: 'Planmäßiger Halt' },
+    { time: '08:05', place: 'Dockweiler', meta: 'Planmäßiger Halt' },
+    { time: '11:00', place: 'Gerolstein', meta: 'Pause · 30 Min.' },
+    { time: '12:12', place: 'Trier', meta: 'Fahrzeugwechsel' },
+    { time: '14:24', place: 'Kötterichen', meta: 'Ankunft · Ende' },
+  ];
+
   protected readonly selectedShift = computed(
     () => this.shifts.find((shift) => shift.id === this.selectedShiftId()) ?? this.shifts[6],
   );
@@ -298,7 +365,11 @@ export class App {
               ? 'Sonderfahrten'
               : this.activeView() === 'messages'
                 ? 'Nachrichten'
-                : 'Wochenplanung',
+                : this.activeView() === 'stats'
+                  ? 'Statistiken'
+                  : this.activeView() === 'driver-portal'
+                    ? 'Fahrerportal'
+                    : 'Wochenplanung',
   );
 
   protected readonly filteredVehicles = computed(() => {
@@ -388,6 +459,17 @@ export class App {
 
   protected readonly selectedMessage = computed(
     () => this.messageThreads.find((thread) => thread.id === this.selectedMessageId()) ?? this.messageThreads[0],
+  );
+
+  protected readonly selectedStatistics = computed(() => this.statisticsSnapshots[this.statisticsPeriod()]);
+  protected readonly canStartDriverShift = computed(
+    () => Number(this.driverStartMileage()) > 0 && this.driverVehicleChecked() && this.driverDocumentsChecked(),
+  );
+  protected readonly drivenDistance = computed(() =>
+    Math.max(0, Number(this.driverEndMileage()) - Number(this.driverStartMileage())),
+  );
+  protected readonly canCompleteDriverShift = computed(
+    () => Number(this.driverEndMileage()) > Number(this.driverStartMileage()),
   );
 
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
@@ -497,6 +579,32 @@ export class App {
     this.messageSent.set(true);
     this.messageReply.set('');
     window.setTimeout(() => this.messageSent.set(false), 2800);
+  }
+
+  protected startDriverShift(): void {
+    if (!this.canStartDriverShift()) return;
+    this.driverShiftState.set('active');
+    this.driverReportMode.set('none');
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
+  protected completeDriverShift(): void {
+    if (!this.canCompleteDriverShift()) return;
+    this.driverShiftState.set('completed');
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
+  protected resetDriverShiftDemo(): void {
+    this.driverShiftState.set('ready');
+    this.driverReportMode.set('none');
+    this.driverEndMileage.set('');
+    this.driverVehicleChecked.set(false);
+    this.driverDocumentsChecked.set(false);
+    this.driverDelay.set('Keine Verspätung');
+    this.driverIssue.set('Keine Mängel');
+    this.driverShiftNote.set('');
   }
 
   protected selectShift(shift: Shift): void {

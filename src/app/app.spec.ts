@@ -254,4 +254,88 @@ describe('App', () => {
     expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Anna Schmitz');
     expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Laura Klein');
   });
+
+  it('should open the statistics view', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const statisticsButton = compiled.querySelector('.nav button:nth-child(9)') as HTMLButtonElement;
+
+    statisticsButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Statistiken');
+    expect(compiled.querySelectorAll('.stat-metric-card')).toHaveLength(4);
+    expect(compiled.querySelector('.trip-trend-card')).toBeTruthy();
+    expect(compiled.querySelectorAll('.vehicle-stat-row')).toHaveLength(6);
+    expect(compiled.querySelectorAll('.driver-stat-row')).toHaveLength(6);
+  });
+
+  it('should update statistics for the selected period', async () => {
+    window.history.replaceState(null, '', '#stats');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const periodFilter = compiled.querySelector('.statistics-actions select') as HTMLSelectElement;
+
+    expect(compiled.querySelector('.stat-metric-card:nth-child(2) strong')?.textContent).toContain('28');
+
+    periodFilter.value = 'Dieser Monat';
+    periodFilter.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.statistics-range')?.textContent).toContain('Juli 2026');
+    expect(compiled.querySelector('.stat-metric-card:nth-child(2) strong')?.textContent).toContain('124');
+    expect(compiled.querySelectorAll('.trip-trend-column')).toHaveLength(4);
+  });
+
+  it('should open the driver portal from driver details', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.nav button:nth-child(5)') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (compiled.querySelector('.driver-portal-preview') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-portal')).toBeTruthy();
+    expect(compiled.querySelector('.driver-portal')?.textContent).toContain('Guten Morgen, Olanovski');
+    expect(window.location.hash).toBe('#driver-portal');
+  });
+
+  it('should complete the driver shift workflow', async () => {
+    window.history.replaceState(null, '', '#driver-portal');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const checklist = compiled.querySelectorAll('.driver-checklist input[type="checkbox"]');
+
+    (checklist[0] as HTMLInputElement).click();
+    (checklist[1] as HTMLInputElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const startButton = compiled.querySelector('.driver-start-card .driver-primary-action') as HTMLButtonElement;
+    expect(startButton.disabled).toBe(false);
+    startButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-active-banner')?.textContent).toContain('Ihre Schicht läuft');
+
+    const endMileage = compiled.querySelector('.driver-finish-card input[type="number"]') as HTMLInputElement;
+    endMileage.value = '221620';
+    endMileage.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const finishButton = compiled.querySelector('.driver-finish-card .driver-primary-action') as HTMLButtonElement;
+    expect(finishButton.disabled).toBe(false);
+    finishButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-complete-card')?.textContent).toContain('Schicht erfolgreich abgeschlossen');
+    expect(compiled.querySelector('.driver-complete-card')?.textContent).toContain('170 km');
+  });
 });
