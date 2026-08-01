@@ -3,7 +3,7 @@ import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 type ShiftTone = 'green' | 'blue' | 'amber' | 'violet' | 'cyan' | 'orange' | 'rose';
-type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips';
+type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips' | 'messages';
 
 interface Shift {
   id: string;
@@ -102,6 +102,22 @@ interface SpecialTrip {
   tone: 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'cyan';
 }
 
+interface MessageThread {
+  id: string;
+  sender: string;
+  initials: string;
+  role: string;
+  subject: string;
+  preview: string;
+  date: string;
+  time: string;
+  category: 'Fahrer' | 'Kunde' | 'System';
+  body: string[];
+  relatedLabel: string;
+  relatedView: AppView;
+  tone: 'blue' | 'violet' | 'green' | 'orange' | 'rose' | 'cyan';
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -122,7 +138,9 @@ export class App {
               ? 'absence'
               : window.location.hash === '#trips'
                 ? 'trips'
-              : 'planning',
+                : window.location.hash === '#messages'
+                  ? 'messages'
+                  : 'planning',
   );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
@@ -149,6 +167,12 @@ export class App {
   protected readonly specialTripSearch = signal('');
   protected readonly specialTripStatus = signal('Alle Status');
   protected readonly specialTripSaved = signal(false);
+  protected readonly selectedMessageId = signal('olanovski-delay');
+  protected readonly messageSearch = signal('');
+  protected readonly messageFilter = signal('Alle Nachrichten');
+  protected readonly unreadMessageIds = signal(['olanovski-delay', 'rheinbach-passengers', 'rh11-service']);
+  protected readonly messageReply = signal('');
+  protected readonly messageSent = signal(false);
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -215,6 +239,16 @@ export class App {
     { id: 'mayen-day-trip', title: 'Seniorenfahrt Mayen', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Kelberg Rathaus', to: 'Mayen Marktplatz', stops: ['Kelberg Rathaus', 'Boos Kirche', 'Mayen Marktplatz'], driver: 'Koch', vehicle: 'DAU-RH 102', passengers: 41, customer: 'Seniorenkreis Kelberg', contact: 'Maria Becker', phone: '+49 2692 618 330', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
   ];
 
+  protected readonly messageThreads: MessageThread[] = [
+    { id: 'olanovski-delay', sender: 'Olanovski', initials: 'O', role: 'Fahrer · DAU-RH 91', subject: 'Verspätung auf der B257', preview: 'Wegen einer Baustelle komme ich voraussichtlich 15 Minuten später in Kötterichen an.', date: 'Heute', time: '11:42', category: 'Fahrer', body: ['Hallo Sebi,', 'wegen einer kurzfristigen Baustelle auf der B257 verzögert sich die Fahrt. Ich rechne aktuell mit etwa 15 Minuten Verspätung bei der Ankunft in Kötterichen.', 'Die Fahrgäste sind informiert. Ich melde mich, falls sich die Situation verändert.'], relatedLabel: 'Einsatz in Wochenplanung öffnen', relatedView: 'planning', tone: 'violet' },
+    { id: 'rheinbach-passengers', sender: 'Anna Schmitz', initials: 'AS', role: 'Kundin · Jugendfreizeit Hönningen', subject: 'Teilnehmerzahl für Rheinbach', preview: 'Die endgültige Teilnehmerzahl für Samstag beträgt 44 Personen inklusive Betreuung.', date: 'Heute', time: '10:18', category: 'Kunde', body: ['Guten Morgen,', 'für unsere Tagesfahrt nach Rheinbach am Samstag sind es endgültig 44 Personen, davon vier Betreuungskräfte.', 'Bitte bestätigen Sie kurz, dass der eingeplante Bus ausreichend Sitzplätze hat. Vielen Dank!'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'rose' },
+    { id: 'rh11-service', sender: 'Werkstatt Daun', initials: 'WD', role: 'Servicepartner', subject: 'DAU-RH 11 ab 15 Uhr verfügbar', preview: 'Die Sicherheitsprüfung ist abgeschlossen. Das Fahrzeug kann heute ab 15 Uhr abgeholt werden.', date: 'Heute', time: '09:05', category: 'System', body: ['Guten Morgen,', 'die Arbeiten und die Sicherheitsprüfung am Fahrzeug DAU-RH 11 sind abgeschlossen.', 'Der Bus kann heute ab 15:00 Uhr abgeholt und wieder eingesetzt werden.'], relatedLabel: 'Fahrzeugdetails anzeigen', relatedView: 'vehicles', tone: 'orange' },
+    { id: 'kyriakos-certificate', sender: 'Kyriakos', initials: 'K', role: 'Fahrer', subject: 'Krankmeldung eingereicht', preview: 'Die Bescheinigung für meine heutige Abwesenheit habe ich soeben hochgeladen.', date: 'Gestern', time: '18:26', category: 'Fahrer', body: ['Hallo,', 'die Arbeitsunfähigkeitsbescheinigung für meine heutige Abwesenheit ist jetzt vollständig eingereicht.', 'Bei Rückfragen bin ich telefonisch erreichbar.'], relatedLabel: 'Abwesenheit anzeigen', relatedView: 'absence', tone: 'orange' },
+    { id: 'system-plan', sender: 'BusDispo System', initials: 'BD', role: 'Automatische Meldung', subject: 'Wochenplan erfolgreich veröffentlicht', preview: 'Der Plan für KW 30 wurde an fünf Fahrer verteilt. Zwei Einsätze sind weiterhin offen.', date: 'Gestern', time: '16:02', category: 'System', body: ['Der Wochenplan für KW 30 wurde erfolgreich veröffentlicht.', 'Fünf Fahrer haben ihre Zuweisung erhalten. Für zwei offene Einsätze ist noch keine Fahrerin oder kein Fahrer hinterlegt.'], relatedLabel: 'Wochenplanung prüfen', relatedView: 'planning', tone: 'blue' },
+    { id: 'zeyen-shift', sender: 'Zeyen B.', initials: 'ZB', role: 'Fahrer · DAU-RH 515', subject: 'Rückfrage zum Dienst am Freitag', preview: 'Bleibt der Fahrzeugwechsel in Cochem wie im aktuellen Dienstplan hinterlegt?', date: '30.07.2026', time: '14:37', category: 'Fahrer', body: ['Hallo Sebi,', 'bleibt der Fahrzeugwechsel in Cochem am Freitag wie im aktuellen Dienstplan eingetragen?', 'Dann plane ich meine Pause entsprechend. Danke für eine kurze Rückmeldung.'], relatedLabel: 'Dienstplan anzeigen', relatedView: 'schedules', tone: 'blue' },
+    { id: 'cochem-request', sender: 'Laura Klein', initials: 'LK', role: 'Grundschule Gillenfeld', subject: 'Abfahrtszeit Schulausflug', preview: 'Könnten wir die Abfahrt am 4. August auf 07:30 Uhr vorziehen?', date: '29.07.2026', time: '12:10', category: 'Kunde', body: ['Guten Tag,', 'für den Schulausflug nach Cochem würden wir die Abfahrt gerne von 07:45 Uhr auf 07:30 Uhr vorziehen.', 'Wäre diese Änderung für Sie möglich? Die Teilnehmerzahl bleibt unverändert.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
+  ];
+
   protected readonly shifts: Shift[] = [
     { id: 'rh102-thu', vehicle: 'DAU-RH 102', day: 3, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
     { id: 'rh102-fri', vehicle: 'DAU-RH 102', day: 4, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
@@ -262,7 +296,9 @@ export class App {
             ? 'Abwesenheiten'
             : this.activeView() === 'trips'
               ? 'Sonderfahrten'
-            : 'Wochenplanung',
+              : this.activeView() === 'messages'
+                ? 'Nachrichten'
+                : 'Wochenplanung',
   );
 
   protected readonly filteredVehicles = computed(() => {
@@ -333,6 +369,25 @@ export class App {
 
   protected readonly selectedSpecialTrip = computed(
     () => this.specialTrips.find((trip) => trip.id === this.selectedSpecialTripId()) ?? this.specialTrips[0],
+  );
+
+  protected readonly unreadMessageCount = computed(() => this.unreadMessageIds().length);
+
+  protected readonly filteredMessageThreads = computed(() => {
+    const query = this.messageSearch().trim().toLocaleLowerCase('de');
+    const filter = this.messageFilter();
+    const unreadIds = this.unreadMessageIds();
+    return this.messageThreads.filter(
+      (thread) =>
+        (filter === 'Alle Nachrichten' ||
+          (filter === 'Ungelesen' && unreadIds.includes(thread.id)) ||
+          thread.category === filter) &&
+        (!query || `${thread.sender} ${thread.subject} ${thread.preview} ${thread.role}`.toLocaleLowerCase('de').includes(query)),
+    );
+  });
+
+  protected readonly selectedMessage = computed(
+    () => this.messageThreads.find((thread) => thread.id === this.selectedMessageId()) ?? this.messageThreads[0],
   );
 
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
@@ -421,6 +476,27 @@ export class App {
   protected saveSpecialTrip(): void {
     this.specialTripSaved.set(true);
     window.setTimeout(() => this.specialTripSaved.set(false), 2400);
+  }
+
+  protected selectMessage(thread: MessageThread): void {
+    this.selectedMessageId.set(thread.id);
+    this.unreadMessageIds.update((ids) => ids.filter((id) => id !== thread.id));
+    this.messageReply.set('');
+    this.messageSent.set(false);
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.message-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    }
+  }
+
+  protected markAllMessagesRead(): void {
+    this.unreadMessageIds.set([]);
+  }
+
+  protected sendMessageReply(): void {
+    if (!this.messageReply().trim()) return;
+    this.messageSent.set(true);
+    this.messageReply.set('');
+    window.setTimeout(() => this.messageSent.set(false), 2800);
   }
 
   protected selectShift(shift: Shift): void {

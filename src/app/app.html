@@ -18,7 +18,7 @@
       <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon">♙</span>Fahrer</button>
       <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
       <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon">♧</span>Sonderfahrten</button>
-      <a href="#messages"><span class="nav__icon">✉</span>Nachrichten</a>
+      <button [class.active]="activeView() === 'messages'" (click)="showView('messages')"><span class="nav__icon">✉</span>Nachrichten @if (unreadMessageCount() > 0) { <span class="nav__badge">{{ unreadMessageCount() }}</span> }</button>
       <a href="#stats"><span class="nav__icon">▥</span>Statistiken</a>
       <a href="#settings"><span class="nav__icon">⚙</span>Einstellungen</a>
     </nav>
@@ -43,7 +43,7 @@
       <button class="menu-button" aria-label="Menü öffnen" (click)="menuOpen.set(true)">☰</button>
       <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
-        <button class="icon-button notification" aria-label="Benachrichtigungen">♧<span>3</span></button>
+        <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">✉ @if (unreadMessageCount() > 0) { <span>{{ unreadMessageCount() }}</span> }</button>
         <div class="avatar">S</div>
         <div class="user-copy"><strong>Sebi</strong><small>Dispatcher</small></div>
         <span class="chevron">⌄</span>
@@ -562,6 +562,81 @@
               </div>
             </div>
           </aside>
+        </div>
+      </section>
+    } @else if (activeView() === 'messages') {
+      <section class="messages-page">
+        <div class="messages-intro">
+          <div>
+            <span class="eyebrow">Kommunikation</span>
+            <h2>Nachrichten</h2>
+            <p>Bleiben Sie mit Fahrern, Kunden und Servicepartnern in Verbindung.</p>
+          </div>
+          <button class="button button--primary">+&nbsp; Neue Nachricht</button>
+        </div>
+
+        <div class="message-metrics">
+          <article><span class="message-metric-icon message-metric-icon--blue">✉</span><div><b>7</b><small>Nachrichten gesamt</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--orange">●</span><div><b>{{ unreadMessageCount() }}</b><small>Ungelesen</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--violet">♙</span><div><b>3</b><small>Von Fahrern</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--green">♧</span><div><b>2</b><small>Kundenanfragen</small></div></article>
+        </div>
+
+        <div class="message-layout">
+          <section class="dashboard-card message-list-card">
+            <div class="message-list-heading"><div><h3>Posteingang</h3><span>{{ unreadMessageCount() }} ungelesen</span></div><button (click)="markAllMessagesRead()" [disabled]="unreadMessageCount() === 0">Alle gelesen</button></div>
+            <div class="message-toolbar">
+              <label class="message-search"><span>⌕</span><input [ngModel]="messageSearch()" (ngModelChange)="messageSearch.set($event)" placeholder="Nachrichten durchsuchen" /></label>
+              <select [ngModel]="messageFilter()" (ngModelChange)="messageFilter.set($event)" aria-label="Nachrichten filtern">
+                <option>Alle Nachrichten</option><option>Ungelesen</option><option>Fahrer</option><option>Kunde</option><option>System</option>
+              </select>
+            </div>
+            <div class="message-thread-list">
+              @for (thread of filteredMessageThreads(); track thread.id) {
+                <button class="message-thread-row" [class.message-thread-row--selected]="selectedMessageId() === thread.id" [class.message-thread-row--unread]="unreadMessageIds().includes(thread.id)" (click)="selectMessage(thread)">
+                  <span class="message-avatar message-avatar--{{ thread.tone }}">{{ thread.initials }}</span>
+                  <span class="message-thread-copy">
+                    <span class="message-thread-meta"><b>{{ thread.sender }}</b><time>{{ thread.date }} · {{ thread.time }}</time></span>
+                    <strong>{{ thread.subject }}</strong>
+                    <small>{{ thread.preview }}</small>
+                    <em>{{ thread.category }}</em>
+                  </span>
+                  @if (unreadMessageIds().includes(thread.id)) { <i class="message-unread-dot" aria-label="Ungelesen"></i> }
+                </button>
+              } @empty {
+                <div class="message-empty"><span>✉</span><strong>Keine Nachrichten gefunden</strong><small>Passen Sie Suche oder Filter an.</small></div>
+              }
+            </div>
+            <footer class="message-footer">{{ filteredMessageThreads().length }} von {{ messageThreads.length }} Nachrichten</footer>
+          </section>
+
+          <section class="dashboard-card message-detail-card">
+            <header class="message-detail-head">
+              <div><span>{{ selectedMessage().category }}</span><h3>{{ selectedMessage().subject }}</h3></div>
+              <div class="message-detail-tools"><button aria-label="Nachricht archivieren">□</button><button aria-label="Weitere Aktionen">•••</button></div>
+            </header>
+            <div class="message-detail-body">
+              <div class="message-sender">
+                <span class="message-avatar message-avatar--{{ selectedMessage().tone }}">{{ selectedMessage().initials }}</span>
+                <div><b>{{ selectedMessage().sender }}</b><small>{{ selectedMessage().role }}</small></div>
+                <time>{{ selectedMessage().date }}<small>{{ selectedMessage().time }}</small></time>
+              </div>
+
+              <div class="message-content">
+                @for (paragraph of selectedMessage().body; track paragraph) { <p>{{ paragraph }}</p> }
+              </div>
+
+              <button class="message-related" (click)="showView(selectedMessage().relatedView)"><span>↗</span><div><b>{{ selectedMessage().relatedLabel }}</b><small>Verknüpften Eintrag in BusDispo öffnen</small></div><i>›</i></button>
+
+              <div class="message-reply">
+                <label for="message-reply">Antwort an {{ selectedMessage().sender }}</label>
+                <textarea id="message-reply" rows="4" [ngModel]="messageReply()" (ngModelChange)="messageReply.set($event)" placeholder="Antwort schreiben …"></textarea>
+                <div><button class="message-attach" aria-label="Datei anhängen">⌕</button><span>Enter zum Senden</span><button class="button button--primary" [disabled]="!messageReply().trim()" (click)="sendMessageReply()">Senden&nbsp; →</button></div>
+              </div>
+
+              @if (messageSent()) { <div class="message-sent"><span>✓</span> Antwort wurde gesendet.</div> }
+            </div>
+          </section>
         </div>
       </section>
     } @else {

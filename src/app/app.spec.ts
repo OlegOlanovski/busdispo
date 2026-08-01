@@ -217,4 +217,41 @@ describe('App', () => {
     expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Schulausflug Cochem');
     expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Messe-Transfer Koblenz');
   });
+
+  it('should open messages and mark a thread as read', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const messagesButton = compiled.querySelector('.nav button:nth-child(8)') as HTMLButtonElement;
+
+    messagesButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Nachrichten');
+    expect(compiled.querySelectorAll('.message-thread-row')).toHaveLength(7);
+    expect(compiled.querySelectorAll('.message-thread-row--unread')).toHaveLength(3);
+    expect(compiled.querySelector('.message-detail-card')?.textContent).toContain('Verspätung auf der B257');
+
+    (compiled.querySelector('.message-thread-row') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.message-thread-row--unread')).toHaveLength(2);
+  });
+
+  it('should filter customer messages', async () => {
+    window.history.replaceState(null, '', '#messages');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const messageFilter = compiled.querySelector('.message-toolbar select') as HTMLSelectElement;
+
+    messageFilter.value = 'Kunde';
+    messageFilter.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.message-thread-row')).toHaveLength(2);
+    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Anna Schmitz');
+    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Laura Klein');
+  });
 });
