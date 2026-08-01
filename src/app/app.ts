@@ -29,6 +29,9 @@ interface Vehicle {
   styleUrl: './app.scss',
 })
 export class App {
+  protected readonly activeView = signal<'overview' | 'planning'>(
+    window.location.hash === '#overview' ? 'overview' : 'planning',
+  );
   protected readonly menuOpen = signal(false);
   protected readonly weekOffset = signal(0);
   protected readonly published = signal(false);
@@ -88,6 +91,10 @@ export class App {
     () => this.shifts.find((shift) => shift.id === this.selectedShiftId()) ?? this.shifts[6],
   );
 
+  protected readonly pageTitle = computed(() =>
+    this.activeView() === 'overview' ? 'Übersicht' : 'Wochenplanung',
+  );
+
   protected readonly weekNumber = computed(() => 30 + this.weekOffset());
   protected readonly dateRange = computed(() => {
     if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
@@ -101,6 +108,14 @@ export class App {
 
   protected getShift(vehicle: string, day: number): Shift | undefined {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
+  }
+
+  protected showView(view: 'overview' | 'planning'): void {
+    this.activeView.set(view);
+    this.menuOpen.set(false);
+    window.history.replaceState(null, '', `#${view}`);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }
 
   protected selectShift(shift: Shift): void {

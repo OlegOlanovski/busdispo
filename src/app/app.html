@@ -11,8 +11,8 @@
     </div>
 
     <nav class="nav" aria-label="Hauptnavigation">
-      <a href="#overview"><span class="nav__icon">⌂</span>Übersicht</a>
-      <a class="active" href="#planning"><span class="nav__icon calendar-icon">□</span>Wochenplanung</a>
+      <button [class.active]="activeView() === 'overview'" (click)="showView('overview')"><span class="nav__icon">⌂</span>Übersicht</button>
+      <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon">□</span>Wochenplanung</button>
       <a href="#vehicles"><span class="nav__icon">▣</span>Fahrzeuge</a>
       <a href="#schedules"><span class="nav__icon">▤</span>Dienstpläne</a>
       <a href="#drivers"><span class="nav__icon">♙</span>Fahrer</a>
@@ -38,10 +38,10 @@
     <button class="sidebar-scrim" aria-label="Menü schließen" (click)="menuOpen.set(false)"></button>
   }
 
-  <main class="workspace" id="planning">
+  <main class="workspace">
     <header class="topbar">
       <button class="menu-button" aria-label="Menü öffnen" (click)="menuOpen.set(true)">☰</button>
-      <h1>Wochenplanung</h1>
+      <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
         <button class="icon-button notification" aria-label="Benachrichtigungen">♧<span>3</span></button>
         <div class="avatar">S</div>
@@ -50,6 +50,93 @@
       </div>
     </header>
 
+    @if (activeView() === 'overview') {
+      <section class="overview-page">
+        <div class="overview-intro">
+          <div>
+            <span class="eyebrow">Donnerstag, 23. Juli 2026</span>
+            <h2>Guten Morgen, Sebi</h2>
+            <p>Hier ist der aktuelle Stand Ihrer Disposition.</p>
+          </div>
+          <button class="button button--primary overview-plan-button" (click)="showView('planning')">□&nbsp; Woche planen</button>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <div class="metric-icon metric-icon--blue">▣</div>
+            <div><span>Fahrzeuge im Einsatz</span><strong>5 <small>/ 6</small></strong><em class="positive">↑ 1 seit gestern</em></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon metric-icon--violet">♙</div>
+            <div><span>Fahrer eingeplant</span><strong>5 <small>/ 7</small></strong><em>2 heute abwesend</em></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon metric-icon--green">✓</div>
+            <div><span>Geplante Einsätze</span><strong>13</strong><em class="positive">92% abgedeckt</em></div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon metric-icon--orange">!</div>
+            <div><span>Offene Einsätze</span><strong>2</strong><em class="warning">Handlungsbedarf</em></div>
+          </article>
+        </div>
+
+        <div class="overview-grid">
+          <section class="dashboard-card today-card">
+            <div class="dashboard-heading">
+              <div><h3>Heutige Einsätze</h3><p>Donnerstag, 23.07.2026</p></div>
+              <button (click)="showView('planning')">Alle anzeigen&nbsp; →</button>
+            </div>
+            <div class="assignment-list">
+              @for (shift of [shifts[0], shifts[2], shifts[4], shifts[6], shifts[8], shifts[11]]; track shift.id; let i = $index) {
+                <button class="assignment-row" (click)="selectShift(shift); showView('planning')">
+                  <span class="assignment-time">{{ shift.start }}<small>{{ shift.end }}</small></span>
+                  <span class="assignment-bus"><i class="tone-dot tone-dot--{{ shift.tone }}"></i><b>{{ shift.vehicle }}</b><small>{{ shift.plan }}</small></span>
+                  <span class="assignment-driver"><i>♙</i><span><b>{{ shift.driver }}</b><small>Fahrer</small></span></span>
+                  <span class="assignment-status" [class.assignment-status--open]="i === 5">{{ i === 5 ? 'Offen' : 'Geplant' }}</span>
+                  <span class="assignment-arrow">›</span>
+                </button>
+              }
+            </div>
+          </section>
+
+          <div class="overview-side">
+            <section class="dashboard-card planning-status-card">
+              <div class="dashboard-heading"><div><h3>Planungsstatus</h3><p>KW 30</p></div><button (click)="showView('planning')">Details&nbsp; →</button></div>
+              <div class="planning-chart">
+                <div class="donut"><div><strong>92%</strong><span>geplant</span></div></div>
+                <div class="chart-legend">
+                  <div><span><i class="legend-dot legend-dot--blue"></i>Geplant</span><b>13</b></div>
+                  <div><span><i class="legend-dot legend-dot--orange"></i>Offen</span><b>2</b></div>
+                  <div><span><i class="legend-dot legend-dot--gray"></i>Frei</span><b>27</b></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="dashboard-card upcoming-card">
+              <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div></div>
+              <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Hönningen → Rheinbach</p></div><em>12:15</em></article>
+              <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Düsseldorf → Mehren</p></div><em>23:00</em></article>
+            </section>
+          </div>
+        </div>
+
+        <div class="overview-bottom-grid">
+          <section class="dashboard-card quick-card">
+            <div class="dashboard-heading"><div><h3>Schnellzugriff</h3><p>Häufige Aufgaben</p></div></div>
+            <div class="quick-actions">
+              <button (click)="showView('planning')"><span>+</span><b>Einsatz planen</b><small>Neue Zuweisung erstellen</small></button>
+              <button><span>▣</span><b>Fahrzeug anlegen</b><small>Fuhrpark verwalten</small></button>
+              <button><span>♙</span><b>Fahrer hinzufügen</b><small>Personal verwalten</small></button>
+            </div>
+          </section>
+          <section class="dashboard-card overview-absence-card">
+            <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button>Alle anzeigen&nbsp; →</button></div>
+            <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Kyriakos</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
+            <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Blum/Böhnke</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
+          </section>
+        </div>
+      </section>
+    } @else {
     <section class="toolbar">
       <div class="week-switcher">
         <button aria-label="Vorherige Woche" (click)="changeWeek(-1)">‹</button>
@@ -183,6 +270,7 @@
         </section>
       </aside>
     </div>
+    }
   </main>
 
   @if (published()) {

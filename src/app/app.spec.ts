@@ -36,4 +36,25 @@ describe('App', () => {
 
     expect(compiled.querySelector('.week-switcher strong')?.textContent).toContain('KW 31');
   });
+
+  it('should switch between overview and weekly planning', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const overviewButton = compiled.querySelector('.nav button:first-child') as HTMLButtonElement;
+
+    overviewButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Übersicht');
+    expect(compiled.querySelector('.overview-page')).toBeTruthy();
+    expect(compiled.querySelector('.schedule-card')).toBeFalsy();
+
+    const planningButton = compiled.querySelector('.nav button:nth-child(2)') as HTMLButtonElement;
+    planningButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
+    expect(compiled.querySelector('.schedule-card')).toBeTruthy();
+  });
 });
