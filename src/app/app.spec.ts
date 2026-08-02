@@ -136,6 +136,8 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.driver-row')).toHaveLength(7);
     expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Olanovski');
     expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Nachweise & Prüfungen');
+    expect(compiled.querySelector('.driver-table-head')?.textContent).not.toContain('Wochenzeit');
+    expect(compiled.querySelector('.driver-hours')).toBeFalsy();
   });
 
   it('should filter drivers by vehicle search', async () => {
@@ -253,41 +255,6 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.message-thread-row')).toHaveLength(2);
     expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Anna Schmitz');
     expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Laura Klein');
-  });
-
-  it('should open the statistics view', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const statisticsButton = compiled.querySelector('.nav button:nth-child(9)') as HTMLButtonElement;
-
-    statisticsButton.click();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('h1')?.textContent).toContain('Statistiken');
-    expect(compiled.querySelectorAll('.stat-metric-card')).toHaveLength(4);
-    expect(compiled.querySelector('.trip-trend-card')).toBeTruthy();
-    expect(compiled.querySelectorAll('.vehicle-stat-row')).toHaveLength(6);
-    expect(compiled.querySelectorAll('.driver-stat-row')).toHaveLength(6);
-  });
-
-  it('should update statistics for the selected period', async () => {
-    window.history.replaceState(null, '', '#stats');
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    const periodFilter = compiled.querySelector('.statistics-actions select') as HTMLSelectElement;
-
-    expect(compiled.querySelector('.stat-metric-card:nth-child(2) strong')?.textContent).toContain('28');
-
-    periodFilter.value = 'Dieser Monat';
-    periodFilter.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.statistics-range')?.textContent).toContain('Juli 2026');
-    expect(compiled.querySelector('.stat-metric-card:nth-child(2) strong')?.textContent).toContain('124');
-    expect(compiled.querySelectorAll('.trip-trend-column')).toHaveLength(4);
   });
 
   it('should open the driver portal from driver details', async () => {

@@ -19,8 +19,6 @@
       <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
       <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon">♧</span>Sonderfahrten</button>
       <button [class.active]="activeView() === 'messages'" (click)="showView('messages')"><span class="nav__icon">✉</span>Nachrichten @if (unreadMessageCount() > 0) { <span class="nav__badge">{{ unreadMessageCount() }}</span> }</button>
-      <button [class.active]="activeView() === 'stats'" (click)="showView('stats')"><span class="nav__icon">▥</span>Statistiken</button>
-      <a href="#settings"><span class="nav__icon">⚙</span>Einstellungen</a>
     </nav>
 
     <section class="week-card" aria-label="Aktuelle Woche">
@@ -378,14 +376,13 @@
                 <option>Alle Status</option><option>Im Einsatz</option><option>Verfügbar</option><option>Abwesend</option>
               </select>
             </div>
-            <div class="driver-table-head"><span>Fahrer</span><span>Status</span><span>Heutiger Einsatz</span><span>Wochenzeit</span><span></span></div>
+            <div class="driver-table-head"><span>Fahrer</span><span>Status</span><span>Heutiger Einsatz</span><span></span></div>
             <div class="driver-list">
               @for (driver of filteredDrivers(); track driver.id) {
                 <button class="driver-row" [class.driver-row--selected]="selectedDriverId() === driver.id" (click)="selectDriver(driver)">
                   <span class="driver-identity"><i class="driver-list-avatar driver-list-avatar--{{ driver.color }}">{{ driver.initials }}</i><span><b>{{ driver.name }}</b><small>{{ driver.email }}</small></span></span>
                   <span class="driver-status driver-status--{{ driver.status === 'Im Einsatz' ? 'active' : driver.status === 'Verfügbar' ? 'ready' : 'absent' }}"><i></i>{{ driver.status }}</span>
                   <span class="driver-assignment"><b>{{ driver.vehicle }}</b><small>{{ driver.shift }}</small></span>
-                  <span class="driver-hours"><b>{{ driver.weeklyHours }}h / {{ driver.targetHours }}h</b><i><span [style.width.%]="driver.weeklyHours / driver.targetHours * 100"></span></i></span>
                   <span class="driver-chevron">›</span>
                 </button>
               } @empty {
@@ -681,74 +678,6 @@
               </div>
 
               @if (messageSent()) { <div class="message-sent"><span>✓</span> Antwort wurde gesendet.</div> }
-            </div>
-          </section>
-        </div>
-      </section>
-    } @else if (activeView() === 'stats') {
-      <section class="statistics-page">
-        <div class="statistics-intro">
-          <div>
-            <span class="eyebrow">Auswertung</span>
-            <h2>Statistiken</h2>
-            <p>Analysieren Sie Auslastung, Fahrleistung und Arbeitszeiten Ihres Betriebs.</p>
-          </div>
-          <div class="statistics-actions">
-            <select [ngModel]="statisticsPeriod()" (ngModelChange)="statisticsPeriod.set($event)" aria-label="Auswertungszeitraum wählen">
-              <option>Diese Woche</option><option>Dieser Monat</option><option>Dieses Jahr</option>
-            </select>
-            <button class="button">↓&nbsp; Bericht exportieren</button>
-          </div>
-        </div>
-
-        <div class="statistics-range"><span>◷</span>{{ selectedStatistics().range }}<em>Datenstand: heute, 12:45 Uhr</em></div>
-
-        <div class="stat-metrics">
-          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--blue">▣</span><div><small>Fuhrparkauslastung</small><strong>{{ selectedStatistics().utilization }}%</strong><em class="stat-positive">↑ 4,2% zum Vergleichszeitraum</em></div></article>
-          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--green">✓</span><div><small>Gefahrene Einsätze</small><strong>{{ selectedStatistics().completedTrips }}</strong><em class="stat-positive">↑ 6 erfolgreich abgeschlossen</em></div></article>
-          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--violet">↗</span><div><small>Gefahrene Strecke</small><strong>{{ selectedStatistics().distance }}</strong><em>Alle Fahrzeuge zusammen</em></div></article>
-          <article class="stat-metric-card"><span class="stat-metric-icon stat-metric-icon--orange">◷</span><div><small>Arbeitszeit Fahrer</small><strong>{{ selectedStatistics().workHours }}</strong><em>Inklusive Sonderfahrten</em></div></article>
-        </div>
-
-        <div class="statistics-chart-grid">
-          <section class="dashboard-card trip-trend-card">
-            <div class="statistics-card-head"><div><h3>Gefahrene Einsätze</h3><p>Verteilung im gewählten Zeitraum</p></div><span>Gesamt&nbsp; <b>{{ selectedStatistics().completedTrips }}</b></span></div>
-            <div class="trip-trend-chart" aria-label="Diagramm gefahrener Einsätze">
-              @for (item of selectedStatistics().trend; track item.label) {
-                <div class="trip-trend-column"><div><span [style.height.%]="item.value"><b>{{ item.count }}</b></span></div><small>{{ item.label }}</small></div>
-              }
-            </div>
-          </section>
-
-          <section class="dashboard-card punctuality-card">
-            <div class="statistics-card-head"><div><h3>Pünktlichkeit</h3><p>Ankunft innerhalb von 5 Minuten</p></div></div>
-            <div class="punctuality-content">
-              <div class="punctuality-ring" [style.--punctuality]="selectedStatistics().punctuality + '%'" [style.background]="'conic-gradient(#20a05a 0 ' + selectedStatistics().punctuality + '%, #e7ebf0 ' + selectedStatistics().punctuality + '% 100%)'"><span><b>{{ selectedStatistics().punctuality }}%</b><small>pünktlich</small></span></div>
-              <div class="trip-type-legend">
-                @for (type of selectedStatistics().tripTypes; track type.label) { <div><span [style.background]="type.color"></span><p><b>{{ type.label }}</b><small>{{ type.value }}% Anteil</small></p></div> }
-              </div>
-            </div>
-            <div class="trip-type-strip" [style.background]="selectedStatistics().tripTypeGradient"></div>
-          </section>
-        </div>
-
-        <div class="statistics-detail-grid">
-          <section class="dashboard-card vehicle-stat-card">
-            <div class="statistics-card-head"><div><h3>Fahrzeugauslastung</h3><p>Fahrleistung nach Fahrzeug</p></div><button (click)="showView('vehicles')">Fuhrpark&nbsp; →</button></div>
-            <div class="vehicle-stat-head"><span>Fahrzeug</span><span>Auslastung</span><span>Fahrten</span><span>Strecke</span></div>
-            <div class="vehicle-stat-list">
-              @for (vehicle of selectedStatistics().vehicles; track vehicle.name) {
-                <div class="vehicle-stat-row"><span><i>▣</i><span><b>{{ vehicle.name }}</b><small>{{ vehicle.model }}</small></span></span><span class="vehicle-stat-progress"><b>{{ vehicle.utilization }}%</b><i><span [style.width.%]="vehicle.utilization"></span></i></span><strong>{{ vehicle.trips }}</strong><em>{{ vehicle.distance }}</em></div>
-              }
-            </div>
-          </section>
-
-          <section class="dashboard-card driver-stat-card">
-            <div class="statistics-card-head"><div><h3>Arbeitszeit Fahrer</h3><p>Soll- und Ist-Zeiten</p></div><button (click)="showView('drivers')">Fahrer&nbsp; →</button></div>
-            <div class="driver-stat-list">
-              @for (driver of selectedStatistics().drivers; track driver.name; let index = $index) {
-                <div class="driver-stat-row"><span class="driver-stat-rank">{{ index + 1 }}</span><div><p><b>{{ driver.name }}</b><em>{{ driver.trips }} Fahrten</em></p><i><span [class.driver-stat-overtime]="driver.hours > driver.target" [style.width.%]="driver.hours / driver.target * 100 > 100 ? 100 : driver.hours / driver.target * 100"></span></i><small>{{ driver.hours }}h von {{ driver.target }}h</small></div><strong [class.stat-hours-over]="driver.hours > driver.target">{{ driver.hours / driver.target * 100 | number:'1.0-0' }}%</strong></div>
-              }
             </div>
           </section>
         </div>
