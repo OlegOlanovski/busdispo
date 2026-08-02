@@ -24,6 +24,27 @@ describe('App', () => {
     expect(compiled.querySelector('.details-panel')?.textContent).toContain('DAU-RH 91');
   });
 
+  it('should add a driver assignment from an empty planning cell', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const shiftsBefore = compiled.querySelectorAll('.shift').length;
+
+    (compiled.querySelector('.empty-cell') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.assignment-form')).toBeTruthy();
+    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Neue Zuweisung');
+    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Standard RH 102');
+
+    (compiled.querySelector('.assignment-form .save-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.shift')).toHaveLength(shiftsBefore + 1);
+    expect(compiled.querySelector('.assignment-form')).toBeFalsy();
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Koch');
+  });
+
   it('should switch to the next week', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

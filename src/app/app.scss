@@ -493,9 +493,34 @@ button {
 
 .empty-cell {
   width: 100%;
+  min-height: 70px;
+  border: 1px dashed transparent;
+  border-radius: 5px;
+  background: transparent;
   color: #7a8699;
   font-size: var(--font-min);
   text-align: center;
+  transition: 160ms ease;
+
+  span {
+    display: inline-grid;
+    width: 27px;
+    height: 27px;
+    place-items: center;
+    border-radius: 50%;
+    color: transparent;
+    font-size: 21px;
+    line-height: 1;
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: #9dc6f5;
+    outline: 0;
+    background: #f3f8ff;
+
+    span { background: #deedff; color: var(--blue); }
+  }
 }
 
 .shift {
@@ -560,6 +585,31 @@ button {
 .route-card {
   margin-top: 16px;
 }
+
+.assignment-guide {
+  min-height: 128px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+  border-color: #bdd8f7;
+  background: #f7fbff;
+}
+
+.assignment-guide__icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 50%;
+  background: #dfedff;
+  color: var(--blue);
+  font-size: 27px;
+  line-height: 39px;
+  text-align: center;
+}
+
+.assignment-guide strong { font-size: 17px; }
+.assignment-guide p { max-width: 630px; margin: 6px 0 0; color: #657087; font-size: var(--font-min); line-height: 1.45; }
 
 .section-heading {
   min-height: 65px;
@@ -671,6 +721,100 @@ button {
 
 .details-body {
   padding: 15px 14px 14px;
+}
+
+.assignment-form__title {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f4f8fd;
+}
+
+.assignment-form__title > span {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #dfedff;
+  color: var(--blue);
+  font-size: 25px;
+  line-height: 38px;
+  text-align: center;
+}
+
+.assignment-form__title strong,
+.assignment-form__title small { display: block; }
+.assignment-form__title strong { font-size: var(--font-min); }
+.assignment-form__title small { margin-top: 4px; color: #6c778b; font-size: var(--font-min); line-height: 1.35; }
+
+.assignment-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 13px;
+  color: #5f6a80;
+  font-size: var(--font-min);
+  font-weight: 600;
+}
+
+.assignment-field select,
+.assignment-field input,
+.assignment-field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d7dee8;
+  border-radius: 5px;
+  outline-color: var(--blue);
+  background: #fff;
+  color: #222b3a;
+  font: inherit;
+  font-weight: 500;
+}
+
+.assignment-field select,
+.assignment-field input { height: 40px; padding: 0 10px; }
+.assignment-field textarea { resize: vertical; padding: 9px 10px; line-height: 1.4; }
+.assignment-field option:disabled { color: #9aa4b5; }
+
+.assignment-time-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.assignment-error {
+  display: grid;
+  grid-template-columns: 23px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+  padding: 10px;
+  border: 1px solid #f0c4c4;
+  border-radius: 6px;
+  background: #fff3f3;
+  color: #b4232b;
+  font-size: var(--font-min);
+  line-height: 1.35;
+}
+
+.assignment-error span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e94b50;
+  color: #fff;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+
+.assignment-cancel-button {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 7px;
+  border: 0;
+  background: transparent;
+  color: #667287;
+  font-size: var(--font-min);
+  font-weight: 600;
 }
 
 .vehicle-title {

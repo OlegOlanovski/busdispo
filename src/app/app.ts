@@ -18,6 +18,17 @@ interface Shift {
   tone: ShiftTone;
   type?: string;
   status?: string;
+  note?: string;
+}
+
+interface AssignmentDraft {
+  vehicle: string;
+  day: number;
+  driver: string;
+  plan: string;
+  start: string;
+  end: string;
+  note: string;
 }
 
 interface Vehicle {
@@ -150,6 +161,8 @@ export class App {
   protected readonly weekOffset = signal(0);
   protected readonly published = signal(false);
   protected readonly saved = signal(false);
+  protected readonly addingAssignment = signal(false);
+  protected readonly assignmentError = signal('');
   protected readonly selectedShiftId = signal('rh91-thu');
   protected readonly selectedVehicleId = signal('DAU-RH 91');
   protected readonly vehicleSearch = signal('');
@@ -186,6 +199,16 @@ export class App {
   protected readonly driverDelay = signal('Keine Verspätung');
   protected readonly driverIssue = signal('Keine Mängel');
   protected readonly driverShiftNote = signal('');
+
+  protected newAssignment: AssignmentDraft = {
+    vehicle: 'DAU-RH 91',
+    day: 0,
+    driver: '',
+    plan: 'Standard RH 91',
+    start: '06:05',
+    end: '14:24',
+    note: '',
+  };
 
   protected readonly days = [
     { short: 'Mo', date: '20.07' },
@@ -439,6 +462,167 @@ export class App {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
   }
 
+  protected openNewAssignment(vehicle?: string, day?: number): void {
+    const target = vehicle && day !== undefined
+      ? { vehicle, day }
+      : this.findFirstEmptyCell();
+    const suggestedPlan = this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DAU-RH ', 'RH ')))
+      ?? this.dutyPlans.find((plan) => plan.status === 'Aktiv')
+      ?? this.dutyPlans[0];
+    const suggestedDriver = this.drivers.find(
+      (driver) => driver.status !== 'Abwesend'
+        && !this.driverHasConflict(driver.name, target.day, undefined, suggestedPlan.start, suggestedPlan.end),
+    );
+
+    this.newAssignment = {
+      vehicle: target.vehicle,
+      day: target.day,
+      driver: suggestedDriver?.name ?? '',
+      plan: suggestedPlan.name,
+      start: suggestedPlan.start,
+      end: suggestedPlan.end,
+      note: '',
+    };
+    this.addingAssignment.set(true);
+    this.assignmentError.set('');
+    this.saved.set(false);
+
+    if (window.innerWidth < 900) {
+      window.setTimeout(() => document.querySelector('.details-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    }
+  }
+
+  protected closeAssignmentForm(): void {
+    this.addingAssignment.set(false);
+    this.assignmentError.set('');
+  }
+
+  protected updateNewAssignment<K extends keyof AssignmentDraft>(field: K, value: AssignmentDraft[K]): void {
+    this.newAssignment = { ...this.newAssignment, [field]: value };
+    this.assignmentError.set('');
+  }
+
+  protected updateNewAssignmentSlot(field: 'vehicle' | 'day', value: string | number): void {
+    if (field === 'day') {
+      this.updateNewAssignment('day', Number(value));
+      return;
+    }
+
+    const vehicle = String(value);
+    const currentDay = this.newAssignment.day;
+    const nextFreeDay = this.days.findIndex((_, day) => !this.getShift(vehicle, day));
+    this.newAssignment = {
+      ...this.newAssignment,
+      vehicle,
+      day: this.getShift(vehicle, currentDay) && nextFreeDay >= 0 ? nextFreeDay : currentDay,
+    };
+    this.assignmentError.set('');
+  }
+
+  protected selectNewAssignmentPlan(planName: string): void {
+    const plan = this.dutyPlans.find((item) => item.name === planName);
+    this.newAssignment = {
+      ...this.newAssignment,
+      plan: planName,
+      start: plan?.start ?? this.newAssignment.start,
+      end: plan?.end ?? this.newAssignment.end,
+    };
+    this.assignmentError.set('');
+  }
+
+  protected isDriverOptionUnavailable(driverName: string): boolean {
+    const driver = this.drivers.find((item) => item.name === driverName);
+    return driver?.status === 'Abwesend'
+      || this.driverHasConflict(
+        driverName,
+        this.newAssignment.day,
+        undefined,
+        this.newAssignment.start,
+        this.newAssignment.end,
+      );
+  }
+
+  protected isAssignmentSlotUnavailable(day: number): boolean {
+    return Boolean(this.getShift(this.newAssignment.vehicle, day));
+  }
+
+  protected createAssignment(): void {
+    const draft = this.newAssignment;
+    if (!draft.vehicle || !draft.driver || !draft.plan || !draft.start || !draft.end) {
+      this.assignmentError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    if (this.getShift(draft.vehicle, draft.day)) {
+      this.assignmentError.set('Für dieses Fahrzeug ist an diesem Tag bereits ein Einsatz geplant.');
+      return;
+    }
+    if (this.driverHasConflict(draft.driver, draft.day, undefined, draft.start, draft.end)) {
+      this.assignmentError.set(`${draft.driver} ist zu dieser Zeit bereits eingeplant.`);
+      return;
+    }
+
+    const driver = this.drivers.find((item) => item.name === draft.driver);
+    const plan = this.dutyPlans.find((item) => item.name === draft.plan);
+    const shift: Shift = {
+      id: `assignment-${this.shifts.length + 1}`,
+      vehicle: draft.vehicle,
+      day: draft.day,
+      driver: draft.driver,
+      start: draft.start,
+      end: draft.end,
+      plan: draft.plan,
+      tone: (plan?.tone ?? driver?.color ?? 'blue') as ShiftTone,
+      status: 'Geplant',
+      note: draft.note.trim() || 'Keine besonderen Hinweise',
+    };
+
+    this.shifts.push(shift);
+    this.selectedShiftId.set(shift.id);
+    this.addingAssignment.set(false);
+    this.assignmentError.set('');
+    this.saved.set(true);
+    window.setTimeout(() => this.saved.set(false), 2600);
+  }
+
+  protected deleteSelectedAssignment(): void {
+    const index = this.shifts.findIndex((shift) => shift.id === this.selectedShiftId());
+    if (index < 0) return;
+    this.shifts.splice(index, 1);
+    this.selectedShiftId.set(this.shifts[0]?.id ?? '');
+    this.saved.set(false);
+  }
+
+  private findFirstEmptyCell(): { vehicle: string; day: number } {
+    for (const vehicle of this.vehicles) {
+      for (let day = 0; day < this.days.length; day += 1) {
+        if (!this.getShift(vehicle.id, day)) return { vehicle: vehicle.id, day };
+      }
+    }
+    return { vehicle: this.vehicles[0].id, day: 0 };
+  }
+
+  private driverHasConflict(
+    driverName: string,
+    day: number,
+    excludeShiftId?: string,
+    start?: string,
+    end?: string,
+  ): boolean {
+    return this.shifts.some((shift) => {
+      if (shift.driver !== driverName || shift.day !== day || shift.id === excludeShiftId) return false;
+      if (!start || !end) return true;
+      return this.timesOverlap(start, end, shift.start, shift.end);
+    });
+  }
+
+  private timesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+    const toMinutes = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    return toMinutes(startA) < toMinutes(endB) && toMinutes(startB) < toMinutes(endA);
+  }
+
   protected showView(view: AppView): void {
     this.activeView.set(view);
     this.menuOpen.set(false);
@@ -560,6 +744,8 @@ export class App {
   }
 
   protected selectShift(shift: Shift): void {
+    this.addingAssignment.set(false);
+    this.assignmentError.set('');
     this.selectedShiftId.set(shift.id);
     this.saved.set(false);
     if (window.innerWidth < 900) {
