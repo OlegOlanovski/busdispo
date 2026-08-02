@@ -20,8 +20,67 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
-    expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(6);
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('DAU-RH 91');
+    expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(7);
+    expect(compiled.querySelectorAll('.line-heading')).toHaveLength(21);
+    expect(compiled.querySelector('.trip-grid--header .line-heading')?.textContent?.trim()).toBe('DAU RH13');
+    expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain('KW 25');
+    expect(compiled.querySelector('.matrix-day')?.textContent).toContain('15.06');
+    expect(compiled.querySelectorAll('.planning-trip-card').length).toBeGreaterThan(80);
+    expect(compiled.querySelector('.trip-grid .matrix-corner')).toBeFalsy();
+    expect(compiled.querySelector('.trip-side-label')).toBeFalsy();
+    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Borler → Boxberg');
+    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Gerolstein → Trier');
+    expect(compiled.querySelector('.schedule-drag-hint')).toBeFalsy();
+    expect(compiled.querySelector('.planning-block-heading')).toBeFalsy();
+    expect(compiled.querySelectorAll('.schedule-grid--header')).toHaveLength(0);
+    expect(compiled.querySelector('.vehicle-heading')).toBeFalsy();
+    expect(compiled.querySelector('.shift')?.textContent?.trim()).toBe('Steffes R.');
+    expect(compiled.querySelector('.shift')?.textContent).not.toContain('06:05');
+    expect(compiled.querySelector('.shift')?.textContent).not.toContain('DAU-RH 13');
+    expect(compiled.querySelector('.right-column')).toBeFalsy();
+    expect(compiled.querySelector('.details-panel')).toBeFalsy();
+
+    const rh91Heading = compiled.querySelector('.trip-grid--header [data-vehicle="DAU-RH 91"]') as HTMLElement;
+    const rh91Cell = compiled.querySelector('.schedule-row [data-vehicle="DAU-RH 91"]') as HTMLElement;
+    expect(rh91Heading).toBeTruthy();
+    expect(rh91Cell.textContent).toContain('Olanovski');
+  });
+
+  it('should slide the main menu in and out', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const menuButton = compiled.querySelector('.menu-button') as HTMLButtonElement;
+    const sidebar = compiled.querySelector('.sidebar') as HTMLElement;
+
+    expect(sidebar.classList).not.toContain('sidebar--open');
+    expect(menuButton.getAttribute('aria-expanded')).toBe('false');
+
+    menuButton.click();
+    fixture.detectChanges();
+
+    expect(sidebar.classList).toContain('sidebar--open');
+    expect(menuButton.getAttribute('aria-expanded')).toBe('true');
+    expect(compiled.querySelector('.sidebar-scrim')).toBeTruthy();
+
+    (compiled.querySelector('.sidebar-close') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(sidebar.classList).not.toContain('sidebar--open');
+    expect(compiled.querySelector('.sidebar-scrim')).toBeFalsy();
+  });
+
+  it('should open line details from a trip card', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.planning-trip-card') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('DAU-RH 13');
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Linie RH 13');
+    expect(compiled.querySelector('.route-table')).toBeFalsy();
   });
 
   it('should add a driver assignment from an empty planning cell', async () => {
@@ -45,6 +104,52 @@ describe('App', () => {
     expect(compiled.querySelector('.details-panel')?.textContent).toContain('Koch');
   });
 
+  it('should move an assignment to a free cell by drag and drop', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const rows = compiled.querySelectorAll('.schedule-row');
+    const sourceCell = rows[3].querySelectorAll('.schedule-cell')[0] as HTMLElement;
+    const target = rows[5].querySelectorAll('.schedule-cell')[0] as HTMLElement;
+    const source = sourceCell.querySelector('.shift') as HTMLButtonElement;
+
+    source.dispatchEvent(new Event('dragstart', { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(target.classList).toContain('schedule-cell--drop-valid');
+
+    target.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(target.querySelector('.shift')?.textContent).toContain('Steffes R.');
+    expect(sourceCell.querySelector('.shift')).toBeFalsy();
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Einsatz verschoben');
+  });
+
+  it('should reject a drop on an occupied planning cell', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const rows = compiled.querySelectorAll('.schedule-row');
+    const sourceCell = rows[3].querySelectorAll('.schedule-cell')[0] as HTMLElement;
+    const targetCell = rows[3].querySelectorAll('.schedule-cell')[1] as HTMLElement;
+    const source = sourceCell.querySelector('.shift') as HTMLButtonElement;
+
+    source.dispatchEvent(new Event('dragstart', { bubbles: true, cancelable: true }));
+    targetCell.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(targetCell.classList).toContain('schedule-cell--drop-invalid');
+
+    targetCell.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(sourceCell.querySelector('.shift')?.textContent).toContain('Steffes R.');
+    expect(targetCell.querySelector('.shift')?.textContent).toContain('Zeyen B.');
+    expect(compiled.querySelector('.toast--error')?.textContent).toContain('bereits belegt');
+  });
+
   it('should switch to the next week', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
@@ -56,7 +161,7 @@ describe('App', () => {
     nextWeekButton.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.week-switcher strong')?.textContent).toContain('KW 31');
+    expect(compiled.querySelector('.week-switcher strong')?.textContent).toContain('KW 26');
   });
 
   it('should switch between overview and weekly planning', async () => {

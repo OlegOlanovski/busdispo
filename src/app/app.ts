@@ -31,9 +31,32 @@ interface AssignmentDraft {
   note: string;
 }
 
+interface PlanningFeedback {
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+interface PlanningTripCard {
+  id: string;
+  vehicle: string;
+  time: string;
+  route: string;
+  label: string;
+  tone: ShiftTone;
+}
+
 interface Vehicle {
   id: string;
   seats: number;
+}
+
+interface PlanningVehicle extends Vehicle {
+  displayLabel: string;
+  lineLabel: string;
+  tone: ShiftTone;
+  start: string;
+  end: string;
 }
 
 interface FleetVehicle extends Vehicle {
@@ -162,8 +185,13 @@ export class App {
   protected readonly published = signal(false);
   protected readonly saved = signal(false);
   protected readonly addingAssignment = signal(false);
+  protected readonly assignmentPanelOpen = signal(false);
   protected readonly assignmentError = signal('');
-  protected readonly selectedShiftId = signal('rh91-thu');
+  protected readonly draggingShiftId = signal<string | null>(null);
+  protected readonly dragTargetKey = signal<string | null>(null);
+  protected readonly dragTargetValid = signal(false);
+  protected readonly planningFeedback = signal<PlanningFeedback | null>(null);
+  protected readonly selectedShiftId = signal('xls-3-dau-rh-91');
   protected readonly selectedVehicleId = signal('DAU-RH 91');
   protected readonly vehicleSearch = signal('');
   protected readonly vehicleStatus = signal('Alle Status');
@@ -211,23 +239,39 @@ export class App {
   };
 
   protected readonly days = [
-    { short: 'Mo', date: '20.07' },
-    { short: 'Di', date: '21.07' },
-    { short: 'Mi', date: '22.07' },
-    { short: 'Do', date: '23.07' },
-    { short: 'Fr', date: '24.07' },
-    { short: 'Sa', date: '25.07' },
-    { short: 'So', date: '26.07' },
+    { short: 'Mo', date: '15.06' },
+    { short: 'Di', date: '16.06' },
+    { short: 'Mi', date: '17.06' },
+    { short: 'Do', date: '18.06' },
+    { short: 'Fr', date: '19.06' },
+    { short: 'Sa', date: '20.06' },
+    { short: 'So', date: '21.06' },
   ];
 
-  protected readonly vehicles: Vehicle[] = [
-    { id: 'DAU-RH 102', seats: 52 },
-    { id: 'DAU-RH 515', seats: 58 },
-    { id: 'DAU-RH 94', seats: 52 },
-    { id: 'DAU-RH 91', seats: 52 },
-    { id: 'DAU-RH 11', seats: 56 },
-    { id: 'DAU-RH 8', seats: 53 },
+  protected readonly vehicles: PlanningVehicle[] = [
+    { id: 'DAU-RH 13', displayLabel: 'DAU RH13', lineLabel: 'RH 13', seats: 0, tone: 'green', start: '07:00', end: '16:00' },
+    { id: 'DAU-RH 11', displayLabel: 'DAU RH11', lineLabel: 'RH 11', seats: 0, tone: 'green', start: '06:30', end: '16:53' },
+    { id: 'DAU-RH 5', displayLabel: 'DAU RH5', lineLabel: 'RH 5', seats: 0, tone: 'green', start: '06:30', end: '15:05' },
+    { id: 'DAU-RH 89', displayLabel: 'DAU RH89', lineLabel: 'RH 89', seats: 0, tone: 'cyan', start: '06:30', end: '16:33' },
+    { id: 'DAU-RH 102', displayLabel: 'DAU RH102', lineLabel: 'RH 102', seats: 0, tone: 'blue', start: '07:07', end: '13:48' },
+    { id: 'DAU-RH 92', displayLabel: 'DAU RH92', lineLabel: 'RH 92', seats: 0, tone: 'cyan', start: '07:19', end: '13:56' },
+    { id: 'DAU-RH 775', displayLabel: 'DAU RH775', lineLabel: 'RH 775', seats: 0, tone: 'blue', start: '05:50', end: '16:53' },
+    { id: 'DAU-RH 93', displayLabel: 'DAU RH93', lineLabel: 'RH 93', seats: 0, tone: 'cyan', start: '07:12', end: '17:53' },
+    { id: 'DAU-RH 94', displayLabel: 'DAU RH94', lineLabel: 'RH 94', seats: 0, tone: 'blue', start: '06:27', end: '17:21' },
+    { id: 'DAU-RH 91', displayLabel: 'DAU RH91', lineLabel: 'RH 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
+    { id: 'DAU-RH 98', displayLabel: 'DAU RH98', lineLabel: 'RH 98', seats: 0, tone: 'blue', start: '06:11', end: '16:32' },
+    { id: 'DAU-RH 101', displayLabel: 'DAU RH101', lineLabel: 'RH 101', seats: 0, tone: 'cyan', start: '06:25', end: '17:52' },
+    { id: 'DAU-RH 96', displayLabel: 'DAU RH96', lineLabel: 'RH 96', seats: 0, tone: 'blue', start: '07:14', end: '17:02' },
+    { id: 'DAU-RH 90', displayLabel: 'DAU RH90', lineLabel: 'RH 90', seats: 0, tone: 'amber', start: '06:45', end: '00:51' },
+    { id: 'DAU-RH 96/14', displayLabel: 'DAU RH96/14', lineLabel: 'RH 96/14', seats: 0, tone: 'amber', start: '06:28', end: '17:06' },
+    { id: 'DAU-RH Nacht 1', displayLabel: 'DAU RH Nacht', lineLabel: 'RH Nacht', seats: 0, tone: 'rose', start: '23:25', end: '01:29' },
+    { id: 'DAU-RH Nacht 2', displayLabel: 'DAU RH Fr/Sa', lineLabel: 'RH Fr/Sa', seats: 0, tone: 'amber', start: '00:55', end: '02:29' },
+    { id: 'Wochenende Trier', displayLabel: 'Wochenende', lineLabel: 'Sa/So', seats: 0, tone: 'amber', start: '22:13', end: '00:51' },
+    { id: 'RMB 520 Samstag', displayLabel: 'RMB 520 Sa', lineLabel: 'RMB 520 Sa', seats: 0, tone: 'blue', start: '14:17', end: '22:48' },
+    { id: 'RMB 520 Sonntag A', displayLabel: 'RMB 520 So', lineLabel: 'RMB 520 So', seats: 0, tone: 'blue', start: '08:17', end: '14:48' },
+    { id: 'RMB 520 Sonntag B', displayLabel: 'RMB 520 So', lineLabel: 'RMB 520 So', seats: 0, tone: 'violet', start: '15:13', end: '21:42' },
   ];
+  protected readonly planningGridWidth = 96 + this.vehicles.length * 135;
 
   protected readonly fleetVehicles: FleetVehicle[] = [
     { id: 'DAU-RH 102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Koch', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
@@ -285,34 +329,129 @@ export class App {
     { id: 'cochem-request', sender: 'Laura Klein', initials: 'LK', role: 'Grundschule Gillenfeld', subject: 'Abfahrtszeit Schulausflug', preview: 'Könnten wir die Abfahrt am 4. August auf 07:30 Uhr vorziehen?', date: '29.07.2026', time: '12:10', category: 'Kunde', body: ['Guten Tag,', 'für den Schulausflug nach Cochem würden wir die Abfahrt gerne von 07:45 Uhr auf 07:30 Uhr vorziehen.', 'Wäre diese Änderung für Sie möglich? Die Teilnehmerzahl bleibt unverändert.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
   ];
 
-  protected readonly shifts: Shift[] = [
-    { id: 'rh102-thu', vehicle: 'DAU-RH 102', day: 3, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
-    { id: 'rh102-fri', vehicle: 'DAU-RH 102', day: 4, driver: 'Koch', start: '06:05', end: '14:20', plan: 'Standard RH 102', tone: 'green' },
-    { id: 'rh515-thu', vehicle: 'DAU-RH 515', day: 3, driver: 'Zeyen B.', start: '07:30', end: '15:45', plan: 'Standard RH 515', tone: 'blue' },
-    { id: 'rh515-fri', vehicle: 'DAU-RH 515', day: 4, driver: 'Zeyen B.', start: '07:30', end: '15:45', plan: 'Standard RH 515', tone: 'blue' },
-    { id: 'rh94-thu', vehicle: 'DAU-RH 94', day: 3, driver: 'Block', start: '08:00', end: '16:10', plan: 'Standard RH 94', tone: 'amber' },
-    { id: 'rh94-fri', vehicle: 'DAU-RH 94', day: 4, driver: 'Block', start: '08:00', end: '16:10', plan: 'Standard RH 94', tone: 'amber' },
-    { id: 'rh91-thu', vehicle: 'DAU-RH 91', day: 3, driver: 'Olanovski', start: '06:05', end: '14:24', plan: 'Standard RH 91', tone: 'violet', status: 'Geplant' },
-    { id: 'rh91-fri', vehicle: 'DAU-RH 91', day: 4, driver: 'Olanovski', start: '06:05', end: '14:24', plan: 'Standard RH 91', tone: 'violet', status: 'Geplant' },
-    { id: 'rh11-thu', vehicle: 'DAU-RH 11', day: 3, driver: 'Spinger', start: '06:30', end: '14:40', plan: 'Standard RH 11', tone: 'cyan' },
-    { id: 'rh11-fri', vehicle: 'DAU-RH 11', day: 4, driver: 'Spinger', start: '06:30', end: '14:40', plan: 'Standard RH 11', tone: 'cyan' },
-    { id: 'rh11-sat', vehicle: 'DAU-RH 11', day: 5, driver: 'Kyriakos', start: '12:15', end: '19:15', plan: 'Tagesfahrt', tone: 'rose', type: 'Sonderfahrt' },
-    { id: 'rh8-thu', vehicle: 'DAU-RH 8', day: 3, driver: 'Vater Ilias', start: '05:55', end: '14:10', plan: 'Standard RH 8', tone: 'orange' },
-    { id: 'rh8-fri', vehicle: 'DAU-RH 8', day: 4, driver: 'Vater Ilias', start: '05:55', end: '14:10', plan: 'Standard RH 8', tone: 'orange' },
+  private readonly weeklyDriverAssignments: string[][] = [
+    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Zahnd / Ilias / Zahnd', 'Kettel / Vater Ilias', 'Ilias / Spinger', 'Mahrouk', '', '', '', '', ''],
+    ['Steffes R.', 'Zeyen B. / Zahnd', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Zahnd / Ilias', 'Ilias / Vater / Spinger', 'Spinger', 'Mahrouk', '', '', '', '', ''],
+    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer / Zahnd', 'Grab', 'Block', 'Ilias / Zeyen / Spinger', 'Vater Ilias / Spinger', 'Mahrouk', '', '', '', '', ''],
+    ['Steffes R.', 'Zeyen B.', 'Kettel H. / Zahnd', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Kettel / Zahnd', 'Grab', 'Block', 'Ilias / Spinger', 'Vater Ilias', 'Mahrouk', '', '', '', '', ''],
+    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Block', 'Kettel / Spinger / Vater Ilias', 'Vater Ilias', 'Mahrouk', 'Spinger', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Spinger', 'Grab', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Spinger', '', 'Vater Ilias', 'Vater Ilias'],
   ];
 
-  protected readonly routeRows = [
-    ['06:05 – 06:24', 'Mannbach', 'Mannbach', '–', 'Start'],
-    ['06:24 – 06:50', 'Mannbach', 'Ortsmitte', '–', ''],
-    ['06:50 – 07:20', 'Ortsmitte', 'Auel Kirche', '–', ''],
-    ['07:20 – 08:05', 'Auel Kirche', 'Dockweiler', '–', ''],
-    ['08:05 – 08:28', 'Dockweiler', 'Kiga', '–', ''],
-    ['…', '', '', '', ''],
-    ['11:00 – 11:30', '', 'Pause', '30m', 'Gerolstein'],
-    ['11:30 – 12:12', 'Gerolstein', 'Trier (Wechsel)', '–', ''],
-    ['12:12 – 12:24', 'Trier (Wexel)', 'Rübenach', '–', ''],
-    ['12:24 – 12:47', 'Rübenach', 'Darscheid', '–', ''],
-    ['12:47 – 14:24', 'Darscheid', 'Kötterichen', '–', 'Ende'],
+  protected readonly shifts: Shift[] = this.weeklyDriverAssignments.flatMap((assignments, day) =>
+    assignments.flatMap((driver, vehicleIndex) => {
+      if (!driver) return [];
+      const vehicle = this.vehicles[vehicleIndex];
+      const slug = vehicle.id.toLocaleLowerCase('de').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      return [{
+        id: `xls-${day}-${slug}`,
+        vehicle: vehicle.id,
+        day,
+        driver,
+        start: vehicle.start,
+        end: vehicle.end,
+        plan: `Linie ${vehicle.lineLabel}`,
+        tone: vehicle.tone,
+        status: 'Geplant',
+      } satisfies Shift];
+    }),
+  );
+
+  protected readonly planningTrips: PlanningTripCard[] = [
+    { id: 'rh13-1', vehicle: 'DAU-RH 13', time: '07:00 – 08:15', route: 'Förderzentrum Gerolstein', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh13-2', vehicle: 'DAU-RH 13', time: '15:15 – 16:00', route: 'Förderzentrum Gerolstein', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh13-3', vehicle: 'DAU-RH 13', time: '12:45 – 13:30', route: 'Förderzentrum Gerolstein', label: 'Fr', tone: 'green' },
+    { id: 'rh11-1', vehicle: 'DAU-RH 11', time: '06:30 – 08:15', route: 'Förderzentrum Daun', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh11-2', vehicle: 'DAU-RH 11', time: '15:05', route: 'Förderzentrum Daun', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh11-3', vehicle: 'DAU-RH 11', time: '12:15', route: 'Förderzentrum Daun', label: 'Fr', tone: 'green' },
+    { id: 'rh11-4', vehicle: 'DAU-RH 11', time: '16:25 – 16:53', route: 'Kelberg Busbahnhof → Nachtsheim, Ort', label: 'Nur Mi + Do', tone: 'cyan' },
+    { id: 'rh5-1', vehicle: 'DAU-RH 5', time: '06:30 – 08:15', route: 'Förderzentrum Daun', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh5-2', vehicle: 'DAU-RH 5', time: '15:05', route: 'Förderzentrum Daun', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh5-3', vehicle: 'DAU-RH 5', time: '12:15', route: 'Förderzentrum Daun', label: 'Fr', tone: 'green' },
+    { id: 'rh89-1', vehicle: 'DAU-RH 89', time: '06:30 – 06:46', route: 'Borler → Boxberg', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-2', vehicle: 'DAU-RH 89', time: '07:25 – 07:42', route: 'Müllenbach → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-3', vehicle: 'DAU-RH 89', time: '07:59 – 08:07', route: 'Meisental → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-4', vehicle: 'DAU-RH 89', time: '08:07 – 08:18', route: 'Kelberg Busbahnhof → Kelberg Kiga', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-5', vehicle: 'DAU-RH 89', time: '11:48 – 12:00', route: 'Dockweiler Feuerwehr → Dreis Brück', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-6', vehicle: 'DAU-RH 89', time: '12:15 – 12:31', route: 'Darscheid Schule → Kradenbach', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-7', vehicle: 'DAU-RH 89', time: '12:45 – 13:01', route: 'Dockweiler GS/KG → Kirchweiler, I. d. Holl', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-8', vehicle: 'DAU-RH 89', time: '13:10 – 13:45', route: 'Gerolstein BBS → Daun ZOB', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-9', vehicle: 'DAU-RH 89', time: '13:50 – 14:27', route: 'Daun ZOB → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-10', vehicle: 'DAU-RH 89', time: '16:05 – 16:33', route: 'Kelberg Kiga → Borler', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh102-1', vehicle: 'DAU-RH 102', time: '07:07 – 07:35', route: 'Sarmersbach → Dockweiler', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-2', vehicle: 'DAU-RH 102', time: '08:02 – 08:20', route: 'Kirchweiler → Dockweiler Kiga', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-3', vehicle: 'DAU-RH 102', time: '12:15 – 12:52', route: 'Kelberg Kiga → Borler', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-4', vehicle: 'DAU-RH 102', time: '13:15 – 13:48', route: 'Kelberg KiTa → Borler Ort', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh92-1', vehicle: 'DAU-RH 92', time: '07:19 – 07:54', route: 'Borler → Kelberg Grund- und Realschule plus', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-2', vehicle: 'DAU-RH 92', time: '07:59 – 08:35', route: 'Borler → Kelberg Kindergarten', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-3', vehicle: 'DAU-RH 92', time: '12:15 – 12:59', route: 'Kelberg Kiga → Darscheid', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-4', vehicle: 'DAU-RH 92', time: '13:12 – 13:56', route: 'Darscheid → Kelberg G u. RS', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh775-1', vehicle: 'DAU-RH 775', time: '05:50 – 06:37', route: 'Uersfeld → Ulmen Bahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-2', vehicle: 'DAU-RH 775', time: '07:12 – 07:52', route: 'Kötterichen → Kelberg G u. RS', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-3', vehicle: 'DAU-RH 775', time: '08:05 – 08:24', route: 'Mannebach Abzw. → Uersfeld Kirche', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-4', vehicle: 'DAU-RH 775', time: '11:55 – 12:11', route: 'Uersfeld Römerhügel → Arbach', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-5', vehicle: 'DAU-RH 775', time: '12:50 – 13:07', route: 'Uersfeld Römerhügel → Kötterichen', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-6', vehicle: 'DAU-RH 775', time: '13:20 – 13:48', route: 'Kelberg Busbahnhof → Ditscheid', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-7', vehicle: 'DAU-RH 775', time: '16:05 – 16:32', route: 'Kelberg Kiga und Schulzentrum → Müllenbach', label: 'Nur Mi + Do', tone: 'blue' },
+    { id: 'rh775-8', vehicle: 'DAU-RH 775', time: '16:25 – 16:53', route: 'Kelberg Busbahnhof → Nachtsheim, Ort', label: 'Nicht Mi + Do', tone: 'cyan' },
+    { id: 'rh93-1', vehicle: 'DAU-RH 93', time: '07:12 – 07:54', route: 'Darscheid → Kelberg G u. RS', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-2', vehicle: 'DAU-RH 93', time: '08:04 – 08:18', route: 'Berenbach → Uersfeld Römerhügel', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-3', vehicle: 'DAU-RH 93', time: '11:50 – 12:07', route: 'Uersfeld Römerhügel → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-4', vehicle: 'DAU-RH 93', time: '12:53 – 13:13', route: 'Uersfeld Römerhügel → Bereborn', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-5', vehicle: 'DAU-RH 93', time: '13:16 – 13:54', route: 'Kelberg G u. RS → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-6', vehicle: 'DAU-RH 93', time: '16:25', route: 'Kelberg G u. RS → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-7', vehicle: 'DAU-RH 93', time: '17:15 – 17:53', route: 'Ulmen Bahnhof → Kaisersesch', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh94-1', vehicle: 'DAU-RH 94', time: '06:27 – 07:13', route: 'Meerfeld → Daun ZOB', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-2', vehicle: 'DAU-RH 94', time: '07:16 – 07:59', route: 'Daun ZOB → Gerolstein GS', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-3', vehicle: 'DAU-RH 94', time: '12:14 – 12:49', route: 'Kelberg Grund- und Realschule plus → Nitz', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-4', vehicle: 'DAU-RH 94', time: '13:19 – 14:12', route: 'Kelberg Grund- und Realschule plus → Ulmen Bahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-5', vehicle: 'DAU-RH 94', time: '15:22 – 16:02', route: 'Cochem Endertplatz → Gillenbeuren Kirchstraße', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-6', vehicle: 'DAU-RH 94', time: '16:15 – 16:29', route: 'Alflen Kirchstraße → Ulmen Bahnhof', label: 'Nur Mo – Do', tone: 'blue' },
+    { id: 'rh94-7', vehicle: 'DAU-RH 94', time: '16:33 – 17:21', route: 'Ulmen Bahnhof → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh91-1', vehicle: 'DAU-RH 91', time: '07:04 – 07:28', route: 'Usch → Gerolstein', label: 'SEV RMV', tone: 'amber' },
+    { id: 'rh91-2', vehicle: 'DAU-RH 91', time: '07:41 – 08:00', route: 'Michelbach → Gerolstein', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-3', vehicle: 'DAU-RH 91', time: '12:09 – 12:40', route: 'Gillenfeld → Strotzbüsch', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-4', vehicle: 'DAU-RH 91', time: '13:16 – 14:00', route: 'Gillenfeld → Daun', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-5', vehicle: 'DAU-RH 91', time: '15:16 – 16:00', route: 'Daun → Gillenfeld', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-6', vehicle: 'DAU-RH 91', time: '16:11 – 16:56', route: 'Gillenfeld → Daun', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh98-1', vehicle: 'DAU-RH 98', time: '06:11 – 07:23', route: 'Nitz → Daun', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-2', vehicle: 'DAU-RH 98', time: '12:14 – 12:44', route: 'Kelberg KiTa → Müllenbach Ort', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-3', vehicle: 'DAU-RH 98', time: '13:17 – 13:44', route: 'Kelberg Busbahnhof → Müllenbach Oberdorf', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-4', vehicle: 'DAU-RH 98', time: '16:05 – 16:32', route: 'Kelberg Kiga und Schulzentrum → Müllenbach', label: 'Nicht Mi + Do', tone: 'blue' },
+    { id: 'rh101-1', vehicle: 'DAU-RH 101', time: '06:25 – 07:36', route: 'Manderscheid → Gerolstein', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-2', vehicle: 'DAU-RH 101', time: '08:18 – 08:44', route: 'Kradenbach → Daun ZOB', label: 'Nur Mo + Di', tone: 'cyan' },
+    { id: 'rh101-3', vehicle: 'DAU-RH 101', time: '11:55 – 12:41', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-4', vehicle: 'DAU-RH 101', time: '12:57 – 13:41', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-5', vehicle: 'DAU-RH 101', time: '13:42 – 14:16', route: 'Salm → Manderscheid', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-6', vehicle: 'DAU-RH 101', time: '15:42 – 16:21', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-7', vehicle: 'DAU-RH 101', time: '16:22 – 16:56', route: 'Salm → Manderscheid', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-8', vehicle: 'DAU-RH 101', time: '17:02 – 17:52', route: 'Darscheid → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh96-1', vehicle: 'DAU-RH 96', time: '07:14 – 07:54', route: 'Berenbach → Kelberg GRS+', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-2', vehicle: 'DAU-RH 96', time: '08:18 – 08:44', route: 'Kradenbach → Daun ZOB', label: 'Nur Mi + Do + Fr', tone: 'blue' },
+    { id: 'rh96-3', vehicle: 'DAU-RH 96', time: '11:45 – 12:10', route: 'Dockweiler → Kradenbach', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-4', vehicle: 'DAU-RH 96', time: '12:52 – 13:12', route: 'Uersfeld → Ulmen', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-5', vehicle: 'DAU-RH 96', time: '13:19 – 13:44', route: 'Ulmen → Uersfeld', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-6', vehicle: 'DAU-RH 96', time: '13:45 – 14:01', route: 'Uersfeld → Ahrbach', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-7', vehicle: 'DAU-RH 96', time: '16:11 – 17:02', route: 'Kelberg Kiga → Darscheid', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh90-1', vehicle: 'DAU-RH 90', time: '–', route: 'Koblenz (HEB Umlauf)', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh90-2', vehicle: 'DAU-RH 90', time: '06:45 – 07:47', route: 'Kyllburg → Oberbettingen', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh90-3', vehicle: 'DAU-RH 90', time: '13:23 – 13:55', route: 'Jünkerath → Gerolstein', label: 'SEV für RMV', tone: 'rose' },
+    { id: 'rh90-4', vehicle: 'DAU-RH 90', time: '22:13 – 00:51', route: 'Gerolstein → Trier (Wechsel in Speicher)', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-1', vehicle: 'DAU-RH 96/14', time: '–', route: 'Koblenz', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-2', vehicle: 'DAU-RH 96/14', time: '06:28 – 06:48', route: 'Densborn → Gerolstein', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-3', vehicle: 'DAU-RH 96/14', time: '07:18 – 07:42', route: 'Usch → Gerolstein', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-4', vehicle: 'DAU-RH 96/14', time: '13:15 – 13:59', route: 'Hillesheim → St. Thomas', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-5', vehicle: 'DAU-RH 96/14', time: '15:25 – 16:00', route: 'Gerolstein → Daun', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh9614-6', vehicle: 'DAU-RH 96/14', time: '16:00 – 17:06', route: 'Daun → Kaisersesch', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'night1-1', vehicle: 'DAU-RH Nacht 1', time: '23:25 – 00:59', route: 'Kall → Gerolstein', label: 'Nur Mo – Do', tone: 'rose' },
+    { id: 'night1-2', vehicle: 'DAU-RH Nacht 1', time: '23:55 – 01:29', route: 'Kall → Gerolstein', label: 'Nur Fr', tone: 'rose' },
+    { id: 'night2-1', vehicle: 'DAU-RH Nacht 2', time: '00:55 – 02:29', route: 'Kall → Gerolstein', label: 'Nur Fr auf Sa', tone: 'amber' },
+    { id: 'weekend-trier', vehicle: 'Wochenende Trier', time: '22:13 – 00:51', route: 'Gerolstein → Trier (Wechsel in Speicher)', label: 'Sa + So', tone: 'amber' },
+    { id: 'rmb-sa', vehicle: 'RMB 520 Samstag', time: '14:17 – 22:48', route: 'RMB 520', label: 'Sa', tone: 'blue' },
+    { id: 'rmb-so-a', vehicle: 'RMB 520 Sonntag A', time: '08:17 – 14:48', route: 'RMB 520', label: 'So', tone: 'blue' },
+    { id: 'rmb-so-b-1', vehicle: 'RMB 520 Sonntag B', time: '15:13 – 21:42', route: 'RMB 520', label: 'So', tone: 'violet' },
+    { id: 'rmb-so-b-2', vehicle: 'RMB 520 Sonntag B', time: '23:55 – 01:29', route: 'Kall → Gerolstein', label: 'So', tone: 'rose' },
   ];
 
   protected readonly driverPortalStops = [
@@ -447,10 +586,10 @@ export class App {
     () => Number(this.driverEndMileage()) > Number(this.driverStartMileage()),
   );
 
-  protected readonly weekNumber = computed(() => 30 + this.weekOffset());
+  protected readonly weekNumber = computed(() => 25 + this.weekOffset());
   protected readonly dateRange = computed(() => {
-    if (this.weekOffset() === 0) return '20.07.2026 – 26.07.2026';
-    const monday = new Date(2026, 6, 20 + this.weekOffset() * 7);
+    if (this.weekOffset() === 0) return '15.06.2026 – 21.06.2026';
+    const monday = new Date(2026, 5, 15 + this.weekOffset() * 7);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const format = (date: Date) =>
@@ -460,6 +599,121 @@ export class App {
 
   protected getShift(vehicle: string, day: number): Shift | undefined {
     return this.shifts.find((shift) => shift.vehicle === vehicle && shift.day === day);
+  }
+
+  protected planningLine(vehicle: string): string {
+    return this.vehicles.find((item) => item.id === vehicle)?.lineLabel ?? vehicle;
+  }
+
+  protected planningVehicleLabel(vehicle: string): string {
+    return this.vehicles.find((item) => item.id === vehicle)?.displayLabel ?? vehicle;
+  }
+
+  protected planningLineTone(vehicle: string): ShiftTone {
+    return this.vehicles.find((item) => item.id === vehicle)?.tone ?? 'blue';
+  }
+
+  protected planningTripsFor(vehicle: string): PlanningTripCard[] {
+    return this.planningTrips.filter((trip) => trip.vehicle === vehicle);
+  }
+
+  protected selectPlanningLine(vehicle: string): void {
+    const shift = this.shifts.find((item) => item.vehicle === vehicle);
+    if (shift) this.selectShift(shift);
+  }
+
+  protected planningCellKey(vehicle: string, day: number): string {
+    return `${vehicle}-${day}`;
+  }
+
+  protected startShiftDrag(event: DragEvent, shift: Shift): void {
+    this.addingAssignment.set(false);
+    this.assignmentError.set('');
+    this.draggingShiftId.set(shift.id);
+    this.dragTargetKey.set(null);
+    this.dragTargetValid.set(false);
+    this.planningFeedback.set(null);
+    event.dataTransfer?.setData('text/plain', shift.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected updateShiftDropTarget(event: DragEvent, vehicle: string, day: number): void {
+    if (!this.draggingShiftId()) return;
+    event.preventDefault();
+    const valid = this.canDropDraggedShift(vehicle, day);
+    this.dragTargetKey.set(this.planningCellKey(vehicle, day));
+    this.dragTargetValid.set(valid);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = valid ? 'move' : 'none';
+  }
+
+  protected leaveShiftDropTarget(event: DragEvent, vehicle: string, day: number): void {
+    const cell = event.currentTarget as HTMLElement | null;
+    if (cell && event.relatedTarget instanceof Node && cell.contains(event.relatedTarget)) return;
+    if (this.dragTargetKey() === this.planningCellKey(vehicle, day)) {
+      this.dragTargetKey.set(null);
+      this.dragTargetValid.set(false);
+    }
+  }
+
+  protected dropShift(event: DragEvent, vehicle: string, day: number): void {
+    event.preventDefault();
+    const shift = this.shifts.find((item) => item.id === this.draggingShiftId());
+    if (!shift) {
+      this.finishShiftDrag();
+      return;
+    }
+
+    const previousVehicle = shift.vehicle;
+    const previousDay = shift.day;
+    if (previousVehicle === vehicle && previousDay === day) {
+      this.finishShiftDrag();
+      return;
+    }
+
+    if (!this.canDropDraggedShift(vehicle, day)) {
+      const occupied = this.getShift(vehicle, day);
+      this.showPlanningFeedback({
+        type: 'error',
+        title: 'Verschieben nicht möglich',
+        message: occupied
+          ? `${vehicle} ist am ${this.days[day].short} bereits belegt.`
+          : `${shift.driver} hat am ${this.days[day].short} bereits einen zeitgleichen Einsatz.`,
+      });
+      this.finishShiftDrag();
+      return;
+    }
+
+    shift.vehicle = vehicle;
+    shift.day = day;
+    this.selectedShiftId.set(shift.id);
+    this.saved.set(false);
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Einsatz verschoben',
+      message: `${shift.driver}: ${this.days[previousDay].short} · ${previousVehicle} → ${this.days[day].short} · ${vehicle}`,
+    });
+    this.finishShiftDrag();
+  }
+
+  protected finishShiftDrag(): void {
+    this.draggingShiftId.set(null);
+    this.dragTargetKey.set(null);
+    this.dragTargetValid.set(false);
+  }
+
+  private canDropDraggedShift(vehicle: string, day: number): boolean {
+    const shift = this.shifts.find((item) => item.id === this.draggingShiftId());
+    if (!shift) return false;
+    if (shift.vehicle === vehicle && shift.day === day) return true;
+    if (this.getShift(vehicle, day)) return false;
+    return !this.driverHasConflict(shift.driver, day, shift.id, shift.start, shift.end);
+  }
+
+  private showPlanningFeedback(feedback: PlanningFeedback): void {
+    this.planningFeedback.set(feedback);
+    window.setTimeout(() => {
+      if (this.planningFeedback() === feedback) this.planningFeedback.set(null);
+    }, 3200);
   }
 
   protected openNewAssignment(vehicle?: string, day?: number): void {
@@ -484,6 +738,7 @@ export class App {
       note: '',
     };
     this.addingAssignment.set(true);
+    this.assignmentPanelOpen.set(true);
     this.assignmentError.set('');
     this.saved.set(false);
 
@@ -494,6 +749,7 @@ export class App {
 
   protected closeAssignmentForm(): void {
     this.addingAssignment.set(false);
+    this.assignmentPanelOpen.set(false);
     this.assignmentError.set('');
   }
 
@@ -589,6 +845,7 @@ export class App {
     if (index < 0) return;
     this.shifts.splice(index, 1);
     this.selectedShiftId.set(this.shifts[0]?.id ?? '');
+    this.assignmentPanelOpen.set(false);
     this.saved.set(false);
   }
 
@@ -620,7 +877,11 @@ export class App {
       const [hours, minutes] = time.split(':').map(Number);
       return hours * 60 + minutes;
     };
-    return toMinutes(startA) < toMinutes(endB) && toMinutes(startB) < toMinutes(endA);
+    const startAMinutes = toMinutes(startA);
+    const startBMinutes = toMinutes(startB);
+    const endAMinutes = toMinutes(endA) <= startAMinutes ? toMinutes(endA) + 24 * 60 : toMinutes(endA);
+    const endBMinutes = toMinutes(endB) <= startBMinutes ? toMinutes(endB) + 24 * 60 : toMinutes(endB);
+    return startAMinutes < endBMinutes && startBMinutes < endAMinutes;
   }
 
   protected showView(view: AppView): void {
@@ -745,6 +1006,7 @@ export class App {
 
   protected selectShift(shift: Shift): void {
     this.addingAssignment.set(false);
+    this.assignmentPanelOpen.set(true);
     this.assignmentError.set('');
     this.selectedShiftId.set(shift.id);
     this.saved.set(false);

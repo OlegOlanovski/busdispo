@@ -1,5 +1,6 @@
 <div class="app-shell" [class.app-shell--driver]="activeView() === 'driver-portal'">
-  <aside class="sidebar" [class.sidebar--open]="menuOpen()">
+  <aside id="main-sidebar" class="sidebar" [class.sidebar--open]="menuOpen()" [attr.aria-hidden]="!menuOpen()" [attr.inert]="menuOpen() ? null : ''">
+    <button class="sidebar-close" type="button" aria-label="Menü schließen" (click)="menuOpen.set(false)">×</button>
     <div class="brand">
       <div class="brand__mark" aria-hidden="true">
         <span></span><span></span><span></span>
@@ -23,8 +24,8 @@
 
     <section class="week-card" aria-label="Aktuelle Woche">
       <strong>Aktuelle Woche</strong>
-      <div><span>Fahrzeuge</span><b>6</b></div>
-      <div><span>Eingeteilt</span><b>5</b></div>
+      <div><span>Linien</span><b>{{ vehicles.length }}</b></div>
+      <div><span>Eingeteilt</span><b>21</b></div>
       <div><span>Offen</span><b>2</b></div>
       <div><span>Sonderfahrten</span><b>3</b></div>
     </section>
@@ -38,7 +39,14 @@
 
   <main class="workspace">
     <header class="topbar">
-      <button class="menu-button" aria-label="Menü öffnen" (click)="menuOpen.set(true)">☰</button>
+      <button
+        class="menu-button"
+        type="button"
+        aria-controls="main-sidebar"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="menuOpen() ? 'Menü schließen' : 'Menü öffnen'"
+        (click)="menuOpen.update(open => !open)"
+      >☰</button>
       <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
         <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">✉ @if (unreadMessageCount() > 0) { <span>{{ unreadMessageCount() }}</span> }</button>
@@ -702,35 +710,55 @@
     <div class="content-grid">
       <div class="main-column">
         <section class="schedule-card" aria-label="Wochenplan">
-          <div class="schedule-grid schedule-grid--header">
-            <div class="vehicle-heading">Fahrzeug</div>
-            @for (day of days; track day.date) {
-              <div class="day-heading"><strong>{{ day.short }}</strong><span>{{ day.date }}</span></div>
+          <div class="trip-grid trip-grid--header planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
+            <div class="planning-week-corner"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
+            @for (vehicle of vehicles; track vehicle.id) {
+              <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id"><strong>{{ planningVehicleLabel(vehicle.id) }}</strong></div>
+            }
+          </div>
+          <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
+            <div class="planning-axis-spacer" aria-hidden="true"></div>
+            @for (vehicle of vehicles; track vehicle.id) {
+              <div class="trip-column" [attr.data-vehicle]="vehicle.id">
+                @for (trip of planningTripsFor(vehicle.id); track trip.id) {
+                  <button class="planning-trip-card planning-trip-card--{{ trip.tone }}" (click)="selectPlanningLine(vehicle.id)">
+                    <span>{{ trip.label }}</span>
+                    <strong>{{ trip.time }}</strong>
+                    <small>{{ trip.route }}</small>
+                  </button>
+                }
+              </div>
             }
           </div>
 
-          @for (vehicle of vehicles; track vehicle.id) {
-            <div class="schedule-grid schedule-row" [class.schedule-row--selected]="addingAssignment() ? newAssignment.vehicle === vehicle.id : selectedShift().vehicle === vehicle.id">
-              <button class="vehicle-cell" (click)="getShift(vehicle.id, 3) && selectShift(getShift(vehicle.id, 3)!)">
-                <span><strong>{{ vehicle.id }}</strong><small>{{ vehicle.seats }} Sitze</small></span>
-                <span class="mini-bus" aria-hidden="true">▣</span>
-              </button>
-              @for (day of days; track $index; let dayIndex = $index) {
-                <div class="schedule-cell">
+          @for (day of days; track day.date; let dayIndex = $index) {
+            <div class="schedule-grid schedule-row planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'" [class.schedule-row--weekend]="dayIndex > 4">
+              <div class="matrix-day"><strong>{{ day.date }}</strong><span>{{ day.short }}</span></div>
+              @for (vehicle of vehicles; track vehicle.id) {
+                <div
+                  class="schedule-cell"
+                  [attr.data-vehicle]="vehicle.id"
+                  [class.schedule-cell--drop-target]="dragTargetKey() === planningCellKey(vehicle.id, dayIndex)"
+                  [class.schedule-cell--drop-valid]="dragTargetKey() === planningCellKey(vehicle.id, dayIndex) && dragTargetValid()"
+                  [class.schedule-cell--drop-invalid]="dragTargetKey() === planningCellKey(vehicle.id, dayIndex) && !dragTargetValid()"
+                  (dragover)="updateShiftDropTarget($event, vehicle.id, dayIndex)"
+                  (dragleave)="leaveShiftDropTarget($event, vehicle.id, dayIndex)"
+                  (drop)="dropShift($event, vehicle.id, dayIndex)"
+                >
                   @if (getShift(vehicle.id, dayIndex); as shift) {
                     <button
                       class="shift shift--{{ shift.tone }}"
                       [class.shift--active]="selectedShiftId() === shift.id"
+                      [class.shift--dragging]="draggingShiftId() === shift.id"
+                      draggable="true"
+                      [attr.aria-grabbed]="draggingShiftId() === shift.id"
+                      [attr.aria-label]="shift.driver + ', ' + shift.start + ' bis ' + shift.end + ', ' + planningLine(shift.vehicle)"
+                      title="Einsatz verschieben oder Details öffnen"
+                      (dragstart)="startShiftDrag($event, shift)"
+                      (dragend)="finishShiftDrag()"
                       (click)="selectShift(shift)"
                     >
                       <strong>{{ shift.driver }}</strong>
-                      @if (shift.type) {
-                        <span>{{ shift.type }}</span>
-                      }
-                      <span>{{ shift.start }} – {{ shift.end }}</span>
-                      @if (!shift.type) {
-                        <small>Standard</small>
-                      }
                       @if (shift.tone === 'green') { <i></i> }
                     </button>
                   } @else {
@@ -742,44 +770,11 @@
           }
         </section>
 
-        @if (addingAssignment()) {
-        <section class="route-card assignment-guide">
-          <span class="assignment-guide__icon">+</span>
-          <div><strong>Neuen Einsatz anlegen</strong><p>Wählen Sie rechts Fahrzeug, Tag, Fahrer und Dienstplan. Nach dem Speichern erscheint der Einsatz direkt in der Wochenübersicht.</p></div>
-        </section>
-        } @else {
-        <section class="route-card">
-          <div class="section-heading">
-            <div>
-              <strong>Dienstplan: {{ selectedShift().plan }}</strong>
-              <span class="tag tag--violet">{{ selectedShift().vehicle }}</span>
-            </div>
-            <div class="route-summary"><b>{{ selectedShift().start }} – {{ selectedShift().end }}</b><span>(8h 19m)</span></div>
-            <button class="button button--edit">⌑&nbsp; Plan bearbeiten&nbsp; ↗</button>
-          </div>
-
-          <div class="route-content">
-            <div class="route-table-wrap">
-              <table class="route-table">
-                <thead>
-                  <tr><th>Zeit</th><th>Von</th><th>Nach / Route</th><th>Pause</th><th>Hinweis</th></tr>
-                </thead>
-                <tbody>
-                  @for (row of routeRows; track $index) {
-                    <tr>
-                      @for (cell of row; track $index) { <td>{{ cell }}</td> }
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        }
       </div>
 
-      <aside class="right-column">
-        <section class="details-panel">
+      @if (assignmentPanelOpen()) {
+        <button class="planning-modal-backdrop" aria-label="Dialog schließen" (click)="closeAssignmentForm()"></button>
+        <section class="details-panel planning-modal" role="dialog" aria-modal="true" [attr.aria-label]="addingAssignment() ? 'Einsatz planen' : 'Einsatzdetails'">
           <div class="panel-heading"><strong>{{ addingAssignment() ? 'Einsatz planen' : 'Einsatzdetails' }}</strong><button aria-label="Schließen" (click)="closeAssignmentForm()">×</button></div>
           @if (addingAssignment()) {
           <div class="details-body assignment-form">
@@ -787,7 +782,7 @@
 
             <label class="assignment-field">Fahrzeug
               <select [ngModel]="newAssignment.vehicle" (ngModelChange)="updateNewAssignmentSlot('vehicle', $event)">
-                @for (vehicle of vehicles; track vehicle.id) { <option [value]="vehicle.id">{{ vehicle.id }} · {{ vehicle.seats }} Sitze</option> }
+                @for (vehicle of vehicles; track vehicle.id) { <option [value]="vehicle.id">{{ planningVehicleLabel(vehicle.id) }}</option> }
               </select>
             </label>
             <label class="assignment-field">Tag
@@ -826,11 +821,11 @@
               <dt>Datum</dt><dd>{{ days[selectedShift().day].short }}, {{ days[selectedShift().day].date }}.2026</dd>
               <dt>Fahrer</dt>
               <dd>
-                <label class="select-control"><span>♙</span><select [(ngModel)]="selectedShift().driver">@for (driver of drivers; track driver.id) { <option [value]="driver.name">{{ driver.name }}</option> }</select></label>
+                <label class="select-control"><span>♙</span><select [(ngModel)]="selectedShift().driver"><option [value]="selectedShift().driver">{{ selectedShift().driver }}</option>@for (driver of drivers; track driver.id) { @if (driver.name !== selectedShift().driver) { <option [value]="driver.name">{{ driver.name }}</option> } }</select></label>
                 <span class="valid">✓</span>
               </dd>
               <dt>Dienstplan</dt>
-              <dd><label class="select-control"><span>▧</span><select [(ngModel)]="selectedShift().plan">@for (plan of dutyPlans; track plan.id) { @if (plan.status !== 'Archiviert') { <option [value]="plan.name">{{ plan.name }}</option> } }</select></label></dd>
+              <dd><label class="select-control"><span>▧</span><select [(ngModel)]="selectedShift().plan"><option [value]="selectedShift().plan">{{ selectedShift().plan }}</option>@for (plan of dutyPlans; track plan.id) { @if (plan.status !== 'Archiviert' && plan.name !== selectedShift().plan) { <option [value]="plan.name">{{ plan.name }}</option> } }</select></label></dd>
               <dt>Arbeitszeit</dt><dd><b>{{ selectedShift().start }} – {{ selectedShift().end }}</b><span class="muted">(8h 19m)</span></dd>
               <dt>Pausen</dt><dd>11:00 – 11:30 <span class="muted">(30m)</span></dd>
               <dt>Bemerkung</dt><dd><input [(ngModel)]="selectedShift().note" placeholder="Keine besonderen Hinweise" aria-label="Bemerkung" /></dd>
@@ -841,32 +836,15 @@
           </div>
           }
         </section>
-
-        <section class="side-card">
-          <h2>Sonderfahrten</h2>
-          <article>
-            <div><span>Sa, 25.07.2026</span><b>12:15 – 19:15</b></div>
-            <strong>Tagesfahrt</strong>
-            <p>Hönningen Zeltlagerplatz →<br />Rheinbach Schwimmbad</p>
-          </article>
-          <article>
-            <div><span>So, 26.07.2026</span><b>23:00 – 02:00</b></div>
-            <strong>Transferfahrt</strong>
-            <p>Düsseldorf Innenstadt → <em>Transfer</em><br />Mehren Ortsmitte</p>
-          </article>
-        </section>
-
-        <section class="side-card absence-card">
-          <h2>Abwesenheiten</h2>
-          <div><b>Kyriakos</b><span>Sa, 25.07.2026</span><em>Krank</em></div>
-          <div><b>Blum/Böhnke</b><span>20.07. – 08.08.2026</span><em>Urlaub</em></div>
-        </section>
-      </aside>
+      }
     </div>
     }
   </main>
 
   @if (published()) {
     <div class="toast" role="status"><span>✓</span><div><strong>Plan veröffentlicht</strong><small>Die aktuelle Woche ist jetzt für alle Fahrer sichtbar.</small></div></div>
+  }
+  @if (planningFeedback(); as feedback) {
+    <div class="toast toast--planning" [class.toast--error]="feedback.type === 'error'" role="status"><span>{{ feedback.type === 'success' ? '✓' : '!' }}</span><div><strong>{{ feedback.title }}</strong><small>{{ feedback.message }}</small></div></div>
   }
 </div>
