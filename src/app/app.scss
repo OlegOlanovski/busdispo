@@ -246,13 +246,15 @@ button {
   width: 100%;
   max-width: 100vw;
   margin-left: 0;
+  padding-top: 66px;
   overflow-x: hidden;
 }
 
 .topbar {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 0 auto 0;
   z-index: 20;
+  width: 100%;
   height: 66px;
   display: flex;
   align-items: center;
@@ -2896,7 +2898,7 @@ button {
 .app-shell--driver > .sidebar,
 .app-shell--driver > .sidebar-scrim,
 .app-shell--driver .topbar { display: none; }
-.app-shell--driver .workspace { width: 100%; margin-left: 0; }
+.app-shell--driver .workspace { width: 100%; margin-left: 0; padding-top: 0; }
 
 .driver-portal { min-height: 100dvh; color: #172033; }
 .driver-portal-header { position: sticky; top: 0; z-index: 20; min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px max(20px, calc((100vw - 760px) / 2)); border-bottom: 1px solid #dde3eb; background: rgb(255 255 255 / 96%); backdrop-filter: blur(12px); }
@@ -3128,6 +3130,10 @@ button {
 @media (max-width: 800px) {
   .sidebar {
     width: min(290px, 85vw);
+  }
+
+  .workspace {
+    padding-top: 61px;
   }
 
   .topbar {
