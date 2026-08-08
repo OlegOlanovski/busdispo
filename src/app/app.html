@@ -719,9 +719,26 @@
           <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
             <div class="planning-axis-spacer" aria-hidden="true"></div>
             @for (vehicle of vehicles; track vehicle.id) {
-              <div class="trip-column" [attr.data-vehicle]="vehicle.id">
+              <div
+                class="trip-column"
+                [class.trip-column--drop-target]="tripDragTargetVehicle() === vehicle.id"
+                [attr.data-vehicle]="vehicle.id"
+                (dragover)="updatePlanningTripDropTarget($event, vehicle.id)"
+                (dragleave)="leavePlanningTripDropTarget($event, vehicle.id)"
+                (drop)="dropPlanningTrip($event, vehicle.id)"
+              >
                 @for (trip of planningTripsFor(vehicle.id); track trip.id) {
-                  <button class="planning-trip-card planning-trip-card--{{ trip.tone }}" (click)="selectPlanningLine(vehicle.id)">
+                  <button
+                    class="planning-trip-card planning-trip-card--{{ trip.tone }}"
+                    [class.planning-trip-card--dragging]="draggingTripId() === trip.id"
+                    draggable="true"
+                    [attr.aria-grabbed]="draggingTripId() === trip.id"
+                    [attr.aria-label]="trip.label + ', ' + trip.time + ', ' + trip.route + '. Fahrt verschieben oder Details öffnen'"
+                    title="Fahrt verschieben oder Details öffnen"
+                    (dragstart)="startPlanningTripDrag($event, trip)"
+                    (dragend)="finishPlanningTripDrag()"
+                    (click)="selectPlanningLine(vehicle.id)"
+                  >
                     <span>{{ trip.label }}</span>
                     <strong>{{ trip.time }}</strong>
                     <small>{{ trip.route }}</small>

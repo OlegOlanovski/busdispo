@@ -83,6 +83,32 @@ describe('App', () => {
     expect(compiled.querySelector('.route-table')).toBeFalsy();
   });
 
+  it('should move a trip card to another vehicle column by drag and drop', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const sourceColumn = compiled.querySelector('.trip-column[data-vehicle="DAU-RH 13"]') as HTMLElement;
+    const targetColumn = compiled.querySelector('.trip-column[data-vehicle="DAU-RH 11"]') as HTMLElement;
+    const source = sourceColumn.querySelector('.planning-trip-card') as HTMLButtonElement;
+    const sourceCount = sourceColumn.querySelectorAll('.planning-trip-card').length;
+    const targetCount = targetColumn.querySelectorAll('.planning-trip-card').length;
+
+    source.dispatchEvent(new Event('dragstart', { bubbles: true, cancelable: true }));
+    targetColumn.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(source.classList).toContain('planning-trip-card--dragging');
+    expect(targetColumn.classList).toContain('trip-column--drop-target');
+
+    targetColumn.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(sourceColumn.querySelectorAll('.planning-trip-card')).toHaveLength(sourceCount - 1);
+    expect(targetColumn.querySelectorAll('.planning-trip-card')).toHaveLength(targetCount + 1);
+    expect(targetColumn.textContent).toContain('07:00 – 08:15');
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt verschoben');
+  });
+
   it('should add a driver assignment from an empty planning cell', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

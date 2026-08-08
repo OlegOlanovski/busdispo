@@ -187,6 +187,8 @@ export class App {
   protected readonly addingAssignment = signal(false);
   protected readonly assignmentPanelOpen = signal(false);
   protected readonly assignmentError = signal('');
+  protected readonly draggingTripId = signal<string | null>(null);
+  protected readonly tripDragTargetVehicle = signal<string | null>(null);
   protected readonly draggingShiftId = signal<string | null>(null);
   protected readonly dragTargetKey = signal<string | null>(null);
   protected readonly dragTargetValid = signal(false);
@@ -620,6 +622,65 @@ export class App {
   protected selectPlanningLine(vehicle: string): void {
     const shift = this.shifts.find((item) => item.vehicle === vehicle);
     if (shift) this.selectShift(shift);
+  }
+
+  protected startPlanningTripDrag(event: DragEvent, trip: PlanningTripCard): void {
+    this.draggingTripId.set(trip.id);
+    this.tripDragTargetVehicle.set(null);
+    this.planningFeedback.set(null);
+    event.dataTransfer?.setData('text/plain', trip.id);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+  }
+
+  protected updatePlanningTripDropTarget(event: DragEvent, vehicle: string): void {
+    if (!this.draggingTripId()) return;
+    event.preventDefault();
+    this.tripDragTargetVehicle.set(vehicle);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  }
+
+  protected leavePlanningTripDropTarget(event: DragEvent, vehicle: string): void {
+    const column = event.currentTarget as HTMLElement | null;
+    if (column && event.relatedTarget instanceof Node && column.contains(event.relatedTarget)) return;
+    if (this.tripDragTargetVehicle() === vehicle) this.tripDragTargetVehicle.set(null);
+  }
+
+  protected dropPlanningTrip(event: DragEvent, vehicle: string): void {
+    event.preventDefault();
+    const tripIndex = this.planningTrips.findIndex((item) => item.id === this.draggingTripId());
+    if (tripIndex < 0) {
+      this.finishPlanningTripDrag();
+      return;
+    }
+
+    const trip = this.planningTrips[tripIndex];
+    const previousVehicle = trip.vehicle;
+    if (previousVehicle === vehicle) {
+      this.finishPlanningTripDrag();
+      return;
+    }
+
+    this.planningTrips.splice(tripIndex, 1);
+    trip.vehicle = vehicle;
+
+    let insertionIndex = this.planningTrips.length;
+    for (let index = 0; index < this.planningTrips.length; index += 1) {
+      if (this.planningTrips[index].vehicle === vehicle) insertionIndex = index + 1;
+    }
+    this.planningTrips.splice(insertionIndex, 0, trip);
+
+    this.saved.set(false);
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Fahrt verschoben',
+      message: `${trip.time}: ${this.planningVehicleLabel(previousVehicle)} → ${this.planningVehicleLabel(vehicle)}`,
+    });
+    this.finishPlanningTripDrag();
+  }
+
+  protected finishPlanningTripDrag(): void {
+    this.draggingTripId.set(null);
+    this.tripDragTargetVehicle.set(null);
   }
 
   protected planningCellKey(vehicle: string, day: number): string {

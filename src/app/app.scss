@@ -532,6 +532,13 @@ button {
   padding: 7px 5px;
   border-right: 1px solid var(--line);
   background: #fff;
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.trip-column--drop-target {
+  z-index: 2;
+  background: #eaf4ff;
+  box-shadow: inset 0 0 0 2px var(--blue);
 }
 
 .planning-trip-card {
@@ -550,9 +557,13 @@ button {
   color: #334058;
   text-align: left;
   transition: transform 150ms ease, box-shadow 150ms ease;
+  cursor: grab;
 }
 
 .planning-trip-card:hover { z-index: 2; transform: translateY(-1px); box-shadow: 0 5px 12px rgb(16 24 40 / 10%); }
+.planning-trip-card:active { cursor: grabbing; }
+.planning-trip-card--dragging,
+.planning-trip-card--dragging:hover { opacity: 0.45; transform: scale(0.98); box-shadow: none; }
 .planning-trip-card > span { color: currentColor; font-size: var(--font-min); font-weight: 700; }
 .planning-trip-card > strong { color: currentColor; font-size: var(--font-min); }
 .planning-trip-card > small { color: #4f5c71; font-size: var(--font-min); line-height: 1.35; }
