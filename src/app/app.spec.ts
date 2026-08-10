@@ -292,6 +292,43 @@ describe('App', () => {
     expect(compiled.querySelector('.driver-hours')).toBeFalsy();
   });
 
+  it('should add a driver from the driver form', async () => {
+    window.history.replaceState(null, '', '#drivers');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.drivers-intro > .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const form = compiled.querySelector('.driver-create-form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(compiled.querySelector('.driver-create-error')?.textContent).toContain('Pflichtfelder');
+
+    const app = fixture.componentInstance as any;
+    app.newDriver = {
+      name: 'Müller Anna',
+      phone: '+49 6592 410 299',
+      email: 'mueller@busdispo.de',
+      status: 'Verfügbar',
+      license: 'D, DE',
+      licenseExpiry: '2029-08-10',
+      medicalCheck: '2027-05-12',
+    };
+    app.createDriver();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-create-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.driver-row')).toHaveLength(8);
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Müller Anna');
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('10.08.2029');
+    expect(compiled.querySelector('.driver-metrics article b')?.textContent).toBe('8');
+    expect(compiled.querySelector('.toast--driver')?.textContent).toContain('Fahrer hinzugefügt');
+  });
+
   it('should filter drivers by vehicle search', async () => {
     window.history.replaceState(null, '', '#drivers');
     const fixture = TestBed.createComponent(App);

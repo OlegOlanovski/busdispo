@@ -366,14 +366,70 @@
             <h2>Fahrer</h2>
             <p>Verwalten Sie Fahrer, Einsatzzeiten und erforderliche Nachweise.</p>
           </div>
-          <button class="button button--primary">+&nbsp; Fahrer hinzufügen</button>
+          <button class="button button--primary" (click)="openNewDriverForm()">+&nbsp; Fahrer hinzufügen</button>
         </div>
 
+        @if (driverFormOpen()) {
+          <button class="driver-create-backdrop" type="button" aria-label="Formular schließen" (click)="closeNewDriverForm()"></button>
+          <section class="driver-create-modal" role="dialog" aria-modal="true" aria-labelledby="driver-create-title">
+            <header class="driver-create-head">
+              <div><span class="driver-create-icon">♙</span><div><small>Personalverwaltung</small><h3 id="driver-create-title">Fahrer hinzufügen</h3></div></div>
+              <button type="button" aria-label="Formular schließen" (click)="closeNewDriverForm()">×</button>
+            </header>
+            <form class="driver-create-form" novalidate (ngSubmit)="createDriver()">
+              <p class="driver-create-intro">Erfassen Sie die persönlichen Daten und erforderlichen Nachweise. Die Einsatzplanung erfolgt anschließend im Wochenplan.</p>
+
+              <div class="driver-create-grid">
+                <label class="driver-create-field driver-create-field--wide">
+                  <span>Name / Nachname *</span>
+                  <input name="driverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Müller Anna" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>Telefon *</span>
+                  <input name="driverPhone" type="tel" [(ngModel)]="newDriver.phone" autocomplete="tel" placeholder="+49 6592 410 000" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>E-Mail *</span>
+                  <input name="driverEmail" type="email" [(ngModel)]="newDriver.email" autocomplete="email" placeholder="name@busdispo.de" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>Status</span>
+                  <select name="driverCreateStatus" [(ngModel)]="newDriver.status">
+                    <option>Verfügbar</option><option>Im Einsatz</option><option>Abwesend</option>
+                  </select>
+                </label>
+                <label class="driver-create-field">
+                  <span>Führerscheinklasse *</span>
+                  <input name="driverLicense" [(ngModel)]="newDriver.license" placeholder="D, DE" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>Führerschein gültig bis *</span>
+                  <input name="driverLicenseExpiry" type="date" [(ngModel)]="newDriver.licenseExpiry" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>Nächste ärztliche Untersuchung *</span>
+                  <input name="driverMedicalCheck" type="date" [(ngModel)]="newDriver.medicalCheck" required />
+                </label>
+              </div>
+
+              @if (driverFormError()) {
+                <div class="driver-create-error" role="alert"><span>!</span>{{ driverFormError() }}</div>
+              }
+
+              <div class="driver-create-note"><span>i</span><p><b>Einsatz später zuweisen</b><small>Fahrzeug, Linie und Arbeitszeit werden in der Wochenplanung festgelegt.</small></p></div>
+              <footer class="driver-create-actions">
+                <button class="button" type="button" (click)="closeNewDriverForm()">Abbrechen</button>
+                <button class="button button--primary" type="submit">Fahrer speichern</button>
+              </footer>
+            </form>
+          </section>
+        }
+
         <div class="driver-metrics">
-          <article><span class="driver-metric-icon driver-metric-icon--blue">♙</span><div><b>7</b><small>Fahrer gesamt</small></div></article>
-          <article><span class="driver-metric-icon driver-metric-icon--green">✓</span><div><b>5</b><small>Im Einsatz</small></div></article>
-          <article><span class="driver-metric-icon driver-metric-icon--cyan">○</span><div><b>1</b><small>Verfügbar</small></div></article>
-          <article><span class="driver-metric-icon driver-metric-icon--rose">⊘</span><div><b>1</b><small>Abwesend</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--blue">♙</span><div><b>{{ driverCounts().total }}</b><small>Fahrer gesamt</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--green">✓</span><div><b>{{ driverCounts().active }}</b><small>Im Einsatz</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--cyan">○</span><div><b>{{ driverCounts().available }}</b><small>Verfügbar</small></div></article>
+          <article><span class="driver-metric-icon driver-metric-icon--rose">⊘</span><div><b>{{ driverCounts().absent }}</b><small>Abwesend</small></div></article>
         </div>
 
         <div class="driver-layout">
@@ -863,5 +919,8 @@
   }
   @if (planningFeedback(); as feedback) {
     <div class="toast toast--planning" [class.toast--error]="feedback.type === 'error'" role="status"><span>{{ feedback.type === 'success' ? '✓' : '!' }}</span><div><strong>{{ feedback.title }}</strong><small>{{ feedback.message }}</small></div></div>
+  }
+  @if (driverCreated(); as driverName) {
+    <div class="toast toast--driver" role="status"><span>✓</span><div><strong>Fahrer hinzugefügt</strong><small>{{ driverName }} wurde erfolgreich angelegt.</small></div></div>
   }
 </div>

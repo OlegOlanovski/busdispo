@@ -102,6 +102,16 @@ interface Driver {
   color: 'blue' | 'violet' | 'green' | 'orange' | 'cyan' | 'rose';
 }
 
+interface DriverDraft {
+  name: string;
+  phone: string;
+  email: string;
+  status: Driver['status'];
+  license: string;
+  licenseExpiry: string;
+  medicalCheck: string;
+}
+
 interface Absence {
   id: string;
   driver: string;
@@ -206,6 +216,11 @@ export class App {
   protected readonly driverSearch = signal('');
   protected readonly driverStatus = signal('Alle Status');
   protected readonly driverSaved = signal(false);
+  protected readonly driverFormOpen = signal(false);
+  protected readonly driverFormError = signal('');
+  protected readonly driverCreated = signal<string | null>(null);
+  private readonly driverRevision = signal(0);
+  protected newDriver: DriverDraft = this.emptyDriverDraft();
   protected readonly selectedAbsenceId = signal('blum-vacation');
   protected readonly absenceSearch = signal('');
   protected readonly absenceType = signal('Alle Arten');
@@ -518,6 +533,7 @@ export class App {
   );
 
   protected readonly filteredDrivers = computed(() => {
+    this.driverRevision();
     const query = this.driverSearch().trim().toLocaleLowerCase('de');
     const status = this.driverStatus();
     return this.drivers.filter(
@@ -530,6 +546,16 @@ export class App {
   protected readonly selectedDriver = computed(
     () => this.drivers.find((driver) => driver.id === this.selectedDriverId()) ?? this.drivers[3],
   );
+
+  protected readonly driverCounts = computed(() => {
+    this.driverRevision();
+    return {
+      total: this.drivers.length,
+      active: this.drivers.filter((driver) => driver.status === 'Im Einsatz').length,
+      available: this.drivers.filter((driver) => driver.status === 'Verfügbar').length,
+      absent: this.drivers.filter((driver) => driver.status === 'Abwesend').length,
+    };
+  });
 
   protected readonly filteredAbsences = computed(() => {
     const query = this.absenceSearch().trim().toLocaleLowerCase('de');
@@ -990,6 +1016,111 @@ export class App {
   protected saveDriver(): void {
     this.driverSaved.set(true);
     window.setTimeout(() => this.driverSaved.set(false), 2400);
+  }
+
+  protected openNewDriverForm(): void {
+    this.newDriver = this.emptyDriverDraft();
+    this.driverFormError.set('');
+    this.driverFormOpen.set(true);
+  }
+
+  protected closeNewDriverForm(): void {
+    this.driverFormOpen.set(false);
+    this.driverFormError.set('');
+  }
+
+  protected createDriver(): void {
+    const draft: DriverDraft = {
+      ...this.newDriver,
+      name: this.newDriver.name.trim(),
+      phone: this.newDriver.phone.trim(),
+      email: this.newDriver.email.trim().toLocaleLowerCase('de'),
+      license: this.newDriver.license.trim(),
+    };
+
+    if (!draft.name || !draft.phone || !draft.email || !draft.license || !draft.licenseExpiry || !draft.medicalCheck) {
+      this.driverFormError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) {
+      this.driverFormError.set('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+    if (this.drivers.some((driver) => driver.email.toLocaleLowerCase('de') === draft.email)) {
+      this.driverFormError.set('Ein Fahrer mit dieser E-Mail-Adresse ist bereits vorhanden.');
+      return;
+    }
+
+    const baseId = draft.name
+      .toLocaleLowerCase('de')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'fahrer';
+    let id = baseId;
+    let suffix = 2;
+    while (this.drivers.some((driver) => driver.id === id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+
+    const colors: Driver['color'][] = ['blue', 'violet', 'green', 'orange', 'cyan', 'rose'];
+    const driver: Driver = {
+      id,
+      name: draft.name,
+      initials: this.driverInitials(draft.name),
+      phone: draft.phone,
+      email: draft.email,
+      status: draft.status,
+      vehicle: '–',
+      shift: draft.status === 'Abwesend' ? 'Abwesend' : 'Kein Einsatz',
+      weeklyHours: 0,
+      targetHours: 40,
+      overtime: '+0h 00m',
+      license: draft.license,
+      licenseExpiry: this.toGermanDate(draft.licenseExpiry),
+      medicalCheck: this.toGermanDate(draft.medicalCheck),
+      color: colors[this.drivers.length % colors.length],
+    };
+
+    this.drivers.push(driver);
+    this.driverRevision.update((revision) => revision + 1);
+    this.driverSearch.set('');
+    this.driverStatus.set('Alle Status');
+    this.selectedDriverId.set(driver.id);
+    this.driverFormOpen.set(false);
+    this.driverFormError.set('');
+    this.driverCreated.set(driver.name);
+    window.setTimeout(() => {
+      if (this.driverCreated() === driver.name) this.driverCreated.set(null);
+    }, 3200);
+  }
+
+  private emptyDriverDraft(): DriverDraft {
+    return {
+      name: '',
+      phone: '',
+      email: '',
+      status: 'Verfügbar',
+      license: 'D, DE',
+      licenseExpiry: '',
+      medicalCheck: '',
+    };
+  }
+
+  private driverInitials(name: string): string {
+    return name
+      .split(/[\s/]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toLocaleUpperCase('de');
+  }
+
+  private toGermanDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}.${month}.${year}` : value;
   }
 
   protected selectAbsence(absence: Absence): void {

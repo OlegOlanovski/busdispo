@@ -2365,6 +2365,132 @@ button {
   i { color: var(--blue); font-size: 18px; font-style: normal; }
 }
 
+.driver-create-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  border: 0;
+  background: rgb(15 23 42 / 46%);
+  backdrop-filter: blur(2px);
+}
+
+.driver-create-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 81;
+  width: min(700px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 1px solid #dfe4ec;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 30%);
+  transform: translate(-50%, -50%);
+}
+
+.driver-create-head {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 18px;
+  border-bottom: 1px solid #e3e8ef;
+  background: linear-gradient(135deg, #f6f9ff, #fff);
+
+  > div { display: flex; align-items: center; gap: 12px; }
+  small { display: block; color: #748096; font-size: var(--font-min); font-weight: 600; text-transform: uppercase; }
+  h3 { margin: 3px 0 0; color: #172033; font-size: 20px; }
+  > button { width: 36px; height: 36px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #647087; font-size: 27px; line-height: 1; }
+  > button:hover { background: #eef3f9; color: #172033; }
+}
+
+.driver-create-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #e8f2ff;
+  color: var(--blue);
+  font-size: 21px;
+  line-height: 42px;
+  text-align: center;
+}
+
+.driver-create-form { padding: 18px; }
+
+.driver-create-intro {
+  margin: 0 0 17px;
+  color: #68748a;
+  font-size: var(--font-min);
+  line-height: 1.5;
+}
+
+.driver-create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.driver-create-field {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+
+  > span { color: #4e596d; font-size: var(--font-min); font-weight: 600; }
+  input,
+  select { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #d5dce6; border-radius: 6px; outline: 0; background: #fff; color: #202a39; font-size: var(--font-min); }
+  input:focus,
+  select:focus { border-color: #77aef1; box-shadow: 0 0 0 3px rgb(9 108 242 / 11%); }
+  input::placeholder { color: #929bad; }
+}
+
+.driver-create-field--wide { grid-column: 1 / -1; }
+
+.driver-create-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #efb8bb;
+  border-radius: 6px;
+  background: #fff2f2;
+  color: #a51e26;
+  font-size: var(--font-min);
+
+  span { width: 22px; height: 22px; flex: 0 0 auto; border-radius: 50%; background: #df343c; color: #fff; line-height: 22px; text-align: center; }
+}
+
+.driver-create-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 17px;
+  padding: 11px 12px;
+  border: 1px solid #cfe0f4;
+  border-radius: 7px;
+  background: #f3f8ff;
+
+  > span { width: 25px; height: 25px; flex: 0 0 auto; border-radius: 50%; background: #dcecff; color: var(--blue); font-size: var(--font-min); font-weight: 700; line-height: 25px; text-align: center; }
+  p { margin: 0; }
+  b,
+  small { display: block; font-size: var(--font-min); }
+  small { margin-top: 3px; color: #718097; line-height: 1.4; }
+}
+
+.driver-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+
+  .button { min-width: 145px; }
+}
+
+.toast--driver { bottom: 24px; }
+
 .absences-page { padding: 30px 31px 36px; }
 
 .absences-intro {
@@ -3226,6 +3352,31 @@ button {
 @media (max-width: 620px) {
   :host {
     --font-min: 14px;
+  }
+
+  .driver-create-modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+
+  .driver-create-head,
+  .driver-create-form {
+    padding: 14px;
+  }
+
+  .driver-create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-create-field--wide {
+    grid-column: auto;
+  }
+
+  .driver-create-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    .button { min-width: 0; }
   }
 
   .user-copy,
