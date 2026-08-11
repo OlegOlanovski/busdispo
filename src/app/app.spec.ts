@@ -22,28 +22,28 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
     expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(7);
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(21);
-    expect(compiled.querySelector('.trip-grid--header .line-heading')?.textContent?.trim()).toBe('DAU RH13');
+    expect(compiled.querySelector('.trip-grid--header .line-heading')?.textContent?.trim()).toBe('DEMO 13');
     expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain('KW 25');
     expect(compiled.querySelector('.matrix-day')?.textContent).toContain('15.06');
     expect(compiled.querySelectorAll('.planning-trip-card').length).toBeGreaterThan(80);
     expect(compiled.querySelector('.trip-grid .matrix-corner')).toBeFalsy();
     expect(compiled.querySelector('.trip-side-label')).toBeFalsy();
-    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Borler → Boxberg');
-    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Gerolstein → Trier');
+    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Demo Ort 19 → Demo Ort 20');
+    expect(compiled.querySelector('.trip-grid--body')?.textContent).toContain('Demo Ort 03 → Demo Ort 47');
     expect(compiled.querySelector('.schedule-drag-hint')).toBeFalsy();
     expect(compiled.querySelector('.planning-block-heading')).toBeFalsy();
     expect(compiled.querySelectorAll('.schedule-grid--header')).toHaveLength(0);
     expect(compiled.querySelector('.vehicle-heading')).toBeFalsy();
-    expect(compiled.querySelector('.shift')?.textContent?.trim()).toBe('Steffes R.');
+    expect(compiled.querySelector('.shift')?.textContent?.trim()).toBe('Fahrer 01');
     expect(compiled.querySelector('.shift')?.textContent).not.toContain('06:05');
-    expect(compiled.querySelector('.shift')?.textContent).not.toContain('DAU-RH 13');
+    expect(compiled.querySelector('.shift')?.textContent).not.toContain('DEMO-13');
     expect(compiled.querySelector('.right-column')).toBeFalsy();
     expect(compiled.querySelector('.details-panel')).toBeFalsy();
 
-    const rh91Heading = compiled.querySelector('.trip-grid--header [data-vehicle="DAU-RH 91"]') as HTMLElement;
-    const rh91Cell = compiled.querySelector('.schedule-row [data-vehicle="DAU-RH 91"]') as HTMLElement;
+    const rh91Heading = compiled.querySelector('.trip-grid--header [data-vehicle="DEMO-91"]') as HTMLElement;
+    const rh91Cell = compiled.querySelector('.schedule-row [data-vehicle="DEMO-91"]') as HTMLElement;
     expect(rh91Heading).toBeTruthy();
-    expect(rh91Cell.textContent).toContain('Olanovski');
+    expect(rh91Cell.textContent).toContain('Fahrer 10');
   });
 
   it('should slide the main menu in and out', async () => {
@@ -78,8 +78,8 @@ describe('App', () => {
     (compiled.querySelector('.planning-trip-card') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('DAU-RH 13');
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Linie RH 13');
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('DEMO-13');
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Linie L 13');
     expect(compiled.querySelector('.route-table')).toBeFalsy();
   });
 
@@ -87,8 +87,8 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const sourceColumn = compiled.querySelector('.trip-column[data-vehicle="DAU-RH 13"]') as HTMLElement;
-    const targetColumn = compiled.querySelector('.trip-column[data-vehicle="DAU-RH 11"]') as HTMLElement;
+    const sourceColumn = compiled.querySelector('.trip-column[data-vehicle="DEMO-13"]') as HTMLElement;
+    const targetColumn = compiled.querySelector('.trip-column[data-vehicle="DEMO-11"]') as HTMLElement;
     const source = sourceColumn.querySelector('.planning-trip-card') as HTMLButtonElement;
     const sourceCount = sourceColumn.querySelectorAll('.planning-trip-card').length;
     const targetCount = targetColumn.querySelectorAll('.planning-trip-card').length;
@@ -120,14 +120,14 @@ describe('App', () => {
 
     expect(compiled.querySelector('.assignment-form')).toBeTruthy();
     expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Neue Zuweisung');
-    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Standard RH 102');
+    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Tagesplan L 102');
 
     (compiled.querySelector('.assignment-form .save-button') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.shift')).toHaveLength(shiftsBefore + 1);
     expect(compiled.querySelector('.assignment-form')).toBeFalsy();
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Koch');
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Fahrer 07');
   });
 
   it('should move an assignment to a free cell by drag and drop', async () => {
@@ -148,7 +148,7 @@ describe('App', () => {
     target.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
 
-    expect(target.querySelector('.shift')?.textContent).toContain('Steffes R.');
+    expect(target.querySelector('.shift')?.textContent).toContain('Fahrer 01');
     expect(sourceCell.querySelector('.shift')).toBeFalsy();
     expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Einsatz verschoben');
   });
@@ -171,8 +171,8 @@ describe('App', () => {
     targetCell.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
 
-    expect(sourceCell.querySelector('.shift')?.textContent).toContain('Steffes R.');
-    expect(targetCell.querySelector('.shift')?.textContent).toContain('Zeyen B.');
+    expect(sourceCell.querySelector('.shift')?.textContent).toContain('Fahrer 01');
+    expect(targetCell.querySelector('.shift')?.textContent).toContain('Fahrer 02');
     expect(compiled.querySelector('.toast--error')?.textContent).toContain('bereits belegt');
   });
 
@@ -222,7 +222,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Fahrzeuge');
     expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(6);
-    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('DAU-RH 91');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('DEMO-91');
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste HU');
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste SP');
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).not.toContain('Tankfüllung');
@@ -241,7 +241,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(1);
-    expect(compiled.querySelector('.fleet-row')?.textContent).toContain('DAU-RH 11');
+    expect(compiled.querySelector('.fleet-row')?.textContent).toContain('DEMO-11');
   });
 
   it('should open the duty plan management view', async () => {
@@ -255,8 +255,46 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Dienstpläne');
     expect(compiled.querySelectorAll('.duty-row')).toHaveLength(6);
-    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Standard RH 91');
+    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Tagesplan L 91');
     expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Linienverlauf');
+  });
+
+  it('should edit a duty plan including its stops', async () => {
+    window.history.replaceState(null, '', '#schedules');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.duty-detail-actions .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.duty-edit-form')).toBeTruthy();
+    expect(compiled.querySelectorAll('.duty-edit-stop')).toHaveLength(6);
+
+    (compiled.querySelector('.duty-edit-add-stop') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelectorAll('.duty-edit-stop')).toHaveLength(7);
+
+    const app = fixture.componentInstance as any;
+    app.dutyPlanDraft = {
+      name: 'Tagesdienstplan L 91 Neu',
+      route: 'Demo Ort 04 ZOB → Demo Ort 02',
+      start: '06:00',
+      end: '14:30',
+      breakTime: '45m',
+      weekdays: 'Mo – Sa',
+      status: 'Aktiv',
+      stops: ['Demo Ort 04 ZOB', 'Demo Ort 13', 'Demo Ort 03', 'Demo Ort 02'],
+    };
+    (compiled.querySelector('.duty-edit-actions .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.duty-edit-form')).toBeFalsy();
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('Tagesdienstplan L 91 Neu');
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('06:00 – 14:30');
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('8h 30m');
+    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Demo Ort 04 ZOB');
+    expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Demo Ort 02');
   });
 
   it('should filter duty plans by route search', async () => {
@@ -266,13 +304,13 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const searchInput = compiled.querySelector('.duty-search input') as HTMLInputElement;
 
-    searchInput.value = 'Cochem';
+    searchInput.value = 'Demo Ort 06';
     searchInput.dispatchEvent(new Event('input'));
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.duty-row')).toHaveLength(1);
-    expect(compiled.querySelector('.duty-row')?.textContent).toContain('Standard RH 515');
+    expect(compiled.querySelector('.duty-row')?.textContent).toContain('Tagesplan L 515');
   });
 
   it('should open the driver management view', async () => {
@@ -286,7 +324,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Fahrer');
     expect(compiled.querySelectorAll('.driver-row')).toHaveLength(7);
-    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Olanovski');
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Fahrer 10');
     expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Nachweise & Prüfungen');
     expect(compiled.querySelector('.driver-table-head')?.textContent).not.toContain('Wochenzeit');
     expect(compiled.querySelector('.driver-hours')).toBeFalsy();
@@ -310,9 +348,9 @@ describe('App', () => {
 
     const app = fixture.componentInstance as any;
     app.newDriver = {
-      name: 'Müller Anna',
-      phone: '+49 6592 410 299',
-      email: 'mueller@busdispo.de',
+      name: 'Demo Fahrer 20',
+      phone: '0000 000 0120',
+      email: 'fahrer20@example.com',
       status: 'Verfügbar',
       license: 'D, DE',
       licenseExpiry: '2029-08-10',
@@ -323,7 +361,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('.driver-create-modal')).toBeFalsy();
     expect(compiled.querySelectorAll('.driver-row')).toHaveLength(8);
-    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Müller Anna');
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Demo Fahrer 20');
     expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('10.08.2029');
     expect(compiled.querySelector('.driver-metrics article b')?.textContent).toBe('8');
     expect(compiled.querySelector('.toast--driver')?.textContent).toContain('Fahrer hinzugefügt');
@@ -336,13 +374,13 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const searchInput = compiled.querySelector('.driver-search input') as HTMLInputElement;
 
-    searchInput.value = 'DAU-RH 102';
+    searchInput.value = 'DEMO-102';
     searchInput.dispatchEvent(new Event('input'));
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.driver-row')).toHaveLength(1);
-    expect(compiled.querySelector('.driver-row')?.textContent).toContain('Koch');
+    expect(compiled.querySelector('.driver-row')?.textContent).toContain('Fahrer 07');
   });
 
   it('should open the absence management view', async () => {
@@ -356,7 +394,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Abwesenheiten');
     expect(compiled.querySelectorAll('.absence-row')).toHaveLength(6);
-    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Blum/Böhnke');
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Fahrer 04/05');
     expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Auswirkung auf die Planung');
   });
 
@@ -373,8 +411,8 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.absence-row')).toHaveLength(2);
-    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Blum/Böhnke');
-    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Zeyen B.');
+    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Fahrer 04/05');
+    expect(compiled.querySelector('.absence-list')?.textContent).toContain('Fahrer 02');
   });
 
   it('should open the special trip management view', async () => {
@@ -388,8 +426,8 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Sonderfahrten');
     expect(compiled.querySelectorAll('.special-trip-row')).toHaveLength(6);
-    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Ausflug Rheinbach');
-    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Jugendfreizeit Hönningen');
+    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Ausflug Demo Ort 54');
+    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Demo-Kunde 01');
   });
 
   it('should filter special trips by status', async () => {
@@ -405,8 +443,8 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.special-trip-row')).toHaveLength(2);
-    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Schulausflug Cochem');
-    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Messe-Transfer Koblenz');
+    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Schulausflug Demo Ort 06');
+    expect(compiled.querySelector('.special-trip-list')?.textContent).toContain('Messe-Transfer Demo Ort 43');
   });
 
   it('should open messages and mark a thread as read', async () => {
@@ -421,7 +459,7 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Nachrichten');
     expect(compiled.querySelectorAll('.message-thread-row')).toHaveLength(7);
     expect(compiled.querySelectorAll('.message-thread-row--unread')).toHaveLength(3);
-    expect(compiled.querySelector('.message-detail-card')?.textContent).toContain('Verspätung auf der B257');
+    expect(compiled.querySelector('.message-detail-card')?.textContent).toContain('Verspätung auf der Demo-Straße');
 
     (compiled.querySelector('.message-thread-row') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -442,8 +480,8 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.message-thread-row')).toHaveLength(2);
-    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Anna Schmitz');
-    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Laura Klein');
+    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Kontakt 01');
+    expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Kontakt 04');
   });
 
   it('should open the driver portal from driver details', async () => {
@@ -457,7 +495,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelector('.driver-portal')).toBeTruthy();
-    expect(compiled.querySelector('.driver-portal')?.textContent).toContain('Guten Morgen, Olanovski');
+    expect(compiled.querySelector('.driver-portal')?.textContent).toContain('Guten Morgen, Fahrer 10');
     expect(window.location.hash).toBe('#driver-portal');
   });
 

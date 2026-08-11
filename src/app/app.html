@@ -50,8 +50,8 @@
       <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
         <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">✉ @if (unreadMessageCount() > 0) { <span>{{ unreadMessageCount() }}</span> }</button>
-        <div class="avatar">S</div>
-        <div class="user-copy"><strong>Sebi</strong><small>Dispatcher</small></div>
+        <div class="avatar">D</div>
+        <div class="user-copy"><strong>Demo Admin</strong><small>Dispatcher</small></div>
         <span class="chevron">⌄</span>
       </div>
     </header>
@@ -60,19 +60,19 @@
       <section class="driver-portal">
         <header class="driver-portal-header">
           <div class="driver-portal-brand"><div class="brand__mark" aria-hidden="true"><span></span><span></span><span></span></div><div><strong>BusDispo</strong><small>Fahrerportal</small></div></div>
-          <div class="driver-portal-user"><span>O</span><div><b>Olanovski</b><small>Fahrer</small></div><button (click)="showView('drivers')" aria-label="Fahrerportal verlassen">Abmelden</button></div>
+          <div class="driver-portal-user"><span>10</span><div><b>Fahrer 10</b><small>Fahrer</small></div><button (click)="showView('drivers')" aria-label="Fahrerportal verlassen">Abmelden</button></div>
         </header>
 
         <main class="driver-portal-content">
           <div class="driver-portal-welcome">
-            <div><span>Donnerstag, 23. Juli 2026</span><h1>Guten Morgen, Olanovski</h1><p>Hier ist Ihr heutiger Einsatz.</p></div>
+            <div><span>Donnerstag, 23. Juli 2026</span><h1>Guten Morgen, Fahrer 10</h1><p>Hier ist Ihr heutiger Einsatz.</p></div>
             <span class="driver-shift-status driver-shift-status--{{ driverShiftState() }}"><i></i>{{ driverShiftState() === 'ready' ? 'Bereit' : driverShiftState() === 'active' ? 'Schicht aktiv' : 'Abgeschlossen' }}</span>
           </div>
 
           <section class="driver-assignment-card">
             <div class="driver-assignment-date"><span>23</span><small>JUL</small></div>
-            <div class="driver-assignment-main"><span>HEUTIGER EINSATZ</span><h2>Standard RH 91</h2><p>Mannbach → Kötterichen</p></div>
-            <div class="driver-assignment-facts"><div><span>◷</span><p><small>Arbeitszeit</small><b>06:05 – 14:24</b></p></div><div><span>▣</span><p><small>Fahrzeug</small><b>DAU-RH 91</b></p></div><div><span>↗</span><p><small>Strecke</small><b>167 km geplant</b></p></div></div>
+            <div class="driver-assignment-main"><span>HEUTIGER EINSATZ</span><h2>Tagesplan L 91</h2><p>Demo Ort 01 → Demo Ort 02</p></div>
+            <div class="driver-assignment-facts"><div><span>◷</span><p><small>Arbeitszeit</small><b>06:05 – 14:24</b></p></div><div><span>▣</span><p><small>Fahrzeug</small><b>DEMO-91</b></p></div><div><span>↗</span><p><small>Strecke</small><b>167 km geplant</b></p></div></div>
           </section>
 
           @if (driverShiftState() === 'ready') {
@@ -86,7 +86,7 @@
             <section class="driver-active-banner"><span>▶</span><div><b>Ihre Schicht läuft</b><small>Gestartet um 06:05 Uhr · Kilometerstand {{ driverStartMileage() | number:'1.0-0' }} km</small></div><em>AKTIV</em></section>
 
             <section class="driver-form-card driver-route-card">
-              <div class="driver-card-heading"><span>↗</span><div><h2>Heutiger Routenverlauf</h2><p>Standard RH 91 · 6 Stationen</p></div></div>
+              <div class="driver-card-heading"><span>↗</span><div><h2>Heutiger Routenverlauf</h2><p>Tagesplan L 91 · 6 Stationen</p></div></div>
               <div class="driver-route-list">@for (stop of driverPortalStops; track stop.time; let first = $first; let last = $last) { <div [class.driver-route-stop--edge]="first || last"><time>{{ stop.time }}</time><span></span><p><b>{{ stop.place }}</b><small>{{ stop.meta }}</small></p></div> }</div>
             </section>
 
@@ -107,7 +107,7 @@
           } @else {
             <section class="driver-complete-card">
               <span class="driver-complete-check">✓</span><h2>Schicht erfolgreich abgeschlossen</h2><p>Ihr Bericht wurde an die Disposition übermittelt.</p>
-              <div class="driver-complete-summary"><div><small>Arbeitszeit</small><b>8h 19m</b></div><div><small>Gefahrene Strecke</small><b>{{ drivenDistance() }} km</b></div><div><small>Fahrzeug</small><b>DAU-RH 91</b></div><div><small>Endstand</small><b>{{ driverEndMileage() | number:'1.0-0' }} km</b></div></div>
+              <div class="driver-complete-summary"><div><small>Arbeitszeit</small><b>8h 19m</b></div><div><small>Gefahrene Strecke</small><b>{{ drivenDistance() }} km</b></div><div><small>Fahrzeug</small><b>DEMO-91</b></div><div><small>Endstand</small><b>{{ driverEndMileage() | number:'1.0-0' }} km</b></div></div>
               <div class="driver-complete-notice"><span>✉</span><div><b>Disposition informiert</b><small>Der Kilometerstand und Ihre Angaben fließen nach Prüfung in die Statistik ein.</small></div></div>
               <button class="driver-secondary-action" (click)="resetDriverShiftDemo()">Demo erneut starten</button>
             </section>
@@ -119,7 +119,7 @@
         <div class="overview-intro">
           <div>
             <span class="eyebrow">Donnerstag, 23. Juli 2026</span>
-            <h2>Guten Morgen, Sebi</h2>
+            <h2>Guten Morgen, Demo Admin</h2>
             <p>Hier ist der aktuelle Stand Ihrer Disposition.</p>
           </div>
           <button class="button button--primary overview-plan-button" (click)="showView('planning')">□&nbsp; Woche planen</button>
@@ -165,8 +165,8 @@
 
           <section class="dashboard-card upcoming-card">
             <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
-            <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Hönningen → Rheinbach</p></div><em>12:15</em></article>
-            <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Düsseldorf → Mehren</p></div><em>23:00</em></article>
+            <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Demo Ort 53 → Demo Ort 54</p></div><em>12:15</em></article>
+            <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Demo Ort 55 → Demo Ort 17</p></div><em>23:00</em></article>
           </section>
         </div>
 
@@ -181,8 +181,8 @@
           </section>
           <section class="dashboard-card overview-absence-card">
             <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button (click)="showView('absence')">Alle anzeigen&nbsp; →</button></div>
-            <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Kyriakos</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
-            <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Blum/Böhnke</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
+            <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Fahrer 19</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
+            <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Fahrer 04/05</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
           </section>
         </div>
       </section>
@@ -256,12 +256,12 @@
                 <div class="inspection-item">
                   <span class="inspection-icon">HU</span>
                   <div><b>Nächste HU</b><small>Hauptuntersuchung</small></div>
-                  <div><em>{{ selectedVehicle().inspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DAU-RH 11' || selectedVehicle().id === 'DAU-RH 91'">{{ selectedVehicle().id === 'DAU-RH 11' ? 'In 4 Tagen' : selectedVehicle().id === 'DAU-RH 91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
+                  <div><em>{{ selectedVehicle().inspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DEMO-11' || selectedVehicle().id === 'DEMO-91'">{{ selectedVehicle().id === 'DEMO-11' ? 'In 4 Tagen' : selectedVehicle().id === 'DEMO-91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
                 </div>
                 <div class="inspection-item">
                   <span class="inspection-icon inspection-icon--sp">SP</span>
                   <div><b>Nächste SP</b><small>Sicherheitsprüfung</small></div>
-                  <div><em>{{ selectedVehicle().safetyInspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DAU-RH 11' || selectedVehicle().id === 'DAU-RH 515'">{{ selectedVehicle().id === 'DAU-RH 11' ? 'In 4 Tagen' : selectedVehicle().id === 'DAU-RH 515' ? 'Morgen' : 'Fristgerecht' }}</small></div>
+                  <div><em>{{ selectedVehicle().safetyInspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DEMO-11' || selectedVehicle().id === 'DEMO-515'">{{ selectedVehicle().id === 'DEMO-11' ? 'In 4 Tagen' : selectedVehicle().id === 'DEMO-515' ? 'Morgen' : 'Fristgerecht' }}</small></div>
                 </div>
               </div>
 
@@ -323,6 +323,54 @@
               <span class="duty-status duty-status--{{ selectedDutyPlan().status === 'Aktiv' ? 'active' : selectedDutyPlan().status === 'Entwurf' ? 'draft' : 'archived' }}"><i></i>{{ selectedDutyPlan().status }}</span>
             </div>
             <div class="duty-detail-body">
+              @if (dutyPlanEditing()) {
+                <form class="duty-edit-form" novalidate (ngSubmit)="saveDutyPlan()">
+                  <div class="duty-edit-title"><span>✎</span><div><h4>Dienstplan bearbeiten</h4><p>Linie, Zeiten und Haltestellen anpassen.</p></div></div>
+
+                  <label class="duty-edit-field">
+                    <span>Name des Tagesdienstplans *</span>
+                    <input name="dutyEditName" [(ngModel)]="dutyPlanDraft.name" placeholder="z. B. Tagesplan L 91" required />
+                  </label>
+                  <label class="duty-edit-field">
+                    <span>Linie / Route *</span>
+                    <input name="dutyEditRoute" [(ngModel)]="dutyPlanDraft.route" placeholder="Start → Ziel" required />
+                  </label>
+
+                  <div class="duty-edit-time-grid">
+                    <label class="duty-edit-field"><span>Beginn *</span><input name="dutyEditStart" type="time" [(ngModel)]="dutyPlanDraft.start" required /></label>
+                    <label class="duty-edit-field"><span>Ende *</span><input name="dutyEditEnd" type="time" [(ngModel)]="dutyPlanDraft.end" required /></label>
+                  </div>
+                  <div class="duty-edit-duration"><span>Berechnete Dauer</span><b>{{ dutyPlanDraftDuration() }}</b></div>
+
+                  <div class="duty-edit-time-grid">
+                    <label class="duty-edit-field"><span>Pause *</span><input name="dutyEditBreak" [(ngModel)]="dutyPlanDraft.breakTime" placeholder="z. B. 30m" required /></label>
+                    <label class="duty-edit-field"><span>Gültigkeit *</span><select name="dutyEditWeekdays" [(ngModel)]="dutyPlanDraft.weekdays"><option>Mo – Fr</option><option>Mo – Sa</option><option>Mo – So</option><option>Sa – So</option></select></label>
+                  </div>
+                  <label class="duty-edit-field"><span>Status</span><select name="dutyEditStatus" [(ngModel)]="dutyPlanDraft.status"><option>Aktiv</option><option>Entwurf</option><option>Archiviert</option></select></label>
+
+                  <div class="duty-edit-stops-head"><div><h4>Haltestellen</h4><small>Reihenfolge des Linienverlaufs</small></div><button class="duty-edit-add-stop" type="button" (click)="addDutyPlanStop()">+ Haltestelle</button></div>
+                  <div class="duty-edit-stops">
+                    @for (stop of dutyPlanDraft.stops; track $index; let index = $index) {
+                      <div class="duty-edit-stop">
+                        <span>{{ index + 1 }}</span>
+                        <input [name]="'dutyStop' + index" [(ngModel)]="dutyPlanDraft.stops[index]" [placeholder]="index === 0 ? 'Start' : index === dutyPlanDraft.stops.length - 1 ? 'Ziel' : 'Zwischenhalt'" required />
+                        <div>
+                          <button type="button" aria-label="Haltestelle nach oben" [disabled]="index === 0" (click)="moveDutyPlanStop(index, -1)">↑</button>
+                          <button type="button" aria-label="Haltestelle nach unten" [disabled]="index === dutyPlanDraft.stops.length - 1" (click)="moveDutyPlanStop(index, 1)">↓</button>
+                          <button class="duty-edit-stop-delete" type="button" aria-label="Haltestelle löschen" [disabled]="dutyPlanDraft.stops.length <= 2" (click)="removeDutyPlanStop(index)">×</button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (dutyPlanEditError()) { <div class="duty-edit-error" role="alert"><span>!</span>{{ dutyPlanEditError() }}</div> }
+
+                  <div class="duty-edit-actions">
+                    <button class="button" type="button" (click)="cancelDutyPlanEdit()">Abbrechen</button>
+                    <button class="button button--primary" type="submit">Änderungen speichern</button>
+                  </div>
+                </form>
+              } @else {
               <h4>Planübersicht</h4>
               <dl class="duty-data">
                 <div><dt>Arbeitszeit</dt><dd>{{ selectedDutyPlan().start }} – {{ selectedDutyPlan().end }}</dd></div>
@@ -352,8 +400,9 @@
 
               <div class="duty-detail-actions">
                 <button class="button">Duplizieren</button>
-                <button class="button button--primary" (click)="saveDutyPlan()">{{ dutyPlanSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+                <button class="button button--primary" (click)="startDutyPlanEdit()">{{ dutyPlanSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
+              }
             </div>
           </aside>
         </div>
@@ -382,15 +431,15 @@
               <div class="driver-create-grid">
                 <label class="driver-create-field driver-create-field--wide">
                   <span>Name / Nachname *</span>
-                  <input name="driverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Müller Anna" required />
+                  <input name="driverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Demo Fahrer 20" required />
                 </label>
                 <label class="driver-create-field">
                   <span>Telefon *</span>
-                  <input name="driverPhone" type="tel" [(ngModel)]="newDriver.phone" autocomplete="tel" placeholder="+49 6592 410 000" required />
+                  <input name="driverPhone" type="tel" [(ngModel)]="newDriver.phone" autocomplete="tel" placeholder="0000 000 0000" required />
                 </label>
                 <label class="driver-create-field">
                   <span>E-Mail *</span>
-                  <input name="driverEmail" type="email" [(ngModel)]="newDriver.email" autocomplete="email" placeholder="name@busdispo.de" required />
+                  <input name="driverEmail" type="email" [(ngModel)]="newDriver.email" autocomplete="email" placeholder="name@example.com" required />
                 </label>
                 <label class="driver-create-field">
                   <span>Status</span>
@@ -487,10 +536,10 @@
               <h4>Nachweise & Prüfungen</h4>
               <div class="driver-documents">
                 <div><span class="document-icon">◇</span><p><b>Führerschein</b><small>Klasse {{ selectedDriver().license }}</small></p><p><em>{{ selectedDriver().licenseExpiry }}</em><small class="document-valid">Gültig</small></p></div>
-                <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'olanovski'">{{ selectedDriver().id === 'olanovski' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
+                <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'fahrer-10'">{{ selectedDriver().id === 'fahrer-10' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
               </div>
 
-              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span>▣</span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als Olanovski testen</small></div><i>→</i></button>
+              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span>▣</span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als Fahrer 10 testen</small></div><i>→</i></button>
 
               <div class="driver-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
@@ -904,7 +953,7 @@
               <dt>Bemerkung</dt><dd><input [(ngModel)]="selectedShift().note" placeholder="Keine besonderen Hinweise" aria-label="Bemerkung" /></dd>
               <dt>Status</dt><dd><span class="tag tag--green">{{ selectedShift().status || 'Geplant' }}</span></dd>
             </dl>
-            <button class="button button--primary save-button" (click)="save()">{{ saved() ? 'Gespeichert ✓' : 'Speichern' }}</button>
+            <button class="button button--primary save-button" (click)="save()">{{ saved() ? 'Gespeichert ✓' : 'Demo Ort 48n' }}</button>
             <button class="delete-button" (click)="deleteSelectedAssignment()">Einsatz löschen</button>
           </div>
           }

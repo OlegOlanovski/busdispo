@@ -84,6 +84,17 @@ interface DutyPlan {
   tone: 'blue' | 'violet' | 'green' | 'orange' | 'cyan';
 }
 
+interface DutyPlanDraft {
+  name: string;
+  route: string;
+  start: string;
+  end: string;
+  breakTime: string;
+  weekdays: string;
+  status: DutyPlan['status'];
+  stops: string[];
+}
+
 interface Driver {
   id: string;
   name: string;
@@ -203,16 +214,22 @@ export class App {
   protected readonly dragTargetKey = signal<string | null>(null);
   protected readonly dragTargetValid = signal(false);
   protected readonly planningFeedback = signal<PlanningFeedback | null>(null);
-  protected readonly selectedShiftId = signal('xls-3-dau-rh-91');
-  protected readonly selectedVehicleId = signal('DAU-RH 91');
+  protected readonly selectedShiftId = signal('xls-3-demo-91');
+  protected readonly selectedVehicleId = signal('DEMO-91');
   protected readonly vehicleSearch = signal('');
   protected readonly vehicleStatus = signal('Alle Status');
   protected readonly vehicleSaved = signal(false);
-  protected readonly selectedDutyPlanId = signal('standard-rh91');
+  protected readonly selectedDutyPlanId = signal('demo-plan-91');
   protected readonly dutyPlanSearch = signal('');
   protected readonly dutyPlanStatus = signal('Alle Status');
   protected readonly dutyPlanSaved = signal(false);
-  protected readonly selectedDriverId = signal('olanovski');
+  protected readonly dutyPlanEditing = signal(false);
+  protected readonly dutyPlanEditError = signal('');
+  private readonly dutyPlanRevision = signal(0);
+  protected dutyPlanDraft: DutyPlanDraft = {
+    name: '', route: '', start: '', end: '', breakTime: '', weekdays: 'Mo – Fr', status: 'Entwurf', stops: [],
+  };
+  protected readonly selectedDriverId = signal('fahrer-10');
   protected readonly driverSearch = signal('');
   protected readonly driverStatus = signal('Alle Status');
   protected readonly driverSaved = signal(false);
@@ -221,18 +238,18 @@ export class App {
   protected readonly driverCreated = signal<string | null>(null);
   private readonly driverRevision = signal(0);
   protected newDriver: DriverDraft = this.emptyDriverDraft();
-  protected readonly selectedAbsenceId = signal('blum-vacation');
+  protected readonly selectedAbsenceId = signal('fahrer-04-05-vacation');
   protected readonly absenceSearch = signal('');
   protected readonly absenceType = signal('Alle Arten');
   protected readonly absenceSaved = signal(false);
-  protected readonly selectedSpecialTripId = signal('rheinbach-day-trip');
+  protected readonly selectedSpecialTripId = signal('demo-trip-01');
   protected readonly specialTripSearch = signal('');
   protected readonly specialTripStatus = signal('Alle Status');
   protected readonly specialTripSaved = signal(false);
-  protected readonly selectedMessageId = signal('olanovski-delay');
+  protected readonly selectedMessageId = signal('fahrer-10-delay');
   protected readonly messageSearch = signal('');
   protected readonly messageFilter = signal('Alle Nachrichten');
-  protected readonly unreadMessageIds = signal(['olanovski-delay', 'rheinbach-passengers', 'rh11-service']);
+  protected readonly unreadMessageIds = signal(['fahrer-10-delay', 'demo-trip-passengers', 'demo-vehicle-service']);
   protected readonly messageReply = signal('');
   protected readonly messageSent = signal(false);
   protected readonly driverShiftState = signal<DriverShiftState>('ready');
@@ -246,10 +263,10 @@ export class App {
   protected readonly driverShiftNote = signal('');
 
   protected newAssignment: AssignmentDraft = {
-    vehicle: 'DAU-RH 91',
+    vehicle: 'DEMO-91',
     day: 0,
     driver: '',
-    plan: 'Standard RH 91',
+    plan: 'Tagesplan L 91',
     start: '06:05',
     end: '14:24',
     note: '',
@@ -266,94 +283,94 @@ export class App {
   ];
 
   protected readonly vehicles: PlanningVehicle[] = [
-    { id: 'DAU-RH 13', displayLabel: 'DAU RH13', lineLabel: 'RH 13', seats: 0, tone: 'green', start: '07:00', end: '16:00' },
-    { id: 'DAU-RH 11', displayLabel: 'DAU RH11', lineLabel: 'RH 11', seats: 0, tone: 'green', start: '06:30', end: '16:53' },
-    { id: 'DAU-RH 5', displayLabel: 'DAU RH5', lineLabel: 'RH 5', seats: 0, tone: 'green', start: '06:30', end: '15:05' },
-    { id: 'DAU-RH 89', displayLabel: 'DAU RH89', lineLabel: 'RH 89', seats: 0, tone: 'cyan', start: '06:30', end: '16:33' },
-    { id: 'DAU-RH 102', displayLabel: 'DAU RH102', lineLabel: 'RH 102', seats: 0, tone: 'blue', start: '07:07', end: '13:48' },
-    { id: 'DAU-RH 92', displayLabel: 'DAU RH92', lineLabel: 'RH 92', seats: 0, tone: 'cyan', start: '07:19', end: '13:56' },
-    { id: 'DAU-RH 775', displayLabel: 'DAU RH775', lineLabel: 'RH 775', seats: 0, tone: 'blue', start: '05:50', end: '16:53' },
-    { id: 'DAU-RH 93', displayLabel: 'DAU RH93', lineLabel: 'RH 93', seats: 0, tone: 'cyan', start: '07:12', end: '17:53' },
-    { id: 'DAU-RH 94', displayLabel: 'DAU RH94', lineLabel: 'RH 94', seats: 0, tone: 'blue', start: '06:27', end: '17:21' },
-    { id: 'DAU-RH 91', displayLabel: 'DAU RH91', lineLabel: 'RH 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
-    { id: 'DAU-RH 98', displayLabel: 'DAU RH98', lineLabel: 'RH 98', seats: 0, tone: 'blue', start: '06:11', end: '16:32' },
-    { id: 'DAU-RH 101', displayLabel: 'DAU RH101', lineLabel: 'RH 101', seats: 0, tone: 'cyan', start: '06:25', end: '17:52' },
-    { id: 'DAU-RH 96', displayLabel: 'DAU RH96', lineLabel: 'RH 96', seats: 0, tone: 'blue', start: '07:14', end: '17:02' },
-    { id: 'DAU-RH 90', displayLabel: 'DAU RH90', lineLabel: 'RH 90', seats: 0, tone: 'amber', start: '06:45', end: '00:51' },
-    { id: 'DAU-RH 96/14', displayLabel: 'DAU RH96/14', lineLabel: 'RH 96/14', seats: 0, tone: 'amber', start: '06:28', end: '17:06' },
-    { id: 'DAU-RH Nacht 1', displayLabel: 'DAU RH Nacht', lineLabel: 'RH Nacht', seats: 0, tone: 'rose', start: '23:25', end: '01:29' },
-    { id: 'DAU-RH Nacht 2', displayLabel: 'DAU RH Fr/Sa', lineLabel: 'RH Fr/Sa', seats: 0, tone: 'amber', start: '00:55', end: '02:29' },
-    { id: 'Wochenende Trier', displayLabel: 'Wochenende', lineLabel: 'Sa/So', seats: 0, tone: 'amber', start: '22:13', end: '00:51' },
-    { id: 'RMB 520 Samstag', displayLabel: 'RMB 520 Sa', lineLabel: 'RMB 520 Sa', seats: 0, tone: 'blue', start: '14:17', end: '22:48' },
-    { id: 'RMB 520 Sonntag A', displayLabel: 'RMB 520 So', lineLabel: 'RMB 520 So', seats: 0, tone: 'blue', start: '08:17', end: '14:48' },
-    { id: 'RMB 520 Sonntag B', displayLabel: 'RMB 520 So', lineLabel: 'RMB 520 So', seats: 0, tone: 'violet', start: '15:13', end: '21:42' },
+    { id: 'DEMO-13', displayLabel: 'DEMO 13', lineLabel: 'L 13', seats: 0, tone: 'green', start: '07:00', end: '16:00' },
+    { id: 'DEMO-11', displayLabel: 'DEMO 11', lineLabel: 'L 11', seats: 0, tone: 'green', start: '06:30', end: '16:53' },
+    { id: 'DEMO-5', displayLabel: 'DEMO 5', lineLabel: 'L 5', seats: 0, tone: 'green', start: '06:30', end: '15:05' },
+    { id: 'DEMO-89', displayLabel: 'DEMO 89', lineLabel: 'L 89', seats: 0, tone: 'cyan', start: '06:30', end: '16:33' },
+    { id: 'DEMO-102', displayLabel: 'DEMO 102', lineLabel: 'L 102', seats: 0, tone: 'blue', start: '07:07', end: '13:48' },
+    { id: 'DEMO-92', displayLabel: 'DEMO 92', lineLabel: 'L 92', seats: 0, tone: 'cyan', start: '07:19', end: '13:56' },
+    { id: 'DEMO-775', displayLabel: 'DEMO 775', lineLabel: 'L 775', seats: 0, tone: 'blue', start: '05:50', end: '16:53' },
+    { id: 'DEMO-93', displayLabel: 'DEMO 93', lineLabel: 'L 93', seats: 0, tone: 'cyan', start: '07:12', end: '17:53' },
+    { id: 'DEMO-94', displayLabel: 'DEMO 94', lineLabel: 'L 94', seats: 0, tone: 'blue', start: '06:27', end: '17:21' },
+    { id: 'DEMO-91', displayLabel: 'DEMO 91', lineLabel: 'L 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
+    { id: 'DEMO-98', displayLabel: 'DEMO 98', lineLabel: 'L 98', seats: 0, tone: 'blue', start: '06:11', end: '16:32' },
+    { id: 'DEMO-101', displayLabel: 'DEMO 101', lineLabel: 'L 101', seats: 0, tone: 'cyan', start: '06:25', end: '17:52' },
+    { id: 'DEMO-96', displayLabel: 'DEMO 96', lineLabel: 'L 96', seats: 0, tone: 'blue', start: '07:14', end: '17:02' },
+    { id: 'DEMO-90', displayLabel: 'DEMO 90', lineLabel: 'L 90', seats: 0, tone: 'amber', start: '06:45', end: '00:51' },
+    { id: 'DEMO-96/14', displayLabel: 'DEMO 96/14', lineLabel: 'L 96/14', seats: 0, tone: 'amber', start: '06:28', end: '17:06' },
+    { id: 'DEMO-Nacht 1', displayLabel: 'DEMO  Nacht', lineLabel: 'L Nacht', seats: 0, tone: 'rose', start: '23:25', end: '01:29' },
+    { id: 'DEMO-Nacht 2', displayLabel: 'DEMO  Fr/Sa', lineLabel: 'L Fr/Sa', seats: 0, tone: 'amber', start: '00:55', end: '02:29' },
+    { id: 'Demo Wochenende', displayLabel: 'Wochenende', lineLabel: 'Sa/So', seats: 0, tone: 'amber', start: '22:13', end: '00:51' },
+    { id: 'DEMO-WE Samstag', displayLabel: 'DEMO-WE Sa', lineLabel: 'DEMO-WE Sa', seats: 0, tone: 'blue', start: '14:17', end: '22:48' },
+    { id: 'DEMO-WE Sonntag A', displayLabel: 'DEMO-WE So', lineLabel: 'DEMO-WE So', seats: 0, tone: 'blue', start: '08:17', end: '14:48' },
+    { id: 'DEMO-WE Sonntag B', displayLabel: 'DEMO-WE So', lineLabel: 'DEMO-WE So', seats: 0, tone: 'violet', start: '15:13', end: '21:42' },
   ];
   protected readonly planningGridWidth = 96 + this.vehicles.length * 135;
 
   protected readonly fleetVehicles: FleetVehicle[] = [
-    { id: 'DAU-RH 102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Koch', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
-    { id: 'DAU-RH 515', seats: 58, model: 'MAN Lion\'s Intercity', year: 2022, mileage: '128.740 km', status: 'Einsatz', driver: 'Zeyen B.', inspection: '02.02.2027', safetyInspection: '02.08.2026' },
-    { id: 'DAU-RH 94', seats: 52, model: 'Setra S 415 UL', year: 2019, mileage: '267.810 km', status: 'Einsatz', driver: 'Block', inspection: '28.09.2026', safetyInspection: '28.08.2026' },
-    { id: 'DAU-RH 91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Olanovski', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
-    { id: 'DAU-RH 11', seats: 56, model: 'IVECO Crossway', year: 2018, mileage: '312.090 km', status: 'Werkstatt', driver: '–', inspection: '05.08.2026', safetyInspection: '05.08.2026' },
-    { id: 'DAU-RH 8', seats: 53, model: 'Setra S 415 LE', year: 2023, mileage: '74.620 km', status: 'Verfügbar', driver: 'Vater Ilias', inspection: '21.04.2027', safetyInspection: '21.10.2026' },
+    { id: 'DEMO-102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Fahrer 07', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
+    { id: 'DEMO-515', seats: 58, model: 'MAN Lion\'s Intercity', year: 2022, mileage: '128.740 km', status: 'Einsatz', driver: 'Fahrer 02', inspection: '02.02.2027', safetyInspection: '02.08.2026' },
+    { id: 'DEMO-94', seats: 52, model: 'Setra S 415 UL', year: 2019, mileage: '267.810 km', status: 'Einsatz', driver: 'Fahrer 18', inspection: '28.09.2026', safetyInspection: '28.08.2026' },
+    { id: 'DEMO-91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Fahrer 10', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
+    { id: 'DEMO-11', seats: 56, model: 'IVECO Crossway', year: 2018, mileage: '312.090 km', status: 'Werkstatt', driver: '–', inspection: '05.08.2026', safetyInspection: '05.08.2026' },
+    { id: 'DEMO-8', seats: 53, model: 'Setra S 415 LE', year: 2023, mileage: '74.620 km', status: 'Verfügbar', driver: 'Fahrer 15', inspection: '21.04.2027', safetyInspection: '21.10.2026' },
   ];
 
   protected readonly dutyPlans: DutyPlan[] = [
-    { id: 'standard-rh91', name: 'Standard RH 91', route: 'Mannbach → Kötterichen', start: '06:05', end: '14:24', duration: '8h 19m', breakTime: '30m', stops: ['Mannbach', 'Auel Kirche', 'Dockweiler', 'Gerolstein', 'Trier', 'Kötterichen'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
-    { id: 'standard-rh102', name: 'Standard RH 102', route: 'Gerolstein → Daun', start: '06:05', end: '14:20', duration: '8h 15m', breakTime: '30m', stops: ['Gerolstein', 'Pelm', 'Dockweiler', 'Daun ZOB'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'green' },
-    { id: 'standard-rh515', name: 'Standard RH 515', route: 'Ulmen → Cochem', start: '07:30', end: '15:45', duration: '8h 15m', breakTime: '45m', stops: ['Ulmen', 'Büchel', 'Faid', 'Cochem Bahnhof'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'blue' },
-    { id: 'standard-rh94', name: 'Standard RH 94', route: 'Adenau → Mayen', start: '08:00', end: '16:10', duration: '8h 10m', breakTime: '30m', stops: ['Adenau', 'Kelberg', 'Boos', 'Mayen Ost'], weekdays: 'Mo – Sa', assignedVehicles: 1, status: 'Aktiv', tone: 'orange' },
-    { id: 'school-service', name: 'Schulverkehr Daun', route: 'Daun → Gillenfeld', start: '06:40', end: '08:15', duration: '1h 35m', breakTime: '–', stops: ['Daun ZOB', 'Rengen', 'Mehren', 'Gillenfeld Schule'], weekdays: 'Mo – Fr', assignedVehicles: 2, status: 'Entwurf', tone: 'cyan' },
-    { id: 'winter-relief', name: 'Winter Verstärker', route: 'Kelberg → Nürburgring', start: '05:50', end: '09:20', duration: '3h 30m', breakTime: '–', stops: ['Kelberg', 'Nürburg', 'Nürburgring'], weekdays: 'Mo – Fr', assignedVehicles: 0, status: 'Archiviert', tone: 'blue' },
+    { id: 'demo-plan-91', name: 'Tagesplan L 91', route: 'Demo Ort 01 → Demo Ort 02', start: '06:05', end: '14:24', duration: '8h 19m', breakTime: '30m', stops: ['Demo Ort 01', 'Demo Halt A', 'Demo Ort 13', 'Demo Ort 03', 'Demo Ort 47', 'Demo Ort 02'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
+    { id: 'demo-plan-102', name: 'Tagesplan L 102', route: 'Demo Ort 03 → Demo Ort 04', start: '06:05', end: '14:20', duration: '8h 15m', breakTime: '30m', stops: ['Demo Ort 03', 'Demo Ort 12', 'Demo Ort 13', 'Demo Ort 04 ZOB'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'green' },
+    { id: 'demo-plan-515', name: 'Tagesplan L 515', route: 'Demo Ort 05 → Demo Ort 06', start: '07:30', end: '15:45', duration: '8h 15m', breakTime: '45m', stops: ['Demo Ort 05', 'Demo Ort 14', 'Demo Ort 15', 'Demo Ort 06 Bahnhof'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'blue' },
+    { id: 'demo-plan-94', name: 'Tagesplan L 94', route: 'Demo Ort 07 → Demo Ort 08', start: '08:00', end: '16:10', duration: '8h 10m', breakTime: '30m', stops: ['Demo Ort 07', 'Demo Ort 10', 'Demo Ort 56', 'Demo Ort 08 Ost'], weekdays: 'Mo – Sa', assignedVehicles: 1, status: 'Aktiv', tone: 'orange' },
+    { id: 'school-service', name: 'Schulverkehr Demo Ort 04', route: 'Demo Ort 04 → Demo Ort 09', start: '06:40', end: '08:15', duration: '1h 35m', breakTime: '–', stops: ['Demo Ort 04 ZOB', 'Demo Ort 16', 'Demo Ort 17', 'Demo Ort 09 Schule'], weekdays: 'Mo – Fr', assignedVehicles: 2, status: 'Entwurf', tone: 'cyan' },
+    { id: 'winter-relief', name: 'Winter Verstärker', route: 'Demo Ort 10 → Demo Arena', start: '05:50', end: '09:20', duration: '3h 30m', breakTime: '–', stops: ['Demo Ort 10', 'Demo Ort 11', 'Demo Arena'], weekdays: 'Mo – Fr', assignedVehicles: 0, status: 'Archiviert', tone: 'blue' },
   ];
 
   protected readonly drivers: Driver[] = [
-    { id: 'koch', name: 'Koch', initials: 'K', phone: '+49 6592 410 221', email: 'koch@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 102', shift: '06:05 – 14:20', weeklyHours: 32, targetHours: 40, overtime: '+2h 15m', license: 'D, DE', licenseExpiry: '18.03.2028', medicalCheck: '12.01.2027', color: 'green' },
-    { id: 'zeyen', name: 'Zeyen B.', initials: 'ZB', phone: '+49 6592 410 228', email: 'zeyen@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 515', shift: '07:30 – 15:45', weeklyHours: 33, targetHours: 40, overtime: '+1h 40m', license: 'D, DE', licenseExpiry: '09.11.2027', medicalCheck: '22.04.2027', color: 'blue' },
-    { id: 'block', name: 'Block', initials: 'B', phone: '+49 6592 410 235', email: 'block@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 94', shift: '08:00 – 16:10', weeklyHours: 32.5, targetHours: 40, overtime: '−0h 30m', license: 'D, DE', licenseExpiry: '27.08.2029', medicalCheck: '04.03.2027', color: 'orange' },
-    { id: 'olanovski', name: 'Olanovski', initials: 'O', phone: '+49 6592 410 244', email: 'olanovski@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 91', shift: '06:05 – 14:24', weeklyHours: 33.3, targetHours: 40, overtime: '+3h 05m', license: 'D, DE', licenseExpiry: '16.12.2027', medicalCheck: '18.09.2026', color: 'violet' },
-    { id: 'spinger', name: 'Spinger', initials: 'S', phone: '+49 6592 410 251', email: 'spinger@busdispo.de', status: 'Im Einsatz', vehicle: 'DAU-RH 11', shift: '06:30 – 14:40', weeklyHours: 32.7, targetHours: 40, overtime: '+0h 55m', license: 'D, DE', licenseExpiry: '05.05.2028', medicalCheck: '30.11.2026', color: 'cyan' },
-    { id: 'vater-ilias', name: 'Vater Ilias', initials: 'VI', phone: '+49 6592 410 267', email: 'ilias@busdispo.de', status: 'Verfügbar', vehicle: '–', shift: 'Kein Einsatz', weeklyHours: 24, targetHours: 40, overtime: '−1h 20m', license: 'D, DE', licenseExpiry: '14.02.2029', medicalCheck: '08.06.2027', color: 'rose' },
-    { id: 'kyriakos', name: 'Kyriakos', initials: 'K', phone: '+49 6592 410 273', email: 'kyriakos@busdispo.de', status: 'Abwesend', vehicle: '–', shift: 'Krank', weeklyHours: 16, targetHours: 40, overtime: '+0h 10m', license: 'D, DE', licenseExpiry: '25.07.2028', medicalCheck: '11.10.2026', color: 'orange' },
+    { id: 'fahrer-07', name: 'Fahrer 07', initials: '07', phone: '0000 000 0107', email: 'fahrer07@example.com', status: 'Im Einsatz', vehicle: 'DEMO-102', shift: '06:05 – 14:20', weeklyHours: 32, targetHours: 40, overtime: '+2h 15m', license: 'D, DE', licenseExpiry: '18.03.2028', medicalCheck: '12.01.2027', color: 'green' },
+    { id: 'fahrer-02', name: 'Fahrer 02', initials: '02', phone: '0000 000 0102', email: 'fahrer02@example.com', status: 'Im Einsatz', vehicle: 'DEMO-515', shift: '07:30 – 15:45', weeklyHours: 33, targetHours: 40, overtime: '+1h 40m', license: 'D, DE', licenseExpiry: '09.11.2027', medicalCheck: '22.04.2027', color: 'blue' },
+    { id: 'fahrer-18', name: 'Fahrer 18', initials: '18', phone: '0000 000 0118', email: 'fahrer18@example.com', status: 'Im Einsatz', vehicle: 'DEMO-94', shift: '08:00 – 16:10', weeklyHours: 32.5, targetHours: 40, overtime: '−0h 30m', license: 'D, DE', licenseExpiry: '27.08.2029', medicalCheck: '04.03.2027', color: 'orange' },
+    { id: 'fahrer-10', name: 'Fahrer 10', initials: '10', phone: '0000 000 0110', email: 'fahrer10@example.com', status: 'Im Einsatz', vehicle: 'DEMO-91', shift: '06:05 – 14:24', weeklyHours: 33.3, targetHours: 40, overtime: '+3h 05m', license: 'D, DE', licenseExpiry: '16.12.2027', medicalCheck: '18.09.2026', color: 'violet' },
+    { id: 'fahrer-16', name: 'Fahrer 16', initials: '16', phone: '0000 000 0116', email: 'fahrer16@example.com', status: 'Im Einsatz', vehicle: 'DEMO-11', shift: '06:30 – 14:40', weeklyHours: 32.7, targetHours: 40, overtime: '+0h 55m', license: 'D, DE', licenseExpiry: '05.05.2028', medicalCheck: '30.11.2026', color: 'cyan' },
+    { id: 'fahrer-15', name: 'Fahrer 15', initials: '15', phone: '0000 000 0115', email: 'fahrer15@example.com', status: 'Verfügbar', vehicle: '–', shift: 'Kein Einsatz', weeklyHours: 24, targetHours: 40, overtime: '−1h 20m', license: 'D, DE', licenseExpiry: '14.02.2029', medicalCheck: '08.06.2027', color: 'rose' },
+    { id: 'fahrer-19', name: 'Fahrer 19', initials: '19', phone: '0000 000 0119', email: 'fahrer19@example.com', status: 'Abwesend', vehicle: '–', shift: 'Krank', weeklyHours: 16, targetHours: 40, overtime: '+0h 10m', license: 'D, DE', licenseExpiry: '25.07.2028', medicalCheck: '11.10.2026', color: 'orange' },
   ];
 
   protected readonly absences: Absence[] = [
-    { id: 'kyriakos-sick', driver: 'Kyriakos', initials: 'K', type: 'Krank', start: '25.07.2026', end: '25.07.2026', duration: '1 Tag', workingDays: 1, status: 'Aktiv', note: 'Krankmeldung liegt vor.', conflicts: 1, color: 'rose' },
-    { id: 'blum-vacation', driver: 'Blum/Böhnke', initials: 'BB', type: 'Urlaub', start: '20.07.2026', end: '08.08.2026', duration: '20 Tage', workingDays: 15, status: 'Aktiv', note: 'Genehmigter Sommerurlaub.', conflicts: 3, color: 'blue' },
-    { id: 'koch-training', driver: 'Koch', initials: 'K', type: 'Fortbildung', start: '03.08.2026', end: '04.08.2026', duration: '2 Tage', workingDays: 2, status: 'Geplant', note: 'Schulung Fahrgastsicherheit.', conflicts: 2, color: 'green' },
-    { id: 'zeyen-vacation', driver: 'Zeyen B.', initials: 'ZB', type: 'Urlaub', start: '10.08.2026', end: '14.08.2026', duration: '5 Tage', workingDays: 5, status: 'Geplant', note: 'Genehmigter Erholungsurlaub.', conflicts: 0, color: 'violet' },
-    { id: 'spinger-other', driver: 'Spinger', initials: 'S', type: 'Sonstige', start: '18.08.2026', end: '18.08.2026', duration: '1 Tag', workingDays: 1, status: 'Geplant', note: 'Behördentermin.', conflicts: 1, color: 'orange' },
-    { id: 'block-training', driver: 'Block', initials: 'B', type: 'Fortbildung', start: '06.07.2026', end: '07.07.2026', duration: '2 Tage', workingDays: 2, status: 'Beendet', note: 'Eco-Training erfolgreich abgeschlossen.', conflicts: 0, color: 'green' },
+    { id: 'fahrer-19-absence', driver: 'Fahrer 19', initials: '19', type: 'Krank', start: '25.07.2026', end: '25.07.2026', duration: '1 Tag', workingDays: 1, status: 'Aktiv', note: 'Krankmeldung liegt vor.', conflicts: 1, color: 'rose' },
+    { id: 'fahrer-04-05-vacation', driver: 'Fahrer 04/05', initials: '45', type: 'Urlaub', start: '20.07.2026', end: '08.08.2026', duration: '20 Tage', workingDays: 15, status: 'Aktiv', note: 'Genehmigter Sommerurlaub.', conflicts: 3, color: 'blue' },
+    { id: 'fahrer-07-training', driver: 'Fahrer 07', initials: '07', type: 'Fortbildung', start: '03.08.2026', end: '04.08.2026', duration: '2 Tage', workingDays: 2, status: 'Geplant', note: 'Schulung Fahrgastsicherheit.', conflicts: 2, color: 'green' },
+    { id: 'fahrer-02-vacation', driver: 'Fahrer 02', initials: '02', type: 'Urlaub', start: '10.08.2026', end: '14.08.2026', duration: '5 Tage', workingDays: 5, status: 'Geplant', note: 'Genehmigter Erholungsurlaub.', conflicts: 0, color: 'violet' },
+    { id: 'fahrer-16-other', driver: 'Fahrer 16', initials: '16', type: 'Sonstige', start: '18.08.2026', end: '18.08.2026', duration: '1 Tag', workingDays: 1, status: 'Geplant', note: 'Behördentermin.', conflicts: 1, color: 'orange' },
+    { id: 'fahrer-18-training', driver: 'Fahrer 18', initials: '18', type: 'Fortbildung', start: '06.07.2026', end: '07.07.2026', duration: '2 Tage', workingDays: 2, status: 'Beendet', note: 'Eco-Training erfolgreich abgeschlossen.', conflicts: 0, color: 'green' },
   ];
 
   protected readonly specialTrips: SpecialTrip[] = [
-    { id: 'rheinbach-day-trip', title: 'Ausflug Rheinbach', type: 'Tagesfahrt', date: '25.07.2026', start: '12:15', end: '19:15', from: 'Hönningen Zeltlagerplatz', to: 'Rheinbach Schwimmbad', stops: ['Hönningen Zeltlagerplatz', 'Adenau Markt', 'Rheinbach Schwimmbad'], driver: 'Kyriakos', vehicle: 'DAU-RH 11', passengers: 44, customer: 'Jugendfreizeit Hönningen', contact: 'Anna Schmitz', phone: '+49 2691 440 218', status: 'Geplant', note: 'Rückfahrt nach Ende des Schwimmbadbesuchs. Gepäckraum freihalten.', tone: 'rose' },
-    { id: 'duesseldorf-transfer', title: 'Flughafentransfer', type: 'Transferfahrt', date: '26.07.2026', start: '23:00', end: '02:00', from: 'Düsseldorf Innenstadt', to: 'Mehren Ortsmitte', stops: ['Düsseldorf Innenstadt', 'Flughafen Düsseldorf', 'Mehren Ortsmitte'], driver: 'Vater Ilias', vehicle: 'DAU-RH 8', passengers: 31, customer: 'Reisegruppe Vulkaneifel', contact: 'Markus Weber', phone: '+49 6592 880 146', status: 'Geplant', note: 'Nachtfahrt. Flugankunft vor Abfahrt telefonisch bestätigen.', tone: 'blue' },
-    { id: 'trier-club-trip', title: 'Vereinsausflug Trier', type: 'Vereinsfahrt', date: '01.08.2026', start: '08:30', end: '20:45', from: 'Daun ZOB', to: 'Trier Porta Nigra', stops: ['Daun ZOB', 'Gerolstein Bahnhof', 'Trier Porta Nigra'], driver: 'Olanovski', vehicle: 'DAU-RH 91', passengers: 49, customer: 'Sportverein Daun 1921', contact: 'Peter Lenz', phone: '+49 6592 731 009', status: 'Geplant', note: 'Ein Zustieg in Gerolstein. Rückfahrt um 19:00 Uhr.', tone: 'violet' },
-    { id: 'cochem-school-trip', title: 'Schulausflug Cochem', type: 'Klassenfahrt', date: '04.08.2026', start: '07:45', end: '16:30', from: 'Gillenfeld Schule', to: 'Cochem Reichsburg', stops: ['Gillenfeld Schule', 'Ulmen Busbahnhof', 'Cochem Reichsburg'], driver: 'Noch offen', vehicle: 'DAU-RH 515', passengers: 53, customer: 'Grundschule Gillenfeld', contact: 'Laura Klein', phone: '+49 6573 340 112', status: 'Offen', note: 'Begleitpersonen: 4. Fahrerzuweisung noch erforderlich.', tone: 'orange' },
-    { id: 'koblenz-transfer', title: 'Messe-Transfer Koblenz', type: 'Transferfahrt', date: '08.08.2026', start: '06:10', end: '18:20', from: 'Dockweiler', to: 'Koblenz Messegelände', stops: ['Dockweiler', 'Daun ZOB', 'Koblenz Messegelände'], driver: 'Noch offen', vehicle: 'Noch offen', passengers: 38, customer: 'Wirtschaftsforum Eifel', contact: 'Sabine Roth', phone: '+49 261 920 884', status: 'Offen', note: 'Fahrzeug und Fahrer müssen noch eingeplant werden.', tone: 'cyan' },
-    { id: 'mayen-day-trip', title: 'Seniorenfahrt Mayen', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Kelberg Rathaus', to: 'Mayen Marktplatz', stops: ['Kelberg Rathaus', 'Boos Kirche', 'Mayen Marktplatz'], driver: 'Koch', vehicle: 'DAU-RH 102', passengers: 41, customer: 'Seniorenkreis Kelberg', contact: 'Maria Becker', phone: '+49 2692 618 330', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
+    { id: 'demo-trip-01', title: 'Ausflug Demo Ort 54', type: 'Tagesfahrt', date: '25.07.2026', start: '12:15', end: '19:15', from: 'Demo Ort 53 Zeltlagerplatz', to: 'Demo Ort 54 Schwimmbad', stops: ['Demo Ort 53 Zeltlagerplatz', 'Demo Ort 07 Markt', 'Demo Ort 54 Schwimmbad'], driver: 'Fahrer 19', vehicle: 'DEMO-11', passengers: 44, customer: 'Demo-Kunde 01', contact: 'Kontakt 01', phone: '0000 000 0201', status: 'Geplant', note: 'Rückfahrt nach Ende des Schwimmbadbesuchs. Gepäckraum freihalten.', tone: 'rose' },
+    { id: 'demo-trip-02', title: 'Flughafentransfer', type: 'Transferfahrt', date: '26.07.2026', start: '23:00', end: '02:00', from: 'Demo Ort 55 Innenstadt', to: 'Demo Ort 17 Ortsmitte', stops: ['Demo Ort 55 Innenstadt', 'Flughafen Demo Ort 55', 'Demo Ort 17 Ortsmitte'], driver: 'Fahrer 15', vehicle: 'DEMO-8', passengers: 31, customer: 'Demo-Kunde 02', contact: 'Kontakt 02', phone: '0000 000 0202', status: 'Geplant', note: 'Nachtfahrt. Flugankunft vor Abfahrt telefonisch bestätigen.', tone: 'blue' },
+    { id: 'demo-trip-03', title: 'Vereinsausflug Demo Ort 47', type: 'Vereinsfahrt', date: '01.08.2026', start: '08:30', end: '20:45', from: 'Demo Ort 04 ZOB', to: 'Demo Ort 47 Porta Nigra', stops: ['Demo Ort 04 ZOB', 'Demo Ort 03 Bahnhof', 'Demo Ort 47 Porta Nigra'], driver: 'Fahrer 10', vehicle: 'DEMO-91', passengers: 49, customer: 'Demo-Kunde 03', contact: 'Kontakt 03', phone: '0000 000 0203', status: 'Geplant', note: 'Ein Zustieg in Demo Ort 03. Rückfahrt um 19:00 Uhr.', tone: 'violet' },
+    { id: 'demo-trip-04', title: 'Schulausflug Demo Ort 06', type: 'Klassenfahrt', date: '04.08.2026', start: '07:45', end: '16:30', from: 'Demo Ort 09 Schule', to: 'Demo Ort 06 Reichsburg', stops: ['Demo Ort 09 Schule', 'Demo Ort 05 Busbahnhof', 'Demo Ort 06 Reichsburg'], driver: 'Noch offen', vehicle: 'DEMO-515', passengers: 53, customer: 'Demo-Kunde 04', contact: 'Kontakt 04', phone: '0000 000 0204', status: 'Offen', note: 'Begleitpersonen: 4. Fahrerzuweisung noch erforderlich.', tone: 'orange' },
+    { id: 'demo-trip-05', title: 'Messe-Transfer Demo Ort 43', type: 'Transferfahrt', date: '08.08.2026', start: '06:10', end: '18:20', from: 'Demo Ort 13', to: 'Demo Ort 43 Messegelände', stops: ['Demo Ort 13', 'Demo Ort 04 ZOB', 'Demo Ort 43 Messegelände'], driver: 'Noch offen', vehicle: 'Noch offen', passengers: 38, customer: 'Demo-Kunde 05', contact: 'Kontakt 05', phone: '0000 000 0205', status: 'Offen', note: 'Fahrzeug und Fahrer müssen noch eingeplant werden.', tone: 'cyan' },
+    { id: 'demo-trip-06', title: 'Seniorenfahrt Demo Ort 08', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Demo Ort 10 Rathaus', to: 'Demo Ort 08 Marktplatz', stops: ['Demo Ort 10 Rathaus', 'Demo Ort 56 Kirche', 'Demo Ort 08 Marktplatz'], driver: 'Fahrer 07', vehicle: 'DEMO-102', passengers: 41, customer: 'Demo-Kunde 06', contact: 'Kontakt 06', phone: '0000 000 0206', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
   ];
 
   protected readonly messageThreads: MessageThread[] = [
-    { id: 'olanovski-delay', sender: 'Olanovski', initials: 'O', role: 'Fahrer · DAU-RH 91', subject: 'Verspätung auf der B257', preview: 'Wegen einer Baustelle komme ich voraussichtlich 15 Minuten später in Kötterichen an.', date: 'Heute', time: '11:42', category: 'Fahrer', body: ['Hallo Sebi,', 'wegen einer kurzfristigen Baustelle auf der B257 verzögert sich die Fahrt. Ich rechne aktuell mit etwa 15 Minuten Verspätung bei der Ankunft in Kötterichen.', 'Die Fahrgäste sind informiert. Ich melde mich, falls sich die Situation verändert.'], relatedLabel: 'Einsatz in Wochenplanung öffnen', relatedView: 'planning', tone: 'violet' },
-    { id: 'rheinbach-passengers', sender: 'Anna Schmitz', initials: 'AS', role: 'Kundin · Jugendfreizeit Hönningen', subject: 'Teilnehmerzahl für Rheinbach', preview: 'Die endgültige Teilnehmerzahl für Samstag beträgt 44 Personen inklusive Betreuung.', date: 'Heute', time: '10:18', category: 'Kunde', body: ['Guten Morgen,', 'für unsere Tagesfahrt nach Rheinbach am Samstag sind es endgültig 44 Personen, davon vier Betreuungskräfte.', 'Bitte bestätigen Sie kurz, dass der eingeplante Bus ausreichend Sitzplätze hat. Vielen Dank!'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'rose' },
-    { id: 'rh11-service', sender: 'Werkstatt Daun', initials: 'WD', role: 'Servicepartner', subject: 'DAU-RH 11 ab 15 Uhr verfügbar', preview: 'Die Sicherheitsprüfung ist abgeschlossen. Das Fahrzeug kann heute ab 15 Uhr abgeholt werden.', date: 'Heute', time: '09:05', category: 'System', body: ['Guten Morgen,', 'die Arbeiten und die Sicherheitsprüfung am Fahrzeug DAU-RH 11 sind abgeschlossen.', 'Der Bus kann heute ab 15:00 Uhr abgeholt und wieder eingesetzt werden.'], relatedLabel: 'Fahrzeugdetails anzeigen', relatedView: 'vehicles', tone: 'orange' },
-    { id: 'kyriakos-certificate', sender: 'Kyriakos', initials: 'K', role: 'Fahrer', subject: 'Krankmeldung eingereicht', preview: 'Die Bescheinigung für meine heutige Abwesenheit habe ich soeben hochgeladen.', date: 'Gestern', time: '18:26', category: 'Fahrer', body: ['Hallo,', 'die Arbeitsunfähigkeitsbescheinigung für meine heutige Abwesenheit ist jetzt vollständig eingereicht.', 'Bei Rückfragen bin ich telefonisch erreichbar.'], relatedLabel: 'Abwesenheit anzeigen', relatedView: 'absence', tone: 'orange' },
+    { id: 'fahrer-10-delay', sender: 'Fahrer 10', initials: '10', role: 'Fahrer · DEMO-91', subject: 'Verspätung auf der Demo-Straße', preview: 'Wegen einer Baustelle komme ich voraussichtlich 15 Minuten später in Demo Ort 02 an.', date: 'Heute', time: '11:42', category: 'Fahrer', body: ['Hallo Demo Admin,', 'wegen einer kurzfristigen Baustelle auf der Demo-Straße verzögert sich die Fahrt. Ich rechne aktuell mit etwa 15 Minuten Verspätung bei der Ankunft in Demo Ort 02.', 'Die Fahrgäste sind informiert. Ich melde mich, falls sich die Situation verändert.'], relatedLabel: 'Einsatz in Wochenplanung öffnen', relatedView: 'planning', tone: 'violet' },
+    { id: 'demo-trip-passengers', sender: 'Kontakt 01', initials: 'C1', role: 'Kundin · Demo-Kunde 01', subject: 'Teilnehmerzahl für Demo Ort 54', preview: 'Die endgültige Teilnehmerzahl für Samstag beträgt 44 Personen inklusive Betreuung.', date: 'Heute', time: '10:18', category: 'Kunde', body: ['Guten Morgen,', 'für unsere Tagesfahrt nach Demo Ort 54 am Samstag sind es endgültig 44 Personen, davon vier Betreuungskräfte.', 'Bitte bestätigen Sie kurz, dass der eingeplante Bus ausreichend Sitzplätze hat. Vielen Dank!'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'rose' },
+    { id: 'demo-vehicle-service', sender: 'Demo-Werkstatt', initials: 'DW', role: 'Servicepartner', subject: 'DEMO-11 ab 15 Uhr verfügbar', preview: 'Die Sicherheitsprüfung ist abgeschlossen. Das Fahrzeug kann heute ab 15 Uhr abgeholt werden.', date: 'Heute', time: '09:05', category: 'System', body: ['Guten Morgen,', 'die Arbeiten und die Sicherheitsprüfung am Fahrzeug DEMO-11 sind abgeschlossen.', 'Der Bus kann heute ab 15:00 Uhr abgeholt und wieder eingesetzt werden.'], relatedLabel: 'Fahrzeugdetails anzeigen', relatedView: 'vehicles', tone: 'orange' },
+    { id: 'fahrer-19-certificate', sender: 'Fahrer 19', initials: '19', role: 'Fahrer', subject: 'Krankmeldung eingereicht', preview: 'Die Bescheinigung für meine heutige Abwesenheit habe ich soeben hochgeladen.', date: 'Gestern', time: '18:26', category: 'Fahrer', body: ['Hallo,', 'die Arbeitsunfähigkeitsbescheinigung für meine heutige Abwesenheit ist jetzt vollständig eingereicht.', 'Bei Rückfragen bin ich telefonisch erreichbar.'], relatedLabel: 'Abwesenheit anzeigen', relatedView: 'absence', tone: 'orange' },
     { id: 'system-plan', sender: 'BusDispo System', initials: 'BD', role: 'Automatische Meldung', subject: 'Wochenplan erfolgreich veröffentlicht', preview: 'Der Plan für KW 30 wurde an fünf Fahrer verteilt. Zwei Einsätze sind weiterhin offen.', date: 'Gestern', time: '16:02', category: 'System', body: ['Der Wochenplan für KW 30 wurde erfolgreich veröffentlicht.', 'Fünf Fahrer haben ihre Zuweisung erhalten. Für zwei offene Einsätze ist noch keine Fahrerin oder kein Fahrer hinterlegt.'], relatedLabel: 'Wochenplanung prüfen', relatedView: 'planning', tone: 'blue' },
-    { id: 'zeyen-shift', sender: 'Zeyen B.', initials: 'ZB', role: 'Fahrer · DAU-RH 515', subject: 'Rückfrage zum Dienst am Freitag', preview: 'Bleibt der Fahrzeugwechsel in Cochem wie im aktuellen Dienstplan hinterlegt?', date: '30.07.2026', time: '14:37', category: 'Fahrer', body: ['Hallo Sebi,', 'bleibt der Fahrzeugwechsel in Cochem am Freitag wie im aktuellen Dienstplan eingetragen?', 'Dann plane ich meine Pause entsprechend. Danke für eine kurze Rückmeldung.'], relatedLabel: 'Dienstplan anzeigen', relatedView: 'schedules', tone: 'blue' },
-    { id: 'cochem-request', sender: 'Laura Klein', initials: 'LK', role: 'Grundschule Gillenfeld', subject: 'Abfahrtszeit Schulausflug', preview: 'Könnten wir die Abfahrt am 4. August auf 07:30 Uhr vorziehen?', date: '29.07.2026', time: '12:10', category: 'Kunde', body: ['Guten Tag,', 'für den Schulausflug nach Cochem würden wir die Abfahrt gerne von 07:45 Uhr auf 07:30 Uhr vorziehen.', 'Wäre diese Änderung für Sie möglich? Die Teilnehmerzahl bleibt unverändert.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
+    { id: 'fahrer-02-shift', sender: 'Fahrer 02', initials: '02', role: 'Fahrer · DEMO-515', subject: 'Rückfrage zum Dienst am Freitag', preview: 'Bleibt der Fahrzeugwechsel in Demo Ort 06 wie im aktuellen Dienstplan hinterlegt?', date: '30.07.2026', time: '14:37', category: 'Fahrer', body: ['Hallo Demo Admin,', 'bleibt der Fahrzeugwechsel in Demo Ort 06 am Freitag wie im aktuellen Dienstplan eingetragen?', 'Dann plane ich meine Pause entsprechend. Danke für eine kurze Rückmeldung.'], relatedLabel: 'Dienstplan anzeigen', relatedView: 'schedules', tone: 'blue' },
+    { id: 'demo-trip-request', sender: 'Kontakt 04', initials: 'C4', role: 'Demo-Kunde 04', subject: 'Abfahrtszeit Schulausflug', preview: 'Könnten wir die Abfahrt am 4. August auf 07:30 Uhr vorziehen?', date: '29.07.2026', time: '12:10', category: 'Kunde', body: ['Guten Tag,', 'für den Schulausflug nach Demo Ort 06 würden wir die Abfahrt gerne von 07:45 Uhr auf 07:30 Uhr vorziehen.', 'Wäre diese Änderung für Sie möglich? Die Teilnehmerzahl bleibt unverändert.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
   ];
 
   private readonly weeklyDriverAssignments: string[][] = [
-    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Zahnd / Ilias / Zahnd', 'Kettel / Vater Ilias', 'Ilias / Spinger', 'Mahrouk', '', '', '', '', ''],
-    ['Steffes R.', 'Zeyen B. / Zahnd', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Zahnd / Ilias', 'Ilias / Vater / Spinger', 'Spinger', 'Mahrouk', '', '', '', '', ''],
-    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer / Zahnd', 'Grab', 'Block', 'Ilias / Zeyen / Spinger', 'Vater Ilias / Spinger', 'Mahrouk', '', '', '', '', ''],
-    ['Steffes R.', 'Zeyen B.', 'Kettel H. / Zahnd', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Kettel / Zahnd', 'Grab', 'Block', 'Ilias / Spinger', 'Vater Ilias', 'Mahrouk', '', '', '', '', ''],
-    ['Steffes R.', 'Zeyen B.', 'Kettel H.', 'Blum', 'Böhnke', 'Bohlenschmidt', 'Koch', 'Otto', 'Di Giacomo', 'Olanovski', 'Mayer', 'Grab', 'Block', 'Kettel / Spinger / Vater Ilias', 'Vater Ilias', 'Mahrouk', 'Spinger', '', '', '', ''],
-    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Spinger', 'Grab', '', ''],
-    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Spinger', '', 'Vater Ilias', 'Vater Ilias'],
+    ['Fahrer 01', 'Fahrer 02', 'Fahrer 03', 'Fahrer 04', 'Fahrer 05', 'Fahrer 06', 'Fahrer 07', 'Fahrer 08', 'Fahrer 09', 'Fahrer 10', 'Fahrer 11', 'Fahrer 12', 'Fahrer 13 / Fahrer 14 / Fahrer 13', 'Fahrer 03 / Fahrer 15', 'Fahrer 14 / Fahrer 16', 'Fahrer 17', '', '', '', '', ''],
+    ['Fahrer 01', 'Fahrer 02 / Fahrer 13', 'Fahrer 03', 'Fahrer 04', 'Fahrer 05', 'Fahrer 06', 'Fahrer 07', 'Fahrer 08', 'Fahrer 09', 'Fahrer 10', 'Fahrer 11', 'Fahrer 12', 'Fahrer 13 / Fahrer 14', 'Fahrer 14 / Fahrer 15 / Fahrer 16', 'Fahrer 16', 'Fahrer 17', '', '', '', '', ''],
+    ['Fahrer 01', 'Fahrer 02', 'Fahrer 03', 'Fahrer 04', 'Fahrer 05', 'Fahrer 06', 'Fahrer 07', 'Fahrer 08', 'Fahrer 09', 'Fahrer 10', 'Fahrer 11 / Fahrer 13', 'Fahrer 12', 'Fahrer 18', 'Fahrer 14 / Fahrer 02 / Fahrer 16', 'Fahrer 15 / Fahrer 16', 'Fahrer 17', '', '', '', '', ''],
+    ['Fahrer 01', 'Fahrer 02', 'Fahrer 03 / Fahrer 13', 'Fahrer 04', 'Fahrer 05', 'Fahrer 06', 'Fahrer 07', 'Fahrer 08', 'Fahrer 09', 'Fahrer 10', 'Fahrer 03 / Fahrer 13', 'Fahrer 12', 'Fahrer 18', 'Fahrer 14 / Fahrer 16', 'Fahrer 15', 'Fahrer 17', '', '', '', '', ''],
+    ['Fahrer 01', 'Fahrer 02', 'Fahrer 03', 'Fahrer 04', 'Fahrer 05', 'Fahrer 06', 'Fahrer 07', 'Fahrer 08', 'Fahrer 09', 'Fahrer 10', 'Fahrer 11', 'Fahrer 12', 'Fahrer 18', 'Fahrer 03 / Fahrer 16 / Fahrer 15', 'Fahrer 15', 'Fahrer 17', 'Fahrer 16', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Fahrer 16', 'Fahrer 12', '', ''],
+    ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Fahrer 16', '', 'Fahrer 15', 'Fahrer 15'],
   ];
 
   protected readonly shifts: Shift[] = this.weeklyDriverAssignments.flatMap((assignments, day) =>
@@ -376,108 +393,108 @@ export class App {
   );
 
   protected readonly planningTrips: PlanningTripCard[] = [
-    { id: 'rh13-1', vehicle: 'DAU-RH 13', time: '07:00 – 08:15', route: 'Förderzentrum Gerolstein', label: 'Mo – Fr', tone: 'green' },
-    { id: 'rh13-2', vehicle: 'DAU-RH 13', time: '15:15 – 16:00', route: 'Förderzentrum Gerolstein', label: 'Mo – Do', tone: 'green' },
-    { id: 'rh13-3', vehicle: 'DAU-RH 13', time: '12:45 – 13:30', route: 'Förderzentrum Gerolstein', label: 'Fr', tone: 'green' },
-    { id: 'rh11-1', vehicle: 'DAU-RH 11', time: '06:30 – 08:15', route: 'Förderzentrum Daun', label: 'Mo – Fr', tone: 'green' },
-    { id: 'rh11-2', vehicle: 'DAU-RH 11', time: '15:05', route: 'Förderzentrum Daun', label: 'Mo – Do', tone: 'green' },
-    { id: 'rh11-3', vehicle: 'DAU-RH 11', time: '12:15', route: 'Förderzentrum Daun', label: 'Fr', tone: 'green' },
-    { id: 'rh11-4', vehicle: 'DAU-RH 11', time: '16:25 – 16:53', route: 'Kelberg Busbahnhof → Nachtsheim, Ort', label: 'Nur Mi + Do', tone: 'cyan' },
-    { id: 'rh5-1', vehicle: 'DAU-RH 5', time: '06:30 – 08:15', route: 'Förderzentrum Daun', label: 'Mo – Fr', tone: 'green' },
-    { id: 'rh5-2', vehicle: 'DAU-RH 5', time: '15:05', route: 'Förderzentrum Daun', label: 'Mo – Do', tone: 'green' },
-    { id: 'rh5-3', vehicle: 'DAU-RH 5', time: '12:15', route: 'Förderzentrum Daun', label: 'Fr', tone: 'green' },
-    { id: 'rh89-1', vehicle: 'DAU-RH 89', time: '06:30 – 06:46', route: 'Borler → Boxberg', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-2', vehicle: 'DAU-RH 89', time: '07:25 – 07:42', route: 'Müllenbach → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-3', vehicle: 'DAU-RH 89', time: '07:59 – 08:07', route: 'Meisental → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-4', vehicle: 'DAU-RH 89', time: '08:07 – 08:18', route: 'Kelberg Busbahnhof → Kelberg Kiga', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-5', vehicle: 'DAU-RH 89', time: '11:48 – 12:00', route: 'Dockweiler Feuerwehr → Dreis Brück', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-6', vehicle: 'DAU-RH 89', time: '12:15 – 12:31', route: 'Darscheid Schule → Kradenbach', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-7', vehicle: 'DAU-RH 89', time: '12:45 – 13:01', route: 'Dockweiler GS/KG → Kirchweiler, I. d. Holl', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-8', vehicle: 'DAU-RH 89', time: '13:10 – 13:45', route: 'Gerolstein BBS → Daun ZOB', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-9', vehicle: 'DAU-RH 89', time: '13:50 – 14:27', route: 'Daun ZOB → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh89-10', vehicle: 'DAU-RH 89', time: '16:05 – 16:33', route: 'Kelberg Kiga → Borler', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh102-1', vehicle: 'DAU-RH 102', time: '07:07 – 07:35', route: 'Sarmersbach → Dockweiler', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh102-2', vehicle: 'DAU-RH 102', time: '08:02 – 08:20', route: 'Kirchweiler → Dockweiler Kiga', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh102-3', vehicle: 'DAU-RH 102', time: '12:15 – 12:52', route: 'Kelberg Kiga → Borler', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh102-4', vehicle: 'DAU-RH 102', time: '13:15 – 13:48', route: 'Kelberg KiTa → Borler Ort', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh92-1', vehicle: 'DAU-RH 92', time: '07:19 – 07:54', route: 'Borler → Kelberg Grund- und Realschule plus', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh92-2', vehicle: 'DAU-RH 92', time: '07:59 – 08:35', route: 'Borler → Kelberg Kindergarten', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh92-3', vehicle: 'DAU-RH 92', time: '12:15 – 12:59', route: 'Kelberg Kiga → Darscheid', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh92-4', vehicle: 'DAU-RH 92', time: '13:12 – 13:56', route: 'Darscheid → Kelberg G u. RS', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh775-1', vehicle: 'DAU-RH 775', time: '05:50 – 06:37', route: 'Uersfeld → Ulmen Bahnhof', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-2', vehicle: 'DAU-RH 775', time: '07:12 – 07:52', route: 'Kötterichen → Kelberg G u. RS', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-3', vehicle: 'DAU-RH 775', time: '08:05 – 08:24', route: 'Mannebach Abzw. → Uersfeld Kirche', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-4', vehicle: 'DAU-RH 775', time: '11:55 – 12:11', route: 'Uersfeld Römerhügel → Arbach', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-5', vehicle: 'DAU-RH 775', time: '12:50 – 13:07', route: 'Uersfeld Römerhügel → Kötterichen', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-6', vehicle: 'DAU-RH 775', time: '13:20 – 13:48', route: 'Kelberg Busbahnhof → Ditscheid', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh775-7', vehicle: 'DAU-RH 775', time: '16:05 – 16:32', route: 'Kelberg Kiga und Schulzentrum → Müllenbach', label: 'Nur Mi + Do', tone: 'blue' },
-    { id: 'rh775-8', vehicle: 'DAU-RH 775', time: '16:25 – 16:53', route: 'Kelberg Busbahnhof → Nachtsheim, Ort', label: 'Nicht Mi + Do', tone: 'cyan' },
-    { id: 'rh93-1', vehicle: 'DAU-RH 93', time: '07:12 – 07:54', route: 'Darscheid → Kelberg G u. RS', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-2', vehicle: 'DAU-RH 93', time: '08:04 – 08:18', route: 'Berenbach → Uersfeld Römerhügel', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-3', vehicle: 'DAU-RH 93', time: '11:50 – 12:07', route: 'Uersfeld Römerhügel → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-4', vehicle: 'DAU-RH 93', time: '12:53 – 13:13', route: 'Uersfeld Römerhügel → Bereborn', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-5', vehicle: 'DAU-RH 93', time: '13:16 – 13:54', route: 'Kelberg G u. RS → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-6', vehicle: 'DAU-RH 93', time: '16:25', route: 'Kelberg G u. RS → Kötterichen', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh93-7', vehicle: 'DAU-RH 93', time: '17:15 – 17:53', route: 'Ulmen Bahnhof → Kaisersesch', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh94-1', vehicle: 'DAU-RH 94', time: '06:27 – 07:13', route: 'Meerfeld → Daun ZOB', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh94-2', vehicle: 'DAU-RH 94', time: '07:16 – 07:59', route: 'Daun ZOB → Gerolstein GS', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh94-3', vehicle: 'DAU-RH 94', time: '12:14 – 12:49', route: 'Kelberg Grund- und Realschule plus → Nitz', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh94-4', vehicle: 'DAU-RH 94', time: '13:19 – 14:12', route: 'Kelberg Grund- und Realschule plus → Ulmen Bahnhof', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh94-5', vehicle: 'DAU-RH 94', time: '15:22 – 16:02', route: 'Cochem Endertplatz → Gillenbeuren Kirchstraße', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh94-6', vehicle: 'DAU-RH 94', time: '16:15 – 16:29', route: 'Alflen Kirchstraße → Ulmen Bahnhof', label: 'Nur Mo – Do', tone: 'blue' },
-    { id: 'rh94-7', vehicle: 'DAU-RH 94', time: '16:33 – 17:21', route: 'Ulmen Bahnhof → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh91-1', vehicle: 'DAU-RH 91', time: '07:04 – 07:28', route: 'Usch → Gerolstein', label: 'SEV RMV', tone: 'amber' },
-    { id: 'rh91-2', vehicle: 'DAU-RH 91', time: '07:41 – 08:00', route: 'Michelbach → Gerolstein', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh91-3', vehicle: 'DAU-RH 91', time: '12:09 – 12:40', route: 'Gillenfeld → Strotzbüsch', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh91-4', vehicle: 'DAU-RH 91', time: '13:16 – 14:00', route: 'Gillenfeld → Daun', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh91-5', vehicle: 'DAU-RH 91', time: '15:16 – 16:00', route: 'Daun → Gillenfeld', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh91-6', vehicle: 'DAU-RH 91', time: '16:11 – 16:56', route: 'Gillenfeld → Daun', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh98-1', vehicle: 'DAU-RH 98', time: '06:11 – 07:23', route: 'Nitz → Daun', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh98-2', vehicle: 'DAU-RH 98', time: '12:14 – 12:44', route: 'Kelberg KiTa → Müllenbach Ort', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh98-3', vehicle: 'DAU-RH 98', time: '13:17 – 13:44', route: 'Kelberg Busbahnhof → Müllenbach Oberdorf', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh98-4', vehicle: 'DAU-RH 98', time: '16:05 – 16:32', route: 'Kelberg Kiga und Schulzentrum → Müllenbach', label: 'Nicht Mi + Do', tone: 'blue' },
-    { id: 'rh101-1', vehicle: 'DAU-RH 101', time: '06:25 – 07:36', route: 'Manderscheid → Gerolstein', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-2', vehicle: 'DAU-RH 101', time: '08:18 – 08:44', route: 'Kradenbach → Daun ZOB', label: 'Nur Mo + Di', tone: 'cyan' },
-    { id: 'rh101-3', vehicle: 'DAU-RH 101', time: '11:55 – 12:41', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-4', vehicle: 'DAU-RH 101', time: '12:57 – 13:41', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-5', vehicle: 'DAU-RH 101', time: '13:42 – 14:16', route: 'Salm → Manderscheid', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-6', vehicle: 'DAU-RH 101', time: '15:42 – 16:21', route: 'Gerolstein → Salm', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-7', vehicle: 'DAU-RH 101', time: '16:22 – 16:56', route: 'Salm → Manderscheid', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh101-8', vehicle: 'DAU-RH 101', time: '17:02 – 17:52', route: 'Darscheid → Kelberg Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh96-1', vehicle: 'DAU-RH 96', time: '07:14 – 07:54', route: 'Berenbach → Kelberg GRS+', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh96-2', vehicle: 'DAU-RH 96', time: '08:18 – 08:44', route: 'Kradenbach → Daun ZOB', label: 'Nur Mi + Do + Fr', tone: 'blue' },
-    { id: 'rh96-3', vehicle: 'DAU-RH 96', time: '11:45 – 12:10', route: 'Dockweiler → Kradenbach', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh96-4', vehicle: 'DAU-RH 96', time: '12:52 – 13:12', route: 'Uersfeld → Ulmen', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh96-5', vehicle: 'DAU-RH 96', time: '13:19 – 13:44', route: 'Ulmen → Uersfeld', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh96-6', vehicle: 'DAU-RH 96', time: '13:45 – 14:01', route: 'Uersfeld → Ahrbach', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh96-7', vehicle: 'DAU-RH 96', time: '16:11 – 17:02', route: 'Kelberg Kiga → Darscheid', label: 'Linienfahrt', tone: 'blue' },
-    { id: 'rh90-1', vehicle: 'DAU-RH 90', time: '–', route: 'Koblenz (HEB Umlauf)', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh90-2', vehicle: 'DAU-RH 90', time: '06:45 – 07:47', route: 'Kyllburg → Oberbettingen', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh90-3', vehicle: 'DAU-RH 90', time: '13:23 – 13:55', route: 'Jünkerath → Gerolstein', label: 'SEV für RMV', tone: 'rose' },
-    { id: 'rh90-4', vehicle: 'DAU-RH 90', time: '22:13 – 00:51', route: 'Gerolstein → Trier (Wechsel in Speicher)', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh9614-1', vehicle: 'DAU-RH 96/14', time: '–', route: 'Koblenz', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh9614-2', vehicle: 'DAU-RH 96/14', time: '06:28 – 06:48', route: 'Densborn → Gerolstein', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh9614-3', vehicle: 'DAU-RH 96/14', time: '07:18 – 07:42', route: 'Usch → Gerolstein', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh9614-4', vehicle: 'DAU-RH 96/14', time: '13:15 – 13:59', route: 'Hillesheim → St. Thomas', label: 'SEV für RMV', tone: 'amber' },
-    { id: 'rh9614-5', vehicle: 'DAU-RH 96/14', time: '15:25 – 16:00', route: 'Gerolstein → Daun', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'rh9614-6', vehicle: 'DAU-RH 96/14', time: '16:00 – 17:06', route: 'Daun → Kaisersesch', label: 'Linienfahrt', tone: 'cyan' },
-    { id: 'night1-1', vehicle: 'DAU-RH Nacht 1', time: '23:25 – 00:59', route: 'Kall → Gerolstein', label: 'Nur Mo – Do', tone: 'rose' },
-    { id: 'night1-2', vehicle: 'DAU-RH Nacht 1', time: '23:55 – 01:29', route: 'Kall → Gerolstein', label: 'Nur Fr', tone: 'rose' },
-    { id: 'night2-1', vehicle: 'DAU-RH Nacht 2', time: '00:55 – 02:29', route: 'Kall → Gerolstein', label: 'Nur Fr auf Sa', tone: 'amber' },
-    { id: 'weekend-trier', vehicle: 'Wochenende Trier', time: '22:13 – 00:51', route: 'Gerolstein → Trier (Wechsel in Speicher)', label: 'Sa + So', tone: 'amber' },
-    { id: 'rmb-sa', vehicle: 'RMB 520 Samstag', time: '14:17 – 22:48', route: 'RMB 520', label: 'Sa', tone: 'blue' },
-    { id: 'rmb-so-a', vehicle: 'RMB 520 Sonntag A', time: '08:17 – 14:48', route: 'RMB 520', label: 'So', tone: 'blue' },
-    { id: 'rmb-so-b-1', vehicle: 'RMB 520 Sonntag B', time: '15:13 – 21:42', route: 'RMB 520', label: 'So', tone: 'violet' },
-    { id: 'rmb-so-b-2', vehicle: 'RMB 520 Sonntag B', time: '23:55 – 01:29', route: 'Kall → Gerolstein', label: 'So', tone: 'rose' },
+    { id: 'rh13-1', vehicle: 'DEMO-13', time: '07:00 – 08:15', route: 'Förderzentrum Demo Ort 03', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh13-2', vehicle: 'DEMO-13', time: '15:15 – 16:00', route: 'Förderzentrum Demo Ort 03', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh13-3', vehicle: 'DEMO-13', time: '12:45 – 13:30', route: 'Förderzentrum Demo Ort 03', label: 'Fr', tone: 'green' },
+    { id: 'rh11-1', vehicle: 'DEMO-11', time: '06:30 – 08:15', route: 'Förderzentrum Demo Ort 04', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh11-2', vehicle: 'DEMO-11', time: '15:05', route: 'Förderzentrum Demo Ort 04', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh11-3', vehicle: 'DEMO-11', time: '12:15', route: 'Förderzentrum Demo Ort 04', label: 'Fr', tone: 'green' },
+    { id: 'rh11-4', vehicle: 'DEMO-11', time: '16:25 – 16:53', route: 'Demo Ort 10 Busbahnhof → Demo Ort 18, Ort', label: 'Nur Mi + Do', tone: 'cyan' },
+    { id: 'rh5-1', vehicle: 'DEMO-5', time: '06:30 – 08:15', route: 'Förderzentrum Demo Ort 04', label: 'Mo – Fr', tone: 'green' },
+    { id: 'rh5-2', vehicle: 'DEMO-5', time: '15:05', route: 'Förderzentrum Demo Ort 04', label: 'Mo – Do', tone: 'green' },
+    { id: 'rh5-3', vehicle: 'DEMO-5', time: '12:15', route: 'Förderzentrum Demo Ort 04', label: 'Fr', tone: 'green' },
+    { id: 'rh89-1', vehicle: 'DEMO-89', time: '06:30 – 06:46', route: 'Demo Ort 19 → Demo Ort 20', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-2', vehicle: 'DEMO-89', time: '07:25 – 07:42', route: 'Demo Ort 21 → Demo Ort 10 Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-3', vehicle: 'DEMO-89', time: '07:59 – 08:07', route: 'Demo Ort 22 → Demo Ort 10 Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-4', vehicle: 'DEMO-89', time: '08:07 – 08:18', route: 'Demo Ort 10 Busbahnhof → Demo Ort 10 Kiga', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-5', vehicle: 'DEMO-89', time: '11:48 – 12:00', route: 'Demo Ort 13 Feuerwehr → Demo Ort 23', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-6', vehicle: 'DEMO-89', time: '12:15 – 12:31', route: 'Demo Ort 24 Schule → Demo Ort 25', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-7', vehicle: 'DEMO-89', time: '12:45 – 13:01', route: 'Demo Ort 13 GS/KG → Demo Ort 26, I. d. Holl', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-8', vehicle: 'DEMO-89', time: '13:10 – 13:45', route: 'Demo Ort 03 BBS → Demo Ort 04 ZOB', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-9', vehicle: 'DEMO-89', time: '13:50 – 14:27', route: 'Demo Ort 04 ZOB → Demo Ort 10 Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh89-10', vehicle: 'DEMO-89', time: '16:05 – 16:33', route: 'Demo Ort 10 Kiga → Demo Ort 19', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh102-1', vehicle: 'DEMO-102', time: '07:07 – 07:35', route: 'Demo Ort 27 → Demo Ort 13', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-2', vehicle: 'DEMO-102', time: '08:02 – 08:20', route: 'Demo Ort 26 → Demo Ort 13 Kiga', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-3', vehicle: 'DEMO-102', time: '12:15 – 12:52', route: 'Demo Ort 10 Kiga → Demo Ort 19', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh102-4', vehicle: 'DEMO-102', time: '13:15 – 13:48', route: 'Demo Ort 10 KiTa → Demo Ort 19 Ort', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh92-1', vehicle: 'DEMO-92', time: '07:19 – 07:54', route: 'Demo Ort 19 → Demo Ort 10 Grund- und Realschule plus', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-2', vehicle: 'DEMO-92', time: '07:59 – 08:35', route: 'Demo Ort 19 → Demo Ort 10 Kindergarten', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-3', vehicle: 'DEMO-92', time: '12:15 – 12:59', route: 'Demo Ort 10 Kiga → Demo Ort 24', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh92-4', vehicle: 'DEMO-92', time: '13:12 – 13:56', route: 'Demo Ort 24 → Demo Ort 10 G u. RS', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh775-1', vehicle: 'DEMO-775', time: '05:50 – 06:37', route: 'Demo Ort 28 → Demo Ort 05 Bahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-2', vehicle: 'DEMO-775', time: '07:12 – 07:52', route: 'Demo Ort 02 → Demo Ort 10 G u. RS', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-3', vehicle: 'DEMO-775', time: '08:05 – 08:24', route: 'Demo Ort 01 Abzw. → Demo Ort 28 Kirche', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-4', vehicle: 'DEMO-775', time: '11:55 – 12:11', route: 'Demo Ort 28 Römerhügel → Demo Ort 29', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-5', vehicle: 'DEMO-775', time: '12:50 – 13:07', route: 'Demo Ort 28 Römerhügel → Demo Ort 02', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-6', vehicle: 'DEMO-775', time: '13:20 – 13:48', route: 'Demo Ort 10 Busbahnhof → Demo Ort 30', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh775-7', vehicle: 'DEMO-775', time: '16:05 – 16:32', route: 'Demo Ort 10 Kiga und Schulzentrum → Demo Ort 21', label: 'Nur Mi + Do', tone: 'blue' },
+    { id: 'rh775-8', vehicle: 'DEMO-775', time: '16:25 – 16:53', route: 'Demo Ort 10 Busbahnhof → Demo Ort 18, Ort', label: 'Nicht Mi + Do', tone: 'cyan' },
+    { id: 'rh93-1', vehicle: 'DEMO-93', time: '07:12 – 07:54', route: 'Demo Ort 24 → Demo Ort 10 G u. RS', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-2', vehicle: 'DEMO-93', time: '08:04 – 08:18', route: 'Demo Ort 31 → Demo Ort 28 Römerhügel', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-3', vehicle: 'DEMO-93', time: '11:50 – 12:07', route: 'Demo Ort 28 Römerhügel → Demo Ort 02', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-4', vehicle: 'DEMO-93', time: '12:53 – 13:13', route: 'Demo Ort 28 Römerhügel → Demo Ort 32', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-5', vehicle: 'DEMO-93', time: '13:16 – 13:54', route: 'Demo Ort 10 G u. RS → Demo Ort 02', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-6', vehicle: 'DEMO-93', time: '16:25', route: 'Demo Ort 10 G u. RS → Demo Ort 02', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh93-7', vehicle: 'DEMO-93', time: '17:15 – 17:53', route: 'Demo Ort 05 Bahnhof → Demo Ort 33', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh94-1', vehicle: 'DEMO-94', time: '06:27 – 07:13', route: 'Demo Ort 34 → Demo Ort 04 ZOB', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-2', vehicle: 'DEMO-94', time: '07:16 – 07:59', route: 'Demo Ort 04 ZOB → Demo Ort 03 GS', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-3', vehicle: 'DEMO-94', time: '12:14 – 12:49', route: 'Demo Ort 10 Grund- und Realschule plus → Demo Ort 35', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-4', vehicle: 'DEMO-94', time: '13:19 – 14:12', route: 'Demo Ort 10 Grund- und Realschule plus → Demo Ort 05 Bahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-5', vehicle: 'DEMO-94', time: '15:22 – 16:02', route: 'Demo Ort 06 Endertplatz → Demo Ort 36 Kirchstraße', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh94-6', vehicle: 'DEMO-94', time: '16:15 – 16:29', route: 'Demo Ort 37 Kirchstraße → Demo Ort 05 Bahnhof', label: 'Nur Mo – Do', tone: 'blue' },
+    { id: 'rh94-7', vehicle: 'DEMO-94', time: '16:33 – 17:21', route: 'Demo Ort 05 Bahnhof → Demo Ort 10 Busbahnhof', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh91-1', vehicle: 'DEMO-91', time: '07:04 – 07:28', route: 'Demo Ort 38 → Demo Ort 03', label: 'SEV RMV', tone: 'amber' },
+    { id: 'rh91-2', vehicle: 'DEMO-91', time: '07:41 – 08:00', route: 'Demo Ort 39 → Demo Ort 03', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-3', vehicle: 'DEMO-91', time: '12:09 – 12:40', route: 'Demo Ort 09 → Demo Ort 40', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-4', vehicle: 'DEMO-91', time: '13:16 – 14:00', route: 'Demo Ort 09 → Demo Ort 04', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-5', vehicle: 'DEMO-91', time: '15:16 – 16:00', route: 'Demo Ort 04 → Demo Ort 09', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-6', vehicle: 'DEMO-91', time: '16:11 – 16:56', route: 'Demo Ort 09 → Demo Ort 04', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh98-1', vehicle: 'DEMO-98', time: '06:11 – 07:23', route: 'Demo Ort 35 → Demo Ort 04', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-2', vehicle: 'DEMO-98', time: '12:14 – 12:44', route: 'Demo Ort 10 KiTa → Demo Ort 21 Ort', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-3', vehicle: 'DEMO-98', time: '13:17 – 13:44', route: 'Demo Ort 10 Busbahnhof → Demo Ort 21 Oberdorf', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh98-4', vehicle: 'DEMO-98', time: '16:05 – 16:32', route: 'Demo Ort 10 Kiga und Schulzentrum → Demo Ort 21', label: 'Nicht Mi + Do', tone: 'blue' },
+    { id: 'rh101-1', vehicle: 'DEMO-101', time: '06:25 – 07:36', route: 'Demo Ort 41 → Demo Ort 03', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-2', vehicle: 'DEMO-101', time: '08:18 – 08:44', route: 'Demo Ort 25 → Demo Ort 04 ZOB', label: 'Nur Mo + Di', tone: 'cyan' },
+    { id: 'rh101-3', vehicle: 'DEMO-101', time: '11:55 – 12:41', route: 'Demo Ort 03 → Demo Ort 42', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-4', vehicle: 'DEMO-101', time: '12:57 – 13:41', route: 'Demo Ort 03 → Demo Ort 42', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-5', vehicle: 'DEMO-101', time: '13:42 – 14:16', route: 'Demo Ort 42 → Demo Ort 41', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-6', vehicle: 'DEMO-101', time: '15:42 – 16:21', route: 'Demo Ort 03 → Demo Ort 42', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-7', vehicle: 'DEMO-101', time: '16:22 – 16:56', route: 'Demo Ort 42 → Demo Ort 41', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh101-8', vehicle: 'DEMO-101', time: '17:02 – 17:52', route: 'Demo Ort 24 → Demo Ort 10 Busbahnhof', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh96-1', vehicle: 'DEMO-96', time: '07:14 – 07:54', route: 'Demo Ort 31 → Demo Ort 10 GRS+', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-2', vehicle: 'DEMO-96', time: '08:18 – 08:44', route: 'Demo Ort 25 → Demo Ort 04 ZOB', label: 'Nur Mi + Do + Fr', tone: 'blue' },
+    { id: 'rh96-3', vehicle: 'DEMO-96', time: '11:45 – 12:10', route: 'Demo Ort 13 → Demo Ort 25', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-4', vehicle: 'DEMO-96', time: '12:52 – 13:12', route: 'Demo Ort 28 → Demo Ort 05', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-5', vehicle: 'DEMO-96', time: '13:19 – 13:44', route: 'Demo Ort 05 → Demo Ort 28', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-6', vehicle: 'DEMO-96', time: '13:45 – 14:01', route: 'Demo Ort 28 → Demo Ort 29', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh96-7', vehicle: 'DEMO-96', time: '16:11 – 17:02', route: 'Demo Ort 10 Kiga → Demo Ort 24', label: 'Linienfahrt', tone: 'blue' },
+    { id: 'rh90-1', vehicle: 'DEMO-90', time: '–', route: 'Demo Ort 43 (HEB Umlauf)', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh90-2', vehicle: 'DEMO-90', time: '06:45 – 07:47', route: 'Demo Ort 44 → Demo Ort 45', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh90-3', vehicle: 'DEMO-90', time: '13:23 – 13:55', route: 'Demo Ort 46 → Demo Ort 03', label: 'SEV für RMV', tone: 'rose' },
+    { id: 'rh90-4', vehicle: 'DEMO-90', time: '22:13 – 00:51', route: 'Demo Ort 03 → Demo Ort 47 (Wechsel in Demo Ort 48)', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-1', vehicle: 'DEMO-96/14', time: '–', route: 'Demo Ort 43', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-2', vehicle: 'DEMO-96/14', time: '06:28 – 06:48', route: 'Demo Ort 49 → Demo Ort 03', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-3', vehicle: 'DEMO-96/14', time: '07:18 – 07:42', route: 'Demo Ort 38 → Demo Ort 03', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-4', vehicle: 'DEMO-96/14', time: '13:15 – 13:59', route: 'Demo Ort 50 → Demo Ort 51', label: 'SEV für RMV', tone: 'amber' },
+    { id: 'rh9614-5', vehicle: 'DEMO-96/14', time: '15:25 – 16:00', route: 'Demo Ort 03 → Demo Ort 04', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'rh9614-6', vehicle: 'DEMO-96/14', time: '16:00 – 17:06', route: 'Demo Ort 04 → Demo Ort 33', label: 'Linienfahrt', tone: 'cyan' },
+    { id: 'night1-1', vehicle: 'DEMO-Nacht 1', time: '23:25 – 00:59', route: 'Demo Ort 52 → Demo Ort 03', label: 'Nur Mo – Do', tone: 'rose' },
+    { id: 'night1-2', vehicle: 'DEMO-Nacht 1', time: '23:55 – 01:29', route: 'Demo Ort 52 → Demo Ort 03', label: 'Nur Fr', tone: 'rose' },
+    { id: 'night2-1', vehicle: 'DEMO-Nacht 2', time: '00:55 – 02:29', route: 'Demo Ort 52 → Demo Ort 03', label: 'Nur Fr auf Sa', tone: 'amber' },
+    { id: 'demo-weekend', vehicle: 'Demo Wochenende', time: '22:13 – 00:51', route: 'Demo Ort 03 → Demo Ort 47 (Wechsel in Demo Ort 48)', label: 'Sa + So', tone: 'amber' },
+    { id: 'rmb-sa', vehicle: 'DEMO-WE Samstag', time: '14:17 – 22:48', route: 'DEMO-WE', label: 'Sa', tone: 'blue' },
+    { id: 'rmb-so-a', vehicle: 'DEMO-WE Sonntag A', time: '08:17 – 14:48', route: 'DEMO-WE', label: 'So', tone: 'blue' },
+    { id: 'rmb-so-b-1', vehicle: 'DEMO-WE Sonntag B', time: '15:13 – 21:42', route: 'DEMO-WE', label: 'So', tone: 'violet' },
+    { id: 'rmb-so-b-2', vehicle: 'DEMO-WE Sonntag B', time: '23:55 – 01:29', route: 'Demo Ort 52 → Demo Ort 03', label: 'So', tone: 'rose' },
   ];
 
   protected readonly driverPortalStops = [
-    { time: '06:05', place: 'Mannbach', meta: 'Abfahrt · Start' },
-    { time: '06:50', place: 'Auel Kirche', meta: 'Planmäßiger Halt' },
-    { time: '08:05', place: 'Dockweiler', meta: 'Planmäßiger Halt' },
-    { time: '11:00', place: 'Gerolstein', meta: 'Pause · 30 Min.' },
-    { time: '12:12', place: 'Trier', meta: 'Fahrzeugwechsel' },
-    { time: '14:24', place: 'Kötterichen', meta: 'Ankunft · Ende' },
+    { time: '06:05', place: 'Demo Ort 01', meta: 'Abfahrt · Start' },
+    { time: '06:50', place: 'Demo Halt A', meta: 'Planmäßiger Halt' },
+    { time: '08:05', place: 'Demo Ort 13', meta: 'Planmäßiger Halt' },
+    { time: '11:00', place: 'Demo Ort 03', meta: 'Pause · 30 Min.' },
+    { time: '12:12', place: 'Demo Ort 47', meta: 'Fahrzeugwechsel' },
+    { time: '14:24', place: 'Demo Ort 02', meta: 'Ankunft · Ende' },
   ];
 
   protected readonly selectedShift = computed(
@@ -519,6 +536,7 @@ export class App {
   );
 
   protected readonly filteredDutyPlans = computed(() => {
+    this.dutyPlanRevision();
     const query = this.dutyPlanSearch().trim().toLocaleLowerCase('de');
     const status = this.dutyPlanStatus();
     return this.dutyPlans.filter(
@@ -807,7 +825,7 @@ export class App {
     const target = vehicle && day !== undefined
       ? { vehicle, day }
       : this.findFirstEmptyCell();
-    const suggestedPlan = this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DAU-RH ', 'RH ')))
+    const suggestedPlan = this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DEMO-', 'L ')))
       ?? this.dutyPlans.find((plan) => plan.status === 'Aktiv')
       ?? this.dutyPlans[0];
     const suggestedDriver = this.drivers.find(
@@ -995,14 +1013,104 @@ export class App {
   protected selectDutyPlan(plan: DutyPlan): void {
     this.selectedDutyPlanId.set(plan.id);
     this.dutyPlanSaved.set(false);
+    this.dutyPlanEditing.set(false);
+    this.dutyPlanEditError.set('');
     if (window.innerWidth < 900) {
       window.setTimeout(() => document.querySelector('.duty-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
     }
   }
 
+  protected startDutyPlanEdit(): void {
+    const plan = this.selectedDutyPlan();
+    this.dutyPlanDraft = {
+      name: plan.name,
+      route: plan.route,
+      start: plan.start,
+      end: plan.end,
+      breakTime: plan.breakTime,
+      weekdays: plan.weekdays,
+      status: plan.status,
+      stops: [...plan.stops],
+    };
+    this.dutyPlanSaved.set(false);
+    this.dutyPlanEditError.set('');
+    this.dutyPlanEditing.set(true);
+  }
+
+  protected cancelDutyPlanEdit(): void {
+    this.dutyPlanEditing.set(false);
+    this.dutyPlanEditError.set('');
+  }
+
+  protected addDutyPlanStop(): void {
+    this.dutyPlanDraft = { ...this.dutyPlanDraft, stops: [...this.dutyPlanDraft.stops, ''] };
+    this.dutyPlanEditError.set('');
+  }
+
+  protected removeDutyPlanStop(index: number): void {
+    if (this.dutyPlanDraft.stops.length <= 2) {
+      this.dutyPlanEditError.set('Ein Linienverlauf benötigt mindestens zwei Haltestellen.');
+      return;
+    }
+    this.dutyPlanDraft = {
+      ...this.dutyPlanDraft,
+      stops: this.dutyPlanDraft.stops.filter((_, stopIndex) => stopIndex !== index),
+    };
+    this.dutyPlanEditError.set('');
+  }
+
+  protected moveDutyPlanStop(index: number, direction: -1 | 1): void {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= this.dutyPlanDraft.stops.length) return;
+    const stops = [...this.dutyPlanDraft.stops];
+    [stops[index], stops[targetIndex]] = [stops[targetIndex], stops[index]];
+    this.dutyPlanDraft = { ...this.dutyPlanDraft, stops };
+  }
+
+  protected dutyPlanDraftDuration(): string {
+    return this.calculateDutyPlanDuration(this.dutyPlanDraft.start, this.dutyPlanDraft.end);
+  }
+
   protected saveDutyPlan(): void {
+    const draft: DutyPlanDraft = {
+      ...this.dutyPlanDraft,
+      name: this.dutyPlanDraft.name.trim(),
+      route: this.dutyPlanDraft.route.trim(),
+      breakTime: this.dutyPlanDraft.breakTime.trim(),
+      stops: this.dutyPlanDraft.stops.map((stop) => stop.trim()),
+    };
+    if (!draft.name || !draft.route || !draft.start || !draft.end || !draft.breakTime || !draft.weekdays) {
+      this.dutyPlanEditError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    if (draft.stops.length < 2 || draft.stops.some((stop) => !stop)) {
+      this.dutyPlanEditError.set('Bitte geben Sie mindestens zwei vollständige Haltestellen an.');
+      return;
+    }
+
+    Object.assign(this.selectedDutyPlan(), {
+      ...draft,
+      duration: this.calculateDutyPlanDuration(draft.start, draft.end),
+    });
+    this.dutyPlanRevision.update((revision) => revision + 1);
+    this.dutyPlanEditing.set(false);
+    this.dutyPlanEditError.set('');
     this.dutyPlanSaved.set(true);
     window.setTimeout(() => this.dutyPlanSaved.set(false), 2400);
+  }
+
+  private calculateDutyPlanDuration(start: string, end: string): string {
+    if (!start || !end) return '–';
+    const toMinutes = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    const startMinutes = toMinutes(start);
+    let duration = toMinutes(end) - startMinutes;
+    if (duration < 0) duration += 24 * 60;
+    const hours = Math.floor(duration / 60);
+    const minutes = duration % 60;
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   }
 
   protected selectDriver(driver: Driver): void {

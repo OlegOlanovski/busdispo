@@ -2016,6 +2016,112 @@ button {
   .button { padding: 0 8px; }
 }
 
+.duty-edit-form {
+  display: grid;
+  gap: 14px;
+}
+
+.duty-edit-title {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e7ebf1;
+
+  > span { width: 35px; height: 35px; border-radius: 7px; background: #e9f3ff; color: var(--blue); font-size: 18px; line-height: 35px; text-align: center; }
+  h4 { margin: 0; color: #344054; font-size: var(--font-min); }
+  p { margin: 4px 0 0; color: #7a8497; font-size: var(--font-min); line-height: 1.4; }
+}
+
+.duty-edit-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+
+  > span { color: #556176; font-size: var(--font-min); font-weight: 600; }
+  input,
+  select { width: 100%; min-width: 0; height: 41px; padding: 0 9px; border: 1px solid #d7dee8; border-radius: 6px; outline: 0; background: #fff; color: #263044; font-size: var(--font-min); }
+  input:focus,
+  select:focus { border-color: #77aef1; box-shadow: 0 0 0 3px rgb(9 108 242 / 10%); }
+  input::placeholder { color: #929bad; }
+}
+
+.duty-edit-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.duty-edit-duration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -5px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  background: #f7f9fc;
+
+  span { color: #7a8497; font-size: var(--font-min); }
+  b { color: #344054; font-size: var(--font-min); }
+}
+
+.duty-edit-stops-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 3px;
+
+  h4 { margin: 0; }
+  small { display: block; margin-top: 3px; color: #7a8497; font-size: var(--font-min); }
+  > button { flex: 0 0 auto; padding: 6px 8px; border: 1px solid #b9d5f6; border-radius: 5px; background: #eef6ff; color: #126fc8; font-size: var(--font-min); font-weight: 600; }
+}
+
+.duty-edit-stops {
+  display: grid;
+  gap: 7px;
+}
+
+.duty-edit-stop {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+
+  > span { width: 25px; height: 25px; border-radius: 50%; background: #e8f2ff; color: var(--blue); font-size: var(--font-min); font-weight: 700; line-height: 25px; text-align: center; }
+  > input { width: 100%; min-width: 0; height: 38px; padding: 0 8px; border: 1px solid #d7dee8; border-radius: 5px; outline: 0; color: #263044; font-size: var(--font-min); }
+  > input:focus { border-color: #77aef1; box-shadow: 0 0 0 3px rgb(9 108 242 / 10%); }
+  > div { display: flex; gap: 3px; }
+  > div button { width: 27px; height: 27px; padding: 0; border: 1px solid #d9e0e9; border-radius: 4px; background: #fff; color: #657087; font-size: var(--font-min); line-height: 25px; }
+  > div button:hover:not(:disabled) { border-color: #9fc5f2; background: #f2f7fd; color: var(--blue); }
+  > div button:disabled { opacity: 0.35; cursor: default; }
+  > div .duty-edit-stop-delete:hover:not(:disabled) { border-color: #efb8bb; background: #fff2f2; color: #c73944; }
+}
+
+.duty-edit-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid #efb8bb;
+  border-radius: 6px;
+  background: #fff2f2;
+  color: #a51e26;
+  font-size: var(--font-min);
+
+  span { width: 21px; height: 21px; flex: 0 0 auto; border-radius: 50%; background: #df343c; color: #fff; line-height: 21px; text-align: center; }
+}
+
+.duty-edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 9px;
+  padding-top: 3px;
+
+  .button { min-width: 0; padding: 0 8px; }
+}
+
 .drivers-page { padding: 30px 31px 36px; }
 
 .vehicles-page,
