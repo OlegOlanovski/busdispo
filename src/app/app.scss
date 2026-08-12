@@ -566,8 +566,46 @@ button {
 .planning-trip-card--dragging:hover { opacity: 0.45; transform: scale(0.98); box-shadow: none; }
 .planning-trip-card > span { color: currentColor; font-size: var(--font-min); font-weight: 700; }
 .planning-trip-card > strong { color: currentColor; font-size: var(--font-min); }
-.planning-trip-card > small { color: #4f5c71; font-size: var(--font-min); line-height: 1.35; }
-.planning-trip-card > small i { color: currentColor; font-style: normal; font-weight: 700; }
+.planning-trip-route-edit {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #4f5c71;
+  font-family: inherit;
+  font-size: var(--font-min);
+  line-height: 1.35;
+  text-align: left;
+}
+
+.planning-trip-route-edit:hover,
+.planning-trip-route-edit:focus-visible {
+  border-color: color-mix(in srgb, currentColor 28%, transparent);
+  background: rgb(255 255 255 / 65%);
+  outline: none;
+}
+
+.planning-trip-route-edit > span { flex: 1; }
+.planning-trip-route-edit > i { opacity: 0; color: currentColor; font-style: normal; font-weight: 700; }
+.planning-trip-route-edit:hover > i,
+.planning-trip-route-edit:focus-visible > i { opacity: .7; }
+
+.planning-trip-route-input {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  outline: 2px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: #fff;
+  color: #253044;
+  font-family: inherit;
+  font-size: var(--font-min);
+}
 
 .planning-trip-card--green { color: #238c34; }
 .planning-trip-card--blue { color: #176ac3; }

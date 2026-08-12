@@ -216,6 +216,8 @@ export class App {
   protected readonly planningFeedback = signal<PlanningFeedback | null>(null);
   protected readonly editingPlanningVehicleId = signal<string | null>(null);
   protected readonly planningVehicleDraft = signal('');
+  protected readonly editingPlanningTripId = signal<string | null>(null);
+  protected readonly planningTripRouteDraft = signal('');
   protected readonly selectedShiftId = signal('xls-3-demo-91');
   protected readonly selectedVehicleId = signal('DEMO-91');
   protected readonly vehicleSearch = signal('');
@@ -706,6 +708,52 @@ export class App {
 
   protected planningTripsFor(vehicle: string): PlanningTripCard[] {
     return this.planningTrips.filter((trip) => trip.vehicle === vehicle);
+  }
+
+  protected editPlanningTripRoute(event: Event, trip: PlanningTripCard): void {
+    event.stopPropagation();
+    this.editingPlanningTripId.set(trip.id);
+    this.planningTripRouteDraft.set(trip.route);
+    window.setTimeout(() => {
+      const input = Array.from(document.querySelectorAll<HTMLInputElement>('.planning-trip-route-input'))
+        .find((item) => item.dataset['tripEdit'] === trip.id);
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  protected savePlanningTripRoute(event: Event, trip: PlanningTripCard): void {
+    event.stopPropagation();
+    if (this.editingPlanningTripId() !== trip.id) return;
+
+    const nextRoute = this.planningTripRouteDraft().trim();
+    if (!nextRoute) {
+      this.showPlanningFeedback({
+        type: 'error',
+        title: 'Linie fehlt',
+        message: 'Bitte geben Sie eine Linie ein.',
+      });
+      return;
+    }
+
+    const previousRoute = trip.route;
+    trip.route = nextRoute;
+    this.editingPlanningTripId.set(null);
+    this.saved.set(false);
+
+    if (previousRoute !== nextRoute) {
+      this.showPlanningFeedback({
+        type: 'success',
+        title: 'Linie geändert',
+        message: `${previousRoute} → ${nextRoute}`,
+      });
+    }
+  }
+
+  protected cancelPlanningTripEdit(event: Event): void {
+    event.stopPropagation();
+    this.editingPlanningTripId.set(null);
+    this.planningTripRouteDraft.set('');
   }
 
   protected selectPlanningLine(vehicle: string): void {

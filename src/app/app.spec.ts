@@ -130,6 +130,26 @@ describe('App', () => {
     expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt verschoben');
   });
 
+  it('should edit a line directly on a planning card', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const card = compiled.querySelector('.planning-trip-card') as HTMLElement;
+
+    (card.querySelector('.planning-trip-route-edit') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const input = card.querySelector('.planning-trip-route-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Linie 4711';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(card.textContent).toContain('Linie 4711');
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Linie geändert');
+  });
+
   it('should add a driver assignment from an empty planning cell', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

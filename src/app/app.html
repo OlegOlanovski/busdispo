@@ -857,21 +857,40 @@
                 (drop)="dropPlanningTrip($event, vehicle.id)"
               >
                 @for (trip of planningTripsFor(vehicle.id); track trip.id) {
-                  <button
+                  <div
                     class="planning-trip-card planning-trip-card--{{ trip.tone }}"
                     [class.planning-trip-card--dragging]="draggingTripId() === trip.id"
-                    draggable="true"
+                    [draggable]="editingPlanningTripId() !== trip.id"
+                    role="button"
+                    tabindex="0"
                     [attr.aria-grabbed]="draggingTripId() === trip.id"
-                    [attr.aria-label]="trip.label + ', ' + trip.time + ', ' + trip.route + '. Fahrt verschieben oder Details öffnen'"
-                    title="Fahrt verschieben oder Details öffnen"
+                    [attr.aria-label]="trip.label + ', ' + trip.time + ', ' + trip.route + '. Linie bearbeiten, Fahrt verschieben oder Details öffnen'"
+                    title="Linie bearbeiten, Fahrt verschieben oder Details öffnen"
                     (dragstart)="startPlanningTripDrag($event, trip)"
                     (dragend)="finishPlanningTripDrag()"
                     (click)="selectPlanningLine(vehicle.id)"
+                    (keydown.enter)="selectPlanningLine(vehicle.id)"
                   >
                     <span>{{ trip.label }}</span>
                     <strong>{{ trip.time }}</strong>
-                    <small>{{ trip.route }}</small>
-                  </button>
+                    @if (editingPlanningTripId() === trip.id) {
+                      <input
+                        class="planning-trip-route-input"
+                        type="text"
+                        maxlength="80"
+                        [attr.data-trip-edit]="trip.id"
+                        [attr.aria-label]="'Linie ' + trip.route + ' bearbeiten'"
+                        [ngModel]="planningTripRouteDraft()"
+                        (ngModelChange)="planningTripRouteDraft.set($event)"
+                        (click)="$event.stopPropagation()"
+                        (keydown.enter)="savePlanningTripRoute($event, trip)"
+                        (keydown.escape)="cancelPlanningTripEdit($event)"
+                        (blur)="savePlanningTripRoute($event, trip)"
+                      />
+                    } @else {
+                      <button class="planning-trip-route-edit" type="button" title="Linie ändern" (click)="editPlanningTripRoute($event, trip)" (keydown.enter)="$event.stopPropagation()"><span>{{ trip.route }}</span><i aria-hidden="true">✎</i></button>
+                    }
+                  </div>
                 }
               </div>
             }
