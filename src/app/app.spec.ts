@@ -83,6 +83,27 @@ describe('App', () => {
     expect(compiled.querySelector('.route-table')).toBeFalsy();
   });
 
+  it('should edit a bus number from the planning header', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const heading = compiled.querySelector('.trip-grid--header [data-vehicle="DEMO-13"]') as HTMLElement;
+
+    (heading.querySelector('.planning-vehicle-edit') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const input = heading.querySelector('.planning-vehicle-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Bus 4711';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(heading.textContent).toContain('Bus 4711');
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Busnummer geändert');
+    expect(compiled.querySelector('.schedule-row [data-vehicle="DEMO-13"]')).toBeTruthy();
+  });
+
   it('should move a trip card to another vehicle column by drag and drop', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

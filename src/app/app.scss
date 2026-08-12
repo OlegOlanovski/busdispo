@@ -606,6 +606,51 @@ button {
 .line-heading span { color: #667287; font-size: var(--font-min); font-weight: 600; }
 .line-heading--vehicle strong { white-space: nowrap; }
 
+.planning-vehicle-edit {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: currentColor;
+}
+
+.planning-vehicle-edit:hover,
+.planning-vehicle-edit:focus-visible {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+  background: rgb(255 255 255 / 65%);
+  outline: none;
+}
+
+.planning-vehicle-edit > span {
+  opacity: 0;
+  color: currentColor;
+  transition: opacity 120ms ease;
+}
+
+.planning-vehicle-edit:hover > span,
+.planning-vehicle-edit:focus-visible > span { opacity: .7; }
+
+.planning-vehicle-input {
+  width: calc(100% - 12px);
+  min-width: 0;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  outline: 2px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: #fff;
+  color: #253044;
+  font-family: inherit;
+  font-size: var(--font-min);
+  font-weight: 700;
+  text-align: center;
+}
+
 .line-heading--green { color: #238c34; }
 .line-heading--blue { color: #176ac3; }
 .line-heading--amber { color: #c48100; }

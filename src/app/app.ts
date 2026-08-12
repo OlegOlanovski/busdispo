@@ -214,6 +214,8 @@ export class App {
   protected readonly dragTargetKey = signal<string | null>(null);
   protected readonly dragTargetValid = signal(false);
   protected readonly planningFeedback = signal<PlanningFeedback | null>(null);
+  protected readonly editingPlanningVehicleId = signal<string | null>(null);
+  protected readonly planningVehicleDraft = signal('');
   protected readonly selectedShiftId = signal('xls-3-demo-91');
   protected readonly selectedVehicleId = signal('DEMO-91');
   protected readonly vehicleSearch = signal('');
@@ -653,6 +655,49 @@ export class App {
 
   protected planningVehicleLabel(vehicle: string): string {
     return this.vehicles.find((item) => item.id === vehicle)?.displayLabel ?? vehicle;
+  }
+
+  protected editPlanningVehicleLabel(vehicle: PlanningVehicle): void {
+    this.editingPlanningVehicleId.set(vehicle.id);
+    this.planningVehicleDraft.set(vehicle.displayLabel);
+    window.setTimeout(() => {
+      const input = Array.from(document.querySelectorAll<HTMLInputElement>('.planning-vehicle-input'))
+        .find((item) => item.dataset['vehicleEdit'] === vehicle.id);
+      input?.focus();
+      input?.select();
+    }, 0);
+  }
+
+  protected savePlanningVehicleLabel(vehicle: PlanningVehicle): void {
+    if (this.editingPlanningVehicleId() !== vehicle.id) return;
+
+    const nextLabel = this.planningVehicleDraft().trim();
+    if (!nextLabel) {
+      this.showPlanningFeedback({
+        type: 'error',
+        title: 'Busnummer fehlt',
+        message: 'Bitte geben Sie eine Busnummer ein.',
+      });
+      return;
+    }
+
+    const previousLabel = vehicle.displayLabel;
+    vehicle.displayLabel = nextLabel;
+    this.editingPlanningVehicleId.set(null);
+    this.saved.set(false);
+
+    if (previousLabel !== nextLabel) {
+      this.showPlanningFeedback({
+        type: 'success',
+        title: 'Busnummer geändert',
+        message: `${previousLabel} → ${nextLabel}`,
+      });
+    }
+  }
+
+  protected cancelPlanningVehicleEdit(): void {
+    this.editingPlanningVehicleId.set(null);
+    this.planningVehicleDraft.set('');
   }
 
   protected planningLineTone(vehicle: string): ShiftTone {

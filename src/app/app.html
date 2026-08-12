@@ -818,7 +818,31 @@
           <div class="trip-grid trip-grid--header planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
             <div class="planning-week-corner"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
             @for (vehicle of vehicles; track vehicle.id) {
-              <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id"><strong>{{ planningVehicleLabel(vehicle.id) }}</strong></div>
+              <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id">
+                @if (editingPlanningVehicleId() === vehicle.id) {
+                  <input
+                    class="planning-vehicle-input"
+                    type="text"
+                    maxlength="24"
+                    [attr.data-vehicle-edit]="vehicle.id"
+                    [attr.aria-label]="'Busnummer für ' + planningVehicleLabel(vehicle.id) + ' bearbeiten'"
+                    [ngModel]="planningVehicleDraft()"
+                    (ngModelChange)="planningVehicleDraft.set($event)"
+                    (click)="$event.stopPropagation()"
+                    (keydown.enter)="savePlanningVehicleLabel(vehicle)"
+                    (keydown.escape)="cancelPlanningVehicleEdit()"
+                    (blur)="savePlanningVehicleLabel(vehicle)"
+                  />
+                } @else {
+                  <button
+                    class="planning-vehicle-edit"
+                    type="button"
+                    title="Busnummer ändern"
+                    [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' ändern'"
+                    (click)="editPlanningVehicleLabel(vehicle)"
+                  ><strong>{{ planningVehicleLabel(vehicle.id) }}</strong><span aria-hidden="true">✎</span></button>
+                }
+              </div>
             }
           </div>
           <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
