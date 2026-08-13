@@ -408,6 +408,51 @@ describe('App', () => {
     expect(compiled.querySelector('.toast--driver')?.textContent).toContain('Fahrer hinzugefügt');
   });
 
+  it('should edit the selected driver', async () => {
+    window.history.replaceState(null, '', '#drivers');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.driver-detail-actions .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('#driver-create-title')?.textContent).toContain('Fahrer bearbeiten');
+    const app = fixture.componentInstance as any;
+    app.newDriver = {
+      ...app.newDriver,
+      name: 'Fahrer 10 Neu',
+      phone: '0000 000 9999',
+      status: 'Verfügbar',
+    };
+    app.updateDriver();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-create-modal')).toBeFalsy();
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('Fahrer 10 Neu');
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).toContain('0000 000 9999');
+    expect(compiled.querySelector('.toast--driver')?.textContent).toContain('Fahrer aktualisiert');
+  });
+
+  it('should delete the selected driver after confirmation', async () => {
+    window.history.replaceState(null, '', '#drivers');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.driver-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-delete-modal')?.textContent).toContain('Fahrer 10');
+    (compiled.querySelector('.driver-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.driver-delete-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.driver-row')).toHaveLength(6);
+    expect(compiled.querySelector('.driver-detail-card')?.textContent).not.toContain('Fahrer 10');
+    expect(compiled.querySelector('.toast--driver')?.textContent).toContain('Fahrer gelöscht');
+  });
+
   it('should filter drivers by vehicle search', async () => {
     window.history.replaceState(null, '', '#drivers');
     const fixture = TestBed.createComponent(App);

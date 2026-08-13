@@ -2533,6 +2533,14 @@ button {
   .button { padding: 0 8px; }
 }
 
+.driver-delete-button {
+  grid-column: 1 / -1;
+  border-color: #efb4b8;
+  color: #b4232d;
+}
+
+.driver-delete-button:hover { border-color: #d9787f; background: #fff3f3; }
+
 .driver-portal-preview {
   width: 100%;
   display: grid;
@@ -2677,6 +2685,52 @@ button {
 
   .button { min-width: 145px; }
 }
+
+.driver-delete-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 82;
+  width: min(430px, calc(100vw - 32px));
+  padding: 25px;
+  border: 1px solid #ead5d7;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 30%);
+  text-align: center;
+  transform: translate(-50%, -50%);
+
+  h3 { margin: 13px 0 8px; color: #172033; font-size: 20px; }
+  p { margin: 0; color: #68748a; font-size: var(--font-min); line-height: 1.5; }
+  p strong { color: #303a4c; }
+}
+
+.driver-delete-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #ffebec;
+  color: #c62c37;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 48px;
+}
+
+.driver-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.driver-delete-confirm {
+  border-color: #bd2933;
+  background: #bd2933;
+  color: #fff;
+}
+
+.driver-delete-confirm:hover { border-color: #a91f29; background: #a91f29; }
 
 .toast--driver { bottom: 24px; }
 

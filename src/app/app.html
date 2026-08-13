@@ -422,11 +422,11 @@
           <button class="driver-create-backdrop" type="button" aria-label="Formular schließen" (click)="closeNewDriverForm()"></button>
           <section class="driver-create-modal" role="dialog" aria-modal="true" aria-labelledby="driver-create-title">
             <header class="driver-create-head">
-              <div><span class="driver-create-icon">♙</span><div><small>Personalverwaltung</small><h3 id="driver-create-title">Fahrer hinzufügen</h3></div></div>
+              <div><span class="driver-create-icon">♙</span><div><small>Personalverwaltung</small><h3 id="driver-create-title">{{ driverEditing() ? 'Fahrer bearbeiten' : 'Fahrer hinzufügen' }}</h3></div></div>
               <button type="button" aria-label="Formular schließen" (click)="closeNewDriverForm()">×</button>
             </header>
-            <form class="driver-create-form" novalidate (ngSubmit)="createDriver()">
-              <p class="driver-create-intro">Erfassen Sie die persönlichen Daten und erforderlichen Nachweise. Die Einsatzplanung erfolgt anschließend im Wochenplan.</p>
+            <form class="driver-create-form" novalidate (ngSubmit)="saveDriverForm()">
+              <p class="driver-create-intro">{{ driverEditing() ? 'Ändern Sie die persönlichen Daten und erforderlichen Nachweise.' : 'Erfassen Sie die persönlichen Daten und erforderlichen Nachweise. Die Einsatzplanung erfolgt anschließend im Wochenplan.' }}</p>
 
               <div class="driver-create-grid">
                 <label class="driver-create-field driver-create-field--wide">
@@ -468,9 +468,22 @@
               <div class="driver-create-note"><span>i</span><p><b>Einsatz später zuweisen</b><small>Fahrzeug, Linie und Arbeitszeit werden in der Wochenplanung festgelegt.</small></p></div>
               <footer class="driver-create-actions">
                 <button class="button" type="button" (click)="closeNewDriverForm()">Abbrechen</button>
-                <button class="button button--primary" type="submit">Fahrer speichern</button>
+                <button class="button button--primary" type="submit">{{ driverEditing() ? 'Änderungen speichern' : 'Fahrer speichern' }}</button>
               </footer>
             </form>
+          </section>
+        }
+
+        @if (driverDeleteConfirmOpen()) {
+          <button class="driver-create-backdrop" type="button" aria-label="Löschen abbrechen" (click)="cancelDriverDelete()"></button>
+          <section class="driver-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="driver-delete-title" aria-describedby="driver-delete-description">
+            <span class="driver-delete-icon">!</span>
+            <h3 id="driver-delete-title">Fahrer löschen?</h3>
+            <p id="driver-delete-description"><strong>{{ selectedDriver().name }}</strong> wird dauerhaft aus der Fahrerliste entfernt.</p>
+            <div class="driver-delete-actions">
+              <button class="button" type="button" (click)="cancelDriverDelete()">Abbrechen</button>
+              <button class="button driver-delete-confirm" type="button" (click)="deleteDriver()">Fahrer löschen</button>
+            </div>
           </section>
         }
 
@@ -544,6 +557,7 @@
               <div class="driver-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
                 <button class="button button--primary" (click)="saveDriver()">{{ driverSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+                <button class="button driver-delete-button" [disabled]="drivers.length === 1" [title]="drivers.length === 1 ? 'Der letzte Fahrer kann nicht gelöscht werden.' : 'Fahrer löschen'" (click)="requestDriverDelete()">Fahrer löschen</button>
               </div>
             </div>
           </aside>
@@ -1014,5 +1028,11 @@
   }
   @if (driverCreated(); as driverName) {
     <div class="toast toast--driver" role="status"><span>✓</span><div><strong>Fahrer hinzugefügt</strong><small>{{ driverName }} wurde erfolgreich angelegt.</small></div></div>
+  }
+  @if (driverUpdated(); as driverName) {
+    <div class="toast toast--driver" role="status"><span>✓</span><div><strong>Fahrer aktualisiert</strong><small>{{ driverName }} wurde erfolgreich gespeichert.</small></div></div>
+  }
+  @if (driverDeleted(); as driverName) {
+    <div class="toast toast--driver toast--error" role="status"><span>✓</span><div><strong>Fahrer gelöscht</strong><small>{{ driverName }} wurde aus der Fahrerliste entfernt.</small></div></div>
   }
 </div>

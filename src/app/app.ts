@@ -238,8 +238,12 @@ export class App {
   protected readonly driverStatus = signal('Alle Status');
   protected readonly driverSaved = signal(false);
   protected readonly driverFormOpen = signal(false);
+  protected readonly driverEditing = signal(false);
+  protected readonly driverDeleteConfirmOpen = signal(false);
   protected readonly driverFormError = signal('');
   protected readonly driverCreated = signal<string | null>(null);
+  protected readonly driverUpdated = signal<string | null>(null);
+  protected readonly driverDeleted = signal<string | null>(null);
   private readonly driverRevision = signal(0);
   protected newDriver: DriverDraft = this.emptyDriverDraft();
   protected readonly selectedAbsenceId = signal('fahrer-04-05-vacation');
@@ -1209,46 +1213,55 @@ export class App {
   protected selectDriver(driver: Driver): void {
     this.selectedDriverId.set(driver.id);
     this.driverSaved.set(false);
+    this.driverDeleteConfirmOpen.set(false);
     if (window.innerWidth < 900) {
       window.setTimeout(() => document.querySelector('.driver-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
     }
   }
 
   protected saveDriver(): void {
-    this.driverSaved.set(true);
-    window.setTimeout(() => this.driverSaved.set(false), 2400);
+    this.openDriverEditForm();
   }
 
   protected openNewDriverForm(): void {
     this.newDriver = this.emptyDriverDraft();
+    this.driverEditing.set(false);
+    this.driverFormError.set('');
+    this.driverFormOpen.set(true);
+  }
+
+  protected openDriverEditForm(): void {
+    const driver = this.selectedDriver();
+    this.newDriver = {
+      name: driver.name,
+      phone: driver.phone,
+      email: driver.email,
+      status: driver.status,
+      license: driver.license,
+      licenseExpiry: this.toInputDate(driver.licenseExpiry),
+      medicalCheck: this.toInputDate(driver.medicalCheck),
+    };
+    this.driverEditing.set(true);
     this.driverFormError.set('');
     this.driverFormOpen.set(true);
   }
 
   protected closeNewDriverForm(): void {
     this.driverFormOpen.set(false);
+    this.driverEditing.set(false);
     this.driverFormError.set('');
   }
 
-  protected createDriver(): void {
-    const draft: DriverDraft = {
-      ...this.newDriver,
-      name: this.newDriver.name.trim(),
-      phone: this.newDriver.phone.trim(),
-      email: this.newDriver.email.trim().toLocaleLowerCase('de'),
-      license: this.newDriver.license.trim(),
-    };
+  protected saveDriverForm(): void {
+    if (this.driverEditing()) this.updateDriver();
+    else this.createDriver();
+  }
 
-    if (!draft.name || !draft.phone || !draft.email || !draft.license || !draft.licenseExpiry || !draft.medicalCheck) {
-      this.driverFormError.set('Bitte füllen Sie alle Pflichtfelder aus.');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) {
-      this.driverFormError.set('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
-      return;
-    }
-    if (this.drivers.some((driver) => driver.email.toLocaleLowerCase('de') === draft.email)) {
-      this.driverFormError.set('Ein Fahrer mit dieser E-Mail-Adresse ist bereits vorhanden.');
+  protected createDriver(): void {
+    const draft = this.normalizedDriverDraft();
+    const validationError = this.validateDriverDraft(draft);
+    if (validationError) {
+      this.driverFormError.set(validationError);
       return;
     }
 
@@ -1297,6 +1310,88 @@ export class App {
     }, 3200);
   }
 
+  protected updateDriver(): void {
+    const currentDriver = this.selectedDriver();
+    const draft = this.normalizedDriverDraft();
+    const validationError = this.validateDriverDraft(draft, currentDriver.id);
+    if (validationError) {
+      this.driverFormError.set(validationError);
+      return;
+    }
+
+    Object.assign(currentDriver, {
+      name: draft.name,
+      initials: this.driverInitials(draft.name),
+      phone: draft.phone,
+      email: draft.email,
+      status: draft.status,
+      license: draft.license,
+      licenseExpiry: this.toGermanDate(draft.licenseExpiry),
+      medicalCheck: this.toGermanDate(draft.medicalCheck),
+    });
+    if (draft.status === 'Abwesend' && currentDriver.vehicle === '–') currentDriver.shift = 'Abwesend';
+    if (draft.status !== 'Abwesend' && currentDriver.vehicle === '–') currentDriver.shift = 'Kein Einsatz';
+
+    this.driverRevision.update((revision) => revision + 1);
+    this.driverFormOpen.set(false);
+    this.driverEditing.set(false);
+    this.driverFormError.set('');
+    this.driverSaved.set(true);
+    this.driverUpdated.set(currentDriver.name);
+    window.setTimeout(() => {
+      this.driverSaved.set(false);
+      if (this.driverUpdated() === currentDriver.name) this.driverUpdated.set(null);
+    }, 3200);
+  }
+
+  protected requestDriverDelete(): void {
+    this.driverDeleteConfirmOpen.set(true);
+  }
+
+  protected cancelDriverDelete(): void {
+    this.driverDeleteConfirmOpen.set(false);
+  }
+
+  protected deleteDriver(): void {
+    if (this.drivers.length <= 1) return;
+    const driver = this.selectedDriver();
+    const index = this.drivers.findIndex((item) => item.id === driver.id);
+    if (index < 0) return;
+
+    this.drivers.splice(index, 1);
+    const nextDriver = this.drivers[Math.min(index, this.drivers.length - 1)];
+    if (nextDriver) this.selectedDriverId.set(nextDriver.id);
+    this.driverRevision.update((revision) => revision + 1);
+    this.driverDeleteConfirmOpen.set(false);
+    this.driverDeleted.set(driver.name);
+    window.setTimeout(() => {
+      if (this.driverDeleted() === driver.name) this.driverDeleted.set(null);
+    }, 3200);
+  }
+
+  private normalizedDriverDraft(): DriverDraft {
+    return {
+      ...this.newDriver,
+      name: this.newDriver.name.trim(),
+      phone: this.newDriver.phone.trim(),
+      email: this.newDriver.email.trim().toLocaleLowerCase('de'),
+      license: this.newDriver.license.trim(),
+    };
+  }
+
+  private validateDriverDraft(draft: DriverDraft, excludedDriverId?: string): string {
+    if (!draft.name || !draft.phone || !draft.email || !draft.license || !draft.licenseExpiry || !draft.medicalCheck) {
+      return 'Bitte füllen Sie alle Pflichtfelder aus.';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) {
+      return 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
+    }
+    if (this.drivers.some((driver) => driver.id !== excludedDriverId && driver.email.toLocaleLowerCase('de') === draft.email)) {
+      return 'Ein Fahrer mit dieser E-Mail-Adresse ist bereits vorhanden.';
+    }
+    return '';
+  }
+
   private emptyDriverDraft(): DriverDraft {
     return {
       name: '',
@@ -1322,6 +1417,11 @@ export class App {
   private toGermanDate(value: string): string {
     const [year, month, day] = value.split('-');
     return year && month && day ? `${day}.${month}.${year}` : value;
+  }
+
+  private toInputDate(value: string): string {
+    const [day, month, year] = value.split('.');
+    return year && month && day ? `${year}-${month}-${day}` : value;
   }
 
   protected selectAbsence(absence: Absence): void {
