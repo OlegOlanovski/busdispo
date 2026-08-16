@@ -253,6 +253,7 @@ export class App {
   protected readonly dutyPlanStatus = signal('Alle Status');
   protected readonly dutyPlanSaved = signal(false);
   protected readonly dutyPlanEditing = signal(false);
+  protected readonly dutyPlanCreateOpen = signal(false);
   protected readonly dutyPlanEditError = signal('');
   private readonly dutyPlanRevision = signal(0);
   protected dutyPlanDraft: DutyPlanDraft = {
@@ -457,6 +458,16 @@ export class App {
   protected readonly selectedDutyPlan = computed(
     () => this.dutyPlans.find((plan) => plan.id === this.selectedDutyPlanId()) ?? this.dutyPlans[0],
   );
+
+  protected readonly dutyPlanCounts = computed(() => {
+    this.dutyPlanRevision();
+    return {
+      total: this.dutyPlans.length,
+      active: this.dutyPlans.filter((plan) => plan.status === 'Aktiv').length,
+      draft: this.dutyPlans.filter((plan) => plan.status === 'Entwurf').length,
+      archived: this.dutyPlans.filter((plan) => plan.status === 'Archiviert').length,
+    };
+  });
 
   protected readonly filteredDrivers = computed(() => {
     this.driverRevision();
@@ -1124,6 +1135,69 @@ export class App {
     }
   }
 
+  protected openNewDutyPlanForm(): void {
+    this.dutyPlanDraft = {
+      name: '',
+      route: '',
+      start: '',
+      end: '',
+      breakTime: '30m',
+      weekdays: 'Mo – Fr',
+      status: 'Entwurf',
+      stops: ['', ''],
+    };
+    this.dutyPlanEditing.set(false);
+    this.dutyPlanEditError.set('');
+    this.dutyPlanCreateOpen.set(true);
+  }
+
+  protected closeNewDutyPlanForm(): void {
+    this.dutyPlanCreateOpen.set(false);
+    this.dutyPlanEditError.set('');
+  }
+
+  protected createDutyPlan(): void {
+    const draft = this.normalizedDutyPlanDraft();
+    const validationError = this.validateDutyPlanDraft(draft);
+    if (validationError) {
+      this.dutyPlanEditError.set(validationError);
+      return;
+    }
+
+    const baseId = draft.name
+      .toLocaleLowerCase('de')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'dienstplan';
+    let id = baseId;
+    let suffix = 2;
+    while (this.dutyPlans.some((plan) => plan.id === id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+
+    const tones: DutyPlan['tone'][] = ['blue', 'violet', 'green', 'orange', 'cyan'];
+    const plan: DutyPlan = {
+      id,
+      ...draft,
+      duration: this.calculateDutyPlanDuration(draft.start, draft.end),
+      assignedVehicles: 0,
+      tone: tones[this.dutyPlans.length % tones.length],
+    };
+
+    this.dutyPlans.push(plan);
+    this.dutyPlanRevision.update((revision) => revision + 1);
+    this.selectedDutyPlanId.set(plan.id);
+    this.dutyPlanSearch.set('');
+    this.dutyPlanStatus.set('Alle Status');
+    this.dutyPlanCreateOpen.set(false);
+    this.dutyPlanEditError.set('');
+    this.dutyPlanSaved.set(true);
+    this.persistState();
+    window.setTimeout(() => this.dutyPlanSaved.set(false), 2400);
+  }
+
   protected startDutyPlanEdit(): void {
     const plan = this.selectedDutyPlan();
     this.dutyPlanDraft = {
@@ -1176,19 +1250,10 @@ export class App {
   }
 
   protected saveDutyPlan(): void {
-    const draft: DutyPlanDraft = {
-      ...this.dutyPlanDraft,
-      name: this.dutyPlanDraft.name.trim(),
-      route: this.dutyPlanDraft.route.trim(),
-      breakTime: this.dutyPlanDraft.breakTime.trim(),
-      stops: this.dutyPlanDraft.stops.map((stop) => stop.trim()),
-    };
-    if (!draft.name || !draft.route || !draft.start || !draft.end || !draft.breakTime || !draft.weekdays) {
-      this.dutyPlanEditError.set('Bitte füllen Sie alle Pflichtfelder aus.');
-      return;
-    }
-    if (draft.stops.length < 2 || draft.stops.some((stop) => !stop)) {
-      this.dutyPlanEditError.set('Bitte geben Sie mindestens zwei vollständige Haltestellen an.');
+    const draft = this.normalizedDutyPlanDraft();
+    const validationError = this.validateDutyPlanDraft(draft);
+    if (validationError) {
+      this.dutyPlanEditError.set(validationError);
       return;
     }
 
@@ -1202,6 +1267,26 @@ export class App {
     this.dutyPlanSaved.set(true);
     this.persistState();
     window.setTimeout(() => this.dutyPlanSaved.set(false), 2400);
+  }
+
+  private normalizedDutyPlanDraft(): DutyPlanDraft {
+    return {
+      ...this.dutyPlanDraft,
+      name: this.dutyPlanDraft.name.trim(),
+      route: this.dutyPlanDraft.route.trim(),
+      breakTime: this.dutyPlanDraft.breakTime.trim(),
+      stops: this.dutyPlanDraft.stops.map((stop) => stop.trim()),
+    };
+  }
+
+  private validateDutyPlanDraft(draft: DutyPlanDraft): string {
+    if (!draft.name || !draft.route || !draft.start || !draft.end || !draft.breakTime || !draft.weekdays) {
+      return 'Bitte füllen Sie alle Pflichtfelder aus.';
+    }
+    if (draft.stops.length < 2 || draft.stops.some((stop) => !stop)) {
+      return 'Bitte geben Sie mindestens zwei vollständige Haltestellen an.';
+    }
+    return '';
   }
 
   private calculateDutyPlanDuration(start: string, end: string): string {

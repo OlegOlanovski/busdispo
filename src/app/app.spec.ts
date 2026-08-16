@@ -324,6 +324,45 @@ describe('App', () => {
     expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Linienverlauf');
   });
 
+  it('should create and persist a duty plan from the modal', async () => {
+    window.history.replaceState(null, '', '#schedules');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.duty-intro > .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const form = compiled.querySelector('.duty-create-form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    expect(compiled.querySelectorAll('.duty-create-form .duty-edit-stop')).toHaveLength(2);
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(compiled.querySelector('.duty-create-form .duty-edit-error')?.textContent).toContain('Pflichtfelder');
+
+    const app = fixture.componentInstance as any;
+    app.dutyPlanDraft = {
+      name: 'Tagesplan L 200',
+      route: 'Demo Ort 20 → Demo Ort 21',
+      start: '08:00',
+      end: '16:30',
+      breakTime: '30m',
+      weekdays: 'Mo – Fr',
+      status: 'Entwurf',
+      stops: ['Demo Ort 20', 'Demo Ort 21'],
+    };
+    app.createDutyPlan();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.duty-create-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.duty-row')).toHaveLength(3);
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('Tagesplan L 200');
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('8h 30m');
+    expect(compiled.querySelector('.duty-metrics article b')?.textContent).toBe('3');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('Tagesplan L 200');
+  });
+
   it('should edit a duty plan including its stops', async () => {
     window.history.replaceState(null, '', '#schedules');
     const fixture = TestBed.createComponent(App);

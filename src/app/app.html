@@ -281,14 +281,70 @@
             <h2>Dienstpläne</h2>
             <p>Erstellen und verwalten Sie wiederkehrende Fahrpläne und Linienabläufe.</p>
           </div>
-          <button class="button button--primary">+&nbsp; Dienstplan erstellen</button>
+          <button class="button button--primary" (click)="openNewDutyPlanForm()">+&nbsp; Dienstplan erstellen</button>
         </div>
 
+        @if (dutyPlanCreateOpen()) {
+          <button class="driver-create-backdrop" type="button" aria-label="Dialog schließen" (click)="closeNewDutyPlanForm()"></button>
+          <section class="driver-create-modal duty-create-modal" role="dialog" aria-modal="true" aria-labelledby="duty-create-title">
+            <header class="driver-create-head">
+              <div><span class="duty-plan-icon duty-plan-icon--blue">▤</span><div><small>Dienstplanverwaltung</small><h3 id="duty-create-title">Dienstplan erstellen</h3></div></div>
+              <button type="button" aria-label="Formular schließen" (click)="closeNewDutyPlanForm()">×</button>
+            </header>
+            <form class="driver-create-form duty-edit-form duty-create-form" novalidate (ngSubmit)="createDutyPlan()">
+              <p class="driver-create-intro">Erfassen Sie Linie, Arbeitszeit und den vollständigen Haltestellenverlauf.</p>
+
+              <label class="duty-edit-field">
+                <span>Name des Tagesdienstplans *</span>
+                <input name="dutyCreateName" [(ngModel)]="dutyPlanDraft.name" placeholder="z. B. Tagesplan L 200" required />
+              </label>
+              <label class="duty-edit-field">
+                <span>Linie / Route *</span>
+                <input name="dutyCreateRoute" [(ngModel)]="dutyPlanDraft.route" placeholder="Start → Ziel" required />
+              </label>
+
+              <div class="duty-edit-time-grid">
+                <label class="duty-edit-field"><span>Beginn *</span><input name="dutyCreateStart" type="time" [(ngModel)]="dutyPlanDraft.start" required /></label>
+                <label class="duty-edit-field"><span>Ende *</span><input name="dutyCreateEnd" type="time" [(ngModel)]="dutyPlanDraft.end" required /></label>
+              </div>
+              <div class="duty-edit-duration"><span>Berechnete Dauer</span><b>{{ dutyPlanDraftDuration() }}</b></div>
+
+              <div class="duty-edit-time-grid">
+                <label class="duty-edit-field"><span>Pause *</span><input name="dutyCreateBreak" [(ngModel)]="dutyPlanDraft.breakTime" placeholder="z. B. 30m" required /></label>
+                <label class="duty-edit-field"><span>Gültigkeit *</span><select name="dutyCreateWeekdays" [(ngModel)]="dutyPlanDraft.weekdays"><option>Mo – Fr</option><option>Mo – Sa</option><option>Mo – So</option><option>Sa – So</option></select></label>
+              </div>
+              <label class="duty-edit-field"><span>Status</span><select name="dutyCreateStatus" [(ngModel)]="dutyPlanDraft.status"><option>Aktiv</option><option>Entwurf</option><option>Archiviert</option></select></label>
+
+              <div class="duty-edit-stops-head"><div><h4>Haltestellen</h4><small>Mindestens Start und Ziel angeben</small></div><button class="duty-edit-add-stop" type="button" (click)="addDutyPlanStop()">+ Haltestelle</button></div>
+              <div class="duty-edit-stops">
+                @for (stop of dutyPlanDraft.stops; track $index; let index = $index) {
+                  <div class="duty-edit-stop">
+                    <span>{{ index + 1 }}</span>
+                    <input [name]="'dutyCreateStop' + index" [(ngModel)]="dutyPlanDraft.stops[index]" [placeholder]="index === 0 ? 'Start' : index === dutyPlanDraft.stops.length - 1 ? 'Ziel' : 'Zwischenhalt'" required />
+                    <div>
+                      <button type="button" aria-label="Haltestelle nach oben" [disabled]="index === 0" (click)="moveDutyPlanStop(index, -1)">↑</button>
+                      <button type="button" aria-label="Haltestelle nach unten" [disabled]="index === dutyPlanDraft.stops.length - 1" (click)="moveDutyPlanStop(index, 1)">↓</button>
+                      <button class="duty-edit-stop-delete" type="button" aria-label="Haltestelle löschen" [disabled]="dutyPlanDraft.stops.length <= 2" (click)="removeDutyPlanStop(index)">×</button>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              @if (dutyPlanEditError()) { <div class="duty-edit-error" role="alert"><span>!</span>{{ dutyPlanEditError() }}</div> }
+
+              <div class="driver-create-actions">
+                <button class="button" type="button" (click)="closeNewDutyPlanForm()">Abbrechen</button>
+                <button class="button button--primary" type="submit">Dienstplan speichern</button>
+              </div>
+            </form>
+          </section>
+        }
+
         <div class="duty-metrics">
-          <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>2</b><small>Dienstpläne gesamt</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>2</b><small>Aktive Pläne</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--orange">◌</span><div><b>0</b><small>Entwurf</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--gray">▦</span><div><b>0</b><small>Archiviert</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>{{ dutyPlanCounts().total }}</b><small>Dienstpläne gesamt</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>{{ dutyPlanCounts().active }}</b><small>Aktive Pläne</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--orange">◌</span><div><b>{{ dutyPlanCounts().draft }}</b><small>Entwurf</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--gray">▦</span><div><b>{{ dutyPlanCounts().archived }}</b><small>Archiviert</small></div></article>
         </div>
 
         <div class="duty-layout">
