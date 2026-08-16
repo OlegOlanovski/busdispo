@@ -25,9 +25,9 @@
     <section class="week-card" aria-label="Aktuelle Woche">
       <strong>Aktuelle Woche</strong>
       <div><span>Linien</span><b>{{ vehicles.length }}</b></div>
-      <div><span>Eingeteilt</span><b>21</b></div>
-      <div><span>Offen</span><b>2</b></div>
-      <div><span>Sonderfahrten</span><b>3</b></div>
+      <div><span>Eingeteilt</span><b>{{ drivers.length }}</b></div>
+      <div><span>Offen</span><b>{{ vehicles.length * days.length - shifts.length }}</b></div>
+      <div><span>Sonderfahrten</span><b>{{ specialTrips.length }}</b></div>
     </section>
 
     <a class="support" href="#support"><span>?</span> Hilfe & Support</a>
@@ -78,8 +78,8 @@
           @if (driverShiftState() === 'ready') {
             <section class="driver-form-card driver-start-card">
               <div class="driver-card-heading"><span>1</span><div><h2>Schicht starten</h2><p>Bitte prüfen Sie Fahrzeug und Dokumente vor der Abfahrt.</p></div></div>
-              <label class="driver-field"><span>Aktueller Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverStartMileage()" (ngModelChange)="driverStartMileage.set($event)" /><em>km</em></div><small>Letzter Stand: 221.450 km</small></label>
-              <div class="driver-checklist"><h3>Abfahrtskontrolle</h3><label><input type="checkbox" [ngModel]="driverVehicleChecked()" (ngModelChange)="driverVehicleChecked.set($event)" /><span>✓</span><p><b>Fahrzeug kontrolliert</b><small>Licht, Reifen und sichtbare Schäden geprüft</small></p></label><label><input type="checkbox" [ngModel]="driverDocumentsChecked()" (ngModelChange)="driverDocumentsChecked.set($event)" /><span>✓</span><p><b>Dokumente vorhanden</b><small>Führerschein und Fahrzeugpapiere geprüft</small></p></label></div>
+              <label class="driver-field"><span>Aktueller Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverStartMileage()" (ngModelChange)="driverStartMileage.set($event); persistDriverPortalState()" /><em>km</em></div><small>Letzter Stand: 221.450 km</small></label>
+              <div class="driver-checklist"><h3>Abfahrtskontrolle</h3><label><input type="checkbox" [ngModel]="driverVehicleChecked()" (ngModelChange)="driverVehicleChecked.set($event); persistDriverPortalState()" /><span>✓</span><p><b>Fahrzeug kontrolliert</b><small>Licht, Reifen und sichtbare Schäden geprüft</small></p></label><label><input type="checkbox" [ngModel]="driverDocumentsChecked()" (ngModelChange)="driverDocumentsChecked.set($event); persistDriverPortalState()" /><span>✓</span><p><b>Dokumente vorhanden</b><small>Führerschein und Fahrzeugpapiere geprüft</small></p></label></div>
               <button class="driver-primary-action" [disabled]="!canStartDriverShift()" (click)="startDriverShift()"><span>▶</span> Schicht starten</button>
             </section>
           } @else if (driverShiftState() === 'active') {
@@ -93,15 +93,15 @@
             <section class="driver-form-card driver-report-card">
               <div class="driver-card-heading"><span>!</span><div><h2>Unterwegs melden</h2><p>Informieren Sie die Disposition direkt.</p></div></div>
               <div class="driver-report-actions"><button [class.active]="driverReportMode() === 'delay'" (click)="driverReportMode.set(driverReportMode() === 'delay' ? 'none' : 'delay')"><span>◷</span><b>Verspätung</b><small>Zeit melden</small></button><button [class.active]="driverReportMode() === 'issue'" (click)="driverReportMode.set(driverReportMode() === 'issue' ? 'none' : 'issue')"><span>⚠</span><b>Problem</b><small>Mangel melden</small></button><button (click)="showView('messages')"><span>✉</span><b>Nachricht</b><small>Disposition</small></button></div>
-              @if (driverReportMode() === 'delay') { <div class="driver-inline-report"><label>Aktuelle Verspätung<select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event)"><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option><option>Mehr als 30 Minuten</option></select></label><button (click)="driverReportMode.set('none')">Verspätung senden</button></div> }
-              @if (driverReportMode() === 'issue') { <div class="driver-inline-report"><label>Art des Problems<select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event)"><option>Technischer Mangel</option><option>Unfall / Schaden</option><option>Fahrgastproblem</option><option>Straßensperrung</option></select></label><button (click)="driverReportMode.set('none')">Problem senden</button></div> }
+              @if (driverReportMode() === 'delay') { <div class="driver-inline-report"><label>Aktuelle Verspätung<select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event); persistDriverPortalState()"><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option><option>Mehr als 30 Minuten</option></select></label><button (click)="driverReportMode.set('none')">Verspätung senden</button></div> }
+              @if (driverReportMode() === 'issue') { <div class="driver-inline-report"><label>Art des Problems<select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event); persistDriverPortalState()"><option>Technischer Mangel</option><option>Unfall / Schaden</option><option>Fahrgastproblem</option><option>Straßensperrung</option></select></label><button (click)="driverReportMode.set('none')">Problem senden</button></div> }
             </section>
 
             <section class="driver-form-card driver-finish-card">
               <div class="driver-card-heading"><span>✓</span><div><h2>Schicht beenden</h2><p>Erfassen Sie die tatsächlichen Abschlussdaten.</p></div></div>
-              <label class="driver-field"><span>Endgültiger Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverEndMileage()" (ngModelChange)="driverEndMileage.set($event)" placeholder="z. B. 221617" /><em>km</em></div>@if (canCompleteDriverShift()) { <small class="driver-distance-result">Gefahrene Strecke: <b>{{ drivenDistance() }} km</b></small> } @else { <small>Muss größer als {{ driverStartMileage() | number:'1.0-0' }} km sein</small> }</label>
-              <div class="driver-field-grid"><label class="driver-field"><span>Verspätung</span><select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event)"><option>Keine Verspätung</option><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option></select></label><label class="driver-field"><span>Fahrzeugzustand</span><select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event)"><option>Keine Mängel</option><option>Mangel gemeldet</option><option>Werkstatt erforderlich</option></select></label></div>
-              <label class="driver-field"><span>Bemerkung</span><textarea rows="3" [ngModel]="driverShiftNote()" (ngModelChange)="driverShiftNote.set($event)" placeholder="Optionale Hinweise für die Disposition"></textarea></label>
+              <label class="driver-field"><span>Endgültiger Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverEndMileage()" (ngModelChange)="driverEndMileage.set($event); persistDriverPortalState()" placeholder="z. B. 221617" /><em>km</em></div>@if (canCompleteDriverShift()) { <small class="driver-distance-result">Gefahrene Strecke: <b>{{ drivenDistance() }} km</b></small> } @else { <small>Muss größer als {{ driverStartMileage() | number:'1.0-0' }} km sein</small> }</label>
+              <div class="driver-field-grid"><label class="driver-field"><span>Verspätung</span><select [ngModel]="driverDelay()" (ngModelChange)="driverDelay.set($event); persistDriverPortalState()"><option>Keine Verspätung</option><option>5 Minuten</option><option>10 Minuten</option><option>15 Minuten</option><option>30 Minuten</option></select></label><label class="driver-field"><span>Fahrzeugzustand</span><select [ngModel]="driverIssue()" (ngModelChange)="driverIssue.set($event); persistDriverPortalState()"><option>Keine Mängel</option><option>Mangel gemeldet</option><option>Werkstatt erforderlich</option></select></label></div>
+              <label class="driver-field"><span>Bemerkung</span><textarea rows="3" [ngModel]="driverShiftNote()" (ngModelChange)="driverShiftNote.set($event); persistDriverPortalState()" placeholder="Optionale Hinweise für die Disposition"></textarea></label>
               <button class="driver-primary-action driver-primary-action--finish" [disabled]="!canCompleteDriverShift()" (click)="completeDriverShift()"><span>✓</span> Schicht abschließen</button>
             </section>
           } @else {
@@ -128,19 +128,19 @@
         <div class="metric-grid">
           <article class="metric-card">
             <div class="metric-icon metric-icon--blue">▣</div>
-            <div><span>Fahrzeuge im Einsatz</span><strong>5 <small>/ 6</small></strong><em class="positive">↑ 1 seit gestern</em></div>
+            <div><span>Fahrzeuge im Einsatz</span><strong>{{ fleetVehicles.length }} <small>/ {{ fleetVehicles.length }}</small></strong><em class="positive">Alle verfügbar</em></div>
           </article>
           <article class="metric-card">
             <div class="metric-icon metric-icon--violet">♙</div>
-            <div><span>Fahrer eingeplant</span><strong>5 <small>/ 7</small></strong><em>2 heute abwesend</em></div>
+            <div><span>Fahrer eingeplant</span><strong>{{ drivers.length }} <small>/ {{ drivers.length }}</small></strong><em>Keine Abwesenheit heute</em></div>
           </article>
           <article class="metric-card">
             <div class="metric-icon metric-icon--green">✓</div>
-            <div><span>Geplante Einsätze</span><strong>13</strong><em class="positive">92% abgedeckt</em></div>
+            <div><span>Geplante Einsätze</span><strong>{{ shifts.length }}</strong><em class="positive">Beispieldaten</em></div>
           </article>
           <article class="metric-card">
             <div class="metric-icon metric-icon--orange">!</div>
-            <div><span>Offene Einsätze</span><strong>2</strong><em class="warning">Handlungsbedarf</em></div>
+            <div><span>Offene Einsätze</span><strong>{{ vehicles.length * days.length - shifts.length }}</strong><em class="warning">Wochenende</em></div>
           </article>
         </div>
 
@@ -151,12 +151,12 @@
               <button (click)="showView('planning')">Alle anzeigen&nbsp; →</button>
             </div>
             <div class="assignment-list">
-              @for (shift of [shifts[0], shifts[2], shifts[4], shifts[6], shifts[8], shifts[11]]; track shift.id; let i = $index) {
+              @for (shift of overviewShifts; track shift.id) {
                 <button class="assignment-row" (click)="selectShift(shift); showView('planning')">
                   <span class="assignment-time">{{ shift.start }}<small>{{ shift.end }}</small></span>
                   <span class="assignment-bus"><i class="tone-dot tone-dot--{{ shift.tone }}"></i><b>{{ shift.vehicle }}</b><small>{{ shift.plan }}</small></span>
                   <span class="assignment-driver"><i>♙</i><span><b>{{ shift.driver }}</b><small>Fahrer</small></span></span>
-                  <span class="assignment-status" [class.assignment-status--open]="i === 5">{{ i === 5 ? 'Offen' : 'Geplant' }}</span>
+                  <span class="assignment-status">Geplant</span>
                   <span class="assignment-arrow">›</span>
                 </button>
               }
@@ -165,8 +165,8 @@
 
           <section class="dashboard-card upcoming-card">
             <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
-            <article><time><b>25</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Demo Ort 53 → Demo Ort 54</p></div><em>12:15</em></article>
-            <article><time><b>26</b><span>JUL</span></time><div><strong>Transferfahrt</strong><p>Demo Ort 55 → Demo Ort 17</p></div><em>23:00</em></article>
+            <article><time><b>01</b><span>AUG</span></time><div><strong>Vereinsfahrt</strong><p>Demo Ort 04 → Demo Ort 47</p></div><em>08:30</em></article>
+            <article><time><b>18</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Demo Ort 10 → Demo Ort 08</p></div><em>09:00</em></article>
           </section>
         </div>
 
@@ -181,8 +181,8 @@
           </section>
           <section class="dashboard-card overview-absence-card">
             <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button (click)="showView('absence')">Alle anzeigen&nbsp; →</button></div>
-            <div><span class="absence-avatar absence-avatar--red">K</span><p><b>Fahrer 19</b><small>Heute · Krank</small></p><em>1 Tag</em></div>
-            <div><span class="absence-avatar absence-avatar--blue">B</span><p><b>Fahrer 04/05</b><small>20.07. – 08.08. · Urlaub</small></p><em>20 Tage</em></div>
+            <div><span class="absence-avatar absence-avatar--green">07</span><p><b>Fahrer 07</b><small>03.08. – 04.08. · Fortbildung</small></p><em>2 Tage</em></div>
+            <div><span class="absence-avatar absence-avatar--blue">10</span><p><b>Fahrer 10</b><small>10.08. – 14.08. · Urlaub</small></p><em>5 Tage</em></div>
           </section>
         </div>
       </section>
@@ -198,10 +198,10 @@
         </div>
 
         <div class="fleet-metrics">
-          <article><span class="fleet-metric-icon fleet-metric-icon--blue">▣</span><div><b>6</b><small>Fahrzeuge gesamt</small></div></article>
-          <article><span class="fleet-metric-icon fleet-metric-icon--green">✓</span><div><b>4</b><small>Im Einsatz</small></div></article>
-          <article><span class="fleet-metric-icon fleet-metric-icon--cyan">○</span><div><b>1</b><small>Verfügbar</small></div></article>
-          <article><span class="fleet-metric-icon fleet-metric-icon--orange">⚙</span><div><b>1</b><small>In der Werkstatt</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--blue">▣</span><div><b>2</b><small>Fahrzeuge gesamt</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--green">✓</span><div><b>2</b><small>Im Einsatz</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--cyan">○</span><div><b>0</b><small>Verfügbar</small></div></article>
+          <article><span class="fleet-metric-icon fleet-metric-icon--orange">⚙</span><div><b>0</b><small>In der Werkstatt</small></div></article>
         </div>
 
         <div class="fleet-layout">
@@ -256,12 +256,12 @@
                 <div class="inspection-item">
                   <span class="inspection-icon">HU</span>
                   <div><b>Nächste HU</b><small>Hauptuntersuchung</small></div>
-                  <div><em>{{ selectedVehicle().inspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DEMO-11' || selectedVehicle().id === 'DEMO-91'">{{ selectedVehicle().id === 'DEMO-11' ? 'In 4 Tagen' : selectedVehicle().id === 'DEMO-91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
+                  <div><em>{{ selectedVehicle().inspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DEMO-91'">{{ selectedVehicle().id === 'DEMO-91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
                 </div>
                 <div class="inspection-item">
                   <span class="inspection-icon inspection-icon--sp">SP</span>
                   <div><b>Nächste SP</b><small>Sicherheitsprüfung</small></div>
-                  <div><em>{{ selectedVehicle().safetyInspection }}</em><small [class.due-soon]="selectedVehicle().id === 'DEMO-11' || selectedVehicle().id === 'DEMO-515'">{{ selectedVehicle().id === 'DEMO-11' ? 'In 4 Tagen' : selectedVehicle().id === 'DEMO-515' ? 'Morgen' : 'Fristgerecht' }}</small></div>
+                  <div><em>{{ selectedVehicle().safetyInspection }}</em><small>Fristgerecht</small></div>
                 </div>
               </div>
 
@@ -285,10 +285,10 @@
         </div>
 
         <div class="duty-metrics">
-          <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>6</b><small>Dienstpläne gesamt</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>4</b><small>Aktive Pläne</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--orange">◌</span><div><b>1</b><small>Entwurf</small></div></article>
-          <article><span class="duty-metric-icon duty-metric-icon--gray">▦</span><div><b>1</b><small>Archiviert</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>2</b><small>Dienstpläne gesamt</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>2</b><small>Aktive Pläne</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--orange">◌</span><div><b>0</b><small>Entwurf</small></div></article>
+          <article><span class="duty-metric-icon duty-metric-icon--gray">▦</span><div><b>0</b><small>Archiviert</small></div></article>
         </div>
 
         <div class="duty-layout">
@@ -552,7 +552,7 @@
                 <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'fahrer-10'">{{ selectedDriver().id === 'fahrer-10' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
               </div>
 
-              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span>▣</span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als Fahrer 10 testen</small></div><i>→</i></button>
+              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span>▣</span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als {{ selectedDriver().name }} testen</small></div><i>→</i></button>
 
               <div class="driver-detail-actions">
                 <button class="button" (click)="showView('planning')">Einsatz planen</button>
@@ -575,10 +575,10 @@
         </div>
 
         <div class="absence-metrics">
-          <article><span class="absence-metric-icon absence-metric-icon--blue">⊠</span><div><b>6</b><small>Einträge gesamt</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--rose">!</span><div><b>2</b><small>Aktuell abwesend</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--orange">◌</span><div><b>3</b><small>Geplant</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--green">✓</span><div><b>1</b><small>Beendet</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--blue">⊠</span><div><b>2</b><small>Einträge gesamt</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--rose">!</span><div><b>0</b><small>Aktuell abwesend</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--orange">◌</span><div><b>2</b><small>Geplant</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--green">✓</span><div><b>0</b><small>Beendet</small></div></article>
         </div>
 
         <div class="absence-layout">
@@ -656,10 +656,10 @@
         </div>
 
         <div class="special-trip-metrics">
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--blue">♧</span><div><b>6</b><small>Fahrten gesamt</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--green">✓</span><div><b>3</b><small>Geplant</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--orange">!</span><div><b>2</b><small>Zuweisung offen</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--violet">♙</span><div><b>256</b><small>Fahrgäste gesamt</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--blue">♧</span><div><b>2</b><small>Fahrten gesamt</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--green">✓</span><div><b>1</b><small>Geplant</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--orange">!</span><div><b>0</b><small>Zuweisung offen</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--violet">♙</span><div><b>90</b><small>Fahrgäste gesamt</small></div></article>
         </div>
 
         <div class="special-trip-layout">
@@ -746,10 +746,10 @@
         </div>
 
         <div class="message-metrics">
-          <article><span class="message-metric-icon message-metric-icon--blue">✉</span><div><b>7</b><small>Nachrichten gesamt</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--blue">✉</span><div><b>2</b><small>Nachrichten gesamt</small></div></article>
           <article><span class="message-metric-icon message-metric-icon--orange">●</span><div><b>{{ unreadMessageCount() }}</b><small>Ungelesen</small></div></article>
-          <article><span class="message-metric-icon message-metric-icon--violet">♙</span><div><b>3</b><small>Von Fahrern</small></div></article>
-          <article><span class="message-metric-icon message-metric-icon--green">♧</span><div><b>2</b><small>Kundenanfragen</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--violet">♙</span><div><b>1</b><small>Von Fahrern</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--green">♧</span><div><b>1</b><small>Kundenanfragen</small></div></article>
         </div>
 
         <div class="message-layout">
@@ -1000,14 +1000,14 @@
               <dt>Datum</dt><dd>{{ days[selectedShift().day].short }}, {{ days[selectedShift().day].date }}.2026</dd>
               <dt>Fahrer</dt>
               <dd>
-                <label class="select-control"><span>♙</span><select [(ngModel)]="selectedShift().driver"><option [value]="selectedShift().driver">{{ selectedShift().driver }}</option>@for (driver of drivers; track driver.id) { @if (driver.name !== selectedShift().driver) { <option [value]="driver.name">{{ driver.name }}</option> } }</select></label>
+                <label class="select-control"><span>♙</span><select [ngModel]="selectedShift().driver" (ngModelChange)="updateSelectedShift('driver', $event)"><option [value]="selectedShift().driver">{{ selectedShift().driver }}</option>@for (driver of drivers; track driver.id) { @if (driver.name !== selectedShift().driver) { <option [value]="driver.name">{{ driver.name }}</option> } }</select></label>
                 <span class="valid">✓</span>
               </dd>
               <dt>Dienstplan</dt>
-              <dd><label class="select-control"><span>▧</span><select [(ngModel)]="selectedShift().plan"><option [value]="selectedShift().plan">{{ selectedShift().plan }}</option>@for (plan of dutyPlans; track plan.id) { @if (plan.status !== 'Archiviert' && plan.name !== selectedShift().plan) { <option [value]="plan.name">{{ plan.name }}</option> } }</select></label></dd>
+              <dd><label class="select-control"><span>▧</span><select [ngModel]="selectedShift().plan" (ngModelChange)="updateSelectedShift('plan', $event)"><option [value]="selectedShift().plan">{{ selectedShift().plan }}</option>@for (plan of dutyPlans; track plan.id) { @if (plan.status !== 'Archiviert' && plan.name !== selectedShift().plan) { <option [value]="plan.name">{{ plan.name }}</option> } }</select></label></dd>
               <dt>Arbeitszeit</dt><dd><b>{{ selectedShift().start }} – {{ selectedShift().end }}</b><span class="muted">(8h 19m)</span></dd>
               <dt>Pausen</dt><dd>11:00 – 11:30 <span class="muted">(30m)</span></dd>
-              <dt>Bemerkung</dt><dd><input [(ngModel)]="selectedShift().note" placeholder="Keine besonderen Hinweise" aria-label="Bemerkung" /></dd>
+              <dt>Bemerkung</dt><dd><input [ngModel]="selectedShift().note" (ngModelChange)="updateSelectedShift('note', $event)" placeholder="Keine besonderen Hinweise" aria-label="Bemerkung" /></dd>
               <dt>Status</dt><dd><span class="tag tag--green">{{ selectedShift().status || 'Geplant' }}</span></dd>
             </dl>
             <button class="button button--primary save-button" (click)="save()">{{ saved() ? 'Gespeichert ✓' : 'Demo Ort 48n' }}</button>
