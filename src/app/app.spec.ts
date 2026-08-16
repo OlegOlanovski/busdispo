@@ -47,6 +47,160 @@ describe('App', () => {
     expect(rh91Cell.textContent).toContain('Fahrer 10');
   });
 
+  it('should add and persist a line from weekly planning', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.planning-line-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const form = compiled.querySelector('.planning-line-modal form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    const busInput = form.querySelector('input[name="planningLineDisplayLabel"]') as HTMLInputElement;
+    expect(busInput.getAttribute('list')).toBeNull();
+    (form.querySelector('.planning-vehicle-picker-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(form.querySelector('.planning-vehicle-menu')).toBeTruthy();
+    expect(form.querySelectorAll('.planning-vehicle-option')).toHaveLength(2);
+    expect(form.querySelector('.planning-vehicle-option')?.textContent).toContain('DEMO-91');
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(compiled.querySelector('.planning-line-modal .driver-create-error')?.textContent).toContain('Pflichtfelder');
+
+    const app = fixture.componentInstance as any;
+    app.planningLineDraft = {
+      displayLabel: 'Bus 200',
+      lineLabel: 'L 200',
+      start: '08:00',
+      end: '16:00',
+    };
+    app.createPlanningLine();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.planning-line-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.line-heading')).toHaveLength(3);
+    expect(compiled.querySelector('.line-heading[data-vehicle="BUS-200"]')?.textContent).toContain('Bus 200');
+    expect(compiled.querySelectorAll('.schedule-row')[0].querySelectorAll('.schedule-cell')).toHaveLength(3);
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Linie hinzugefügt');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('BUS-200');
+  });
+
+  it('should delete a planning column with its trips and assignments after confirmation', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const heading = compiled.querySelector('.line-heading[data-vehicle="DEMO-91"]') as HTMLElement;
+
+    (heading.querySelector('.planning-vehicle-delete') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const modal = compiled.querySelector('.planning-line-delete-modal') as HTMLElement;
+    expect(modal.textContent).toContain('DEMO 91 · L 91');
+    expect(modal.textContent).toContain('2 Fahrten');
+    expect(modal.textContent).toContain('5 Einsätze');
+
+    (modal.querySelector('.planning-line-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.planning-line-delete-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.line-heading')).toHaveLength(1);
+    expect(compiled.querySelector('[data-vehicle="DEMO-91"]')).toBeFalsy();
+    expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(2);
+    expect(compiled.querySelectorAll('.schedule-row')[0].querySelectorAll('.schedule-cell')).toHaveLength(1);
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Spalte gelöscht');
+
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.vehicles.some((vehicle: { id: string }) => vehicle.id === 'DEMO-91')).toBe(false);
+    expect(stored.planningTrips.some((trip: { vehicle: string }) => trip.vehicle === 'DEMO-91')).toBe(false);
+    expect(stored.shifts.some((shift: { vehicle: string }) => shift.vehicle === 'DEMO-91')).toBe(false);
+
+    (compiled.querySelector('.planning-vehicle-delete') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (compiled.querySelector('.planning-line-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.line-heading')).toHaveLength(0);
+    expect(compiled.querySelector('.planning-empty-lines')?.textContent).toContain('Noch keine Linien eingeplant');
+    expect((compiled.querySelector('.assignment-add-button') as HTMLButtonElement).disabled).toBe(true);
+
+    const emptyStateButton = compiled.querySelector('.planning-empty-lines .button--primary') as HTMLButtonElement;
+    emptyStateButton.click();
+    fixture.detectChanges();
+    const app = fixture.componentInstance as any;
+    app.planningLineDraft = { displayLabel: 'BUS-300', lineLabel: 'Gerolstein – Daun', start: '08:00', end: '16:00' };
+    app.createPlanningLine();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.line-heading')).toHaveLength(1);
+    expect(compiled.querySelector('.line-heading')?.textContent).toContain('BUS-300');
+    expect(compiled.querySelector('.planning-empty-lines')).toBeFalsy();
+  });
+
+  it('should add a driver from weekly planning and make them assignable', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.planning-driver-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.planning-driver-modal')).toBeTruthy();
+
+    const app = fixture.componentInstance as any;
+    app.newDriver = {
+      name: 'Fahrer 20',
+      phone: '0000 000 0120',
+      email: 'fahrer20@example.com',
+      status: 'Verfügbar',
+      license: 'D, DE',
+      licenseExpiry: '2029-08-10',
+      medicalCheck: '2027-05-12',
+    };
+    app.createDriver();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.planning-driver-modal')).toBeFalsy();
+    (compiled.querySelector('.assignment-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Fahrer 20');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('fahrer20@example.com');
+  });
+
+  it('should add and persist a trip by clicking its line column', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const column = compiled.querySelector('.trip-column[data-vehicle="DEMO-91"]') as HTMLElement;
+
+    (column.querySelector('.planning-trip-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const form = compiled.querySelector('.planning-trip-form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(compiled.querySelector('.planning-trip-modal .driver-create-error')?.textContent).toContain('Pflichtfelder');
+
+    const app = fixture.componentInstance as any;
+    app.planningTripDraft = {
+      vehicle: 'DEMO-91',
+      label: 'Linienfahrt',
+      start: '09:15',
+      end: '10:05',
+      route: 'Demo Ort 01 → Demo Ort 02',
+    };
+    app.createPlanningTrip();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.planning-trip-modal')).toBeFalsy();
+    expect(column.querySelectorAll('.planning-trip-card')).toHaveLength(3);
+    expect(column.textContent).toContain('Linienfahrt');
+    expect(column.textContent).toContain('09:15 – 10:05');
+    expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(5);
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt hinzugefügt');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('09:15 – 10:05');
+  });
+
   it('should slide the main menu in and out', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

@@ -46,6 +46,14 @@ interface PlanningTripCard {
   tone: ShiftTone;
 }
 
+interface PlanningTripDraft {
+  vehicle: string;
+  label: string;
+  start: string;
+  end: string;
+  route: string;
+}
+
 interface Vehicle {
   id: string;
   seats: number;
@@ -55,6 +63,13 @@ interface PlanningVehicle extends Vehicle {
   displayLabel: string;
   lineLabel: string;
   tone: ShiftTone;
+  start: string;
+  end: string;
+}
+
+interface PlanningLineDraft {
+  displayLabel: string;
+  lineLabel: string;
   start: string;
   end: string;
 }
@@ -239,10 +254,18 @@ export class App {
   protected readonly dragTargetKey = signal<string | null>(null);
   protected readonly dragTargetValid = signal(false);
   protected readonly planningFeedback = signal<PlanningFeedback | null>(null);
+  protected readonly planningLineFormOpen = signal(false);
+  protected readonly planningLineError = signal('');
+  protected readonly planningLineDeleteId = signal<string | null>(null);
+  protected readonly planningVehicleMenuOpen = signal(false);
+  protected readonly planningTripFormOpen = signal(false);
+  protected readonly planningTripError = signal('');
   protected readonly editingPlanningVehicleId = signal<string | null>(null);
   protected readonly planningVehicleDraft = signal('');
   protected readonly editingPlanningTripId = signal<string | null>(null);
   protected readonly planningTripRouteDraft = signal('');
+  protected planningLineDraft: PlanningLineDraft = this.emptyPlanningLineDraft();
+  protected planningTripDraft: PlanningTripDraft = this.emptyPlanningTripDraft();
   protected readonly selectedShiftId = signal('xls-3-demo-91');
   protected readonly selectedVehicleId = signal('DEMO-91');
   protected readonly vehicleSearch = signal('');
@@ -321,7 +344,7 @@ export class App {
     { id: 'DEMO-102', displayLabel: 'DEMO 102', lineLabel: 'L 102', seats: 0, tone: 'green', start: '06:05', end: '14:20' },
   ];
   protected get planningGridWidth(): number {
-    return 96 + this.vehicles.length * 135;
+    return 96 + this.vehicles.length * 175;
   }
 
   protected readonly fleetVehicles: FleetVehicle[] = [
@@ -672,6 +695,209 @@ export class App {
 
   protected planningVehicleLabel(vehicle: string): string {
     return this.vehicles.find((item) => item.id === vehicle)?.displayLabel ?? vehicle;
+  }
+
+  protected openPlanningLineForm(): void {
+    this.planningLineDraft = this.emptyPlanningLineDraft();
+    this.planningLineError.set('');
+    this.planningVehicleMenuOpen.set(false);
+    this.closePlanningTripForm();
+    this.driverFormOpen.set(false);
+    this.planningLineFormOpen.set(true);
+  }
+
+  protected closePlanningLineForm(): void {
+    this.planningLineFormOpen.set(false);
+    this.planningLineError.set('');
+    this.planningVehicleMenuOpen.set(false);
+  }
+
+  protected togglePlanningVehicleMenu(input: HTMLInputElement): void {
+    const wasOpen = this.planningVehicleMenuOpen();
+    input.focus();
+    this.planningVehicleMenuOpen.set(!wasOpen);
+  }
+
+  protected closePlanningVehicleMenuLater(): void {
+    window.setTimeout(() => this.planningVehicleMenuOpen.set(false), 120);
+  }
+
+  protected selectPlanningVehicle(vehicle: FleetVehicle): void {
+    this.planningLineDraft = { ...this.planningLineDraft, displayLabel: vehicle.id };
+    this.planningVehicleMenuOpen.set(false);
+  }
+
+  protected requestPlanningLineDelete(vehicle: PlanningVehicle): void {
+    this.closePlanningLineForm();
+    this.closePlanningTripForm();
+    this.closeAssignmentForm();
+    this.cancelPlanningVehicleEdit();
+    this.planningLineDeleteId.set(vehicle.id);
+  }
+
+  protected cancelPlanningLineDelete(): void {
+    this.planningLineDeleteId.set(null);
+  }
+
+  protected planningLinePendingDelete(): PlanningVehicle | undefined {
+    return this.vehicles.find((vehicle) => vehicle.id === this.planningLineDeleteId());
+  }
+
+  protected planningLineAssignmentCount(vehicle: string): number {
+    return this.shifts.filter((shift) => shift.vehicle === vehicle).length;
+  }
+
+  protected deletePlanningLine(): void {
+    const vehicleId = this.planningLineDeleteId();
+    const vehicleIndex = this.vehicles.findIndex((vehicle) => vehicle.id === vehicleId);
+    if (!vehicleId || vehicleIndex < 0) {
+      this.cancelPlanningLineDelete();
+      return;
+    }
+
+    const vehicle = this.vehicles[vehicleIndex];
+    const removedTripCount = this.planningTrips.filter((trip) => trip.vehicle === vehicleId).length;
+    const removedShiftCount = this.shifts.filter((shift) => shift.vehicle === vehicleId).length;
+    const selectedShiftWasRemoved = this.shifts.some(
+      (shift) => shift.id === this.selectedShiftId() && shift.vehicle === vehicleId,
+    );
+
+    this.vehicles.splice(vehicleIndex, 1);
+    this.planningTrips.splice(
+      0,
+      this.planningTrips.length,
+      ...this.planningTrips.filter((trip) => trip.vehicle !== vehicleId),
+    );
+    this.shifts.splice(0, this.shifts.length, ...this.shifts.filter((shift) => shift.vehicle !== vehicleId));
+
+    if (selectedShiftWasRemoved || !this.shifts.some((shift) => shift.id === this.selectedShiftId())) {
+      this.selectedShiftId.set(this.shifts[0]?.id ?? '');
+    }
+    if (this.newAssignment.vehicle === vehicleId) {
+      this.newAssignment = { ...this.newAssignment, vehicle: this.vehicles[0]?.id ?? '' };
+    }
+    if (this.planningTripDraft.vehicle === vehicleId) {
+      this.planningTripDraft = { ...this.planningTripDraft, vehicle: this.vehicles[0]?.id ?? '' };
+    }
+
+    this.finishPlanningTripDrag();
+    this.finishShiftDrag();
+    this.cancelPlanningLineDelete();
+    this.saved.set(false);
+    this.persistState();
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Spalte gelöscht',
+      message: `${vehicle.displayLabel}: ${removedTripCount} Fahrten und ${removedShiftCount} Einsätze entfernt.`,
+    });
+  }
+
+  protected openPlanningDriverForm(): void {
+    this.closePlanningLineForm();
+    this.closePlanningTripForm();
+    this.openNewDriverForm();
+  }
+
+  protected createPlanningLine(): void {
+    const displayLabel = this.planningLineDraft.displayLabel.trim();
+    const generatedVehicleId = displayLabel
+      .toLocaleUpperCase('de')
+      .replace(/[^A-Z0-9ÄÖÜ]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const draft: PlanningLineDraft = {
+      displayLabel,
+      lineLabel: this.planningLineDraft.lineLabel.trim(),
+      start: this.planningLineDraft.start,
+      end: this.planningLineDraft.end,
+    };
+    if (!draft.displayLabel || !draft.lineLabel || !draft.start || !draft.end) {
+      this.planningLineError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    const vehicleId = generatedVehicleId || `LINIE-${this.vehicles.length + 1}`;
+    if (this.vehicles.some((vehicle) => vehicle.id === vehicleId)) {
+      this.planningLineError.set('Dieser Bus ist bereits eingeplant.');
+      return;
+    }
+
+    const tones: ShiftTone[] = ['blue', 'violet', 'green', 'cyan', 'orange', 'rose', 'amber'];
+    const vehicle: PlanningVehicle = {
+      id: vehicleId,
+      displayLabel: draft.displayLabel,
+      lineLabel: draft.lineLabel,
+      seats: 0,
+      tone: tones[this.vehicles.length % tones.length],
+      start: draft.start,
+      end: draft.end,
+    };
+    this.vehicles.push(vehicle);
+    this.planningLineFormOpen.set(false);
+    this.planningLineError.set('');
+    this.persistState();
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Linie hinzugefügt',
+      message: `${vehicle.displayLabel} · ${vehicle.lineLabel}`,
+    });
+  }
+
+  private emptyPlanningLineDraft(): PlanningLineDraft {
+    return { displayLabel: '', lineLabel: '', start: '', end: '' };
+  }
+
+  protected openPlanningTripForm(vehicle: string): void {
+    this.closeAssignmentForm();
+    this.closePlanningLineForm();
+    this.driverFormOpen.set(false);
+    this.planningTripDraft = { ...this.emptyPlanningTripDraft(), vehicle };
+    this.planningTripError.set('');
+    this.planningTripFormOpen.set(true);
+  }
+
+  protected closePlanningTripForm(): void {
+    this.planningTripFormOpen.set(false);
+    this.planningTripError.set('');
+  }
+
+  protected createPlanningTrip(): void {
+    const draft: PlanningTripDraft = {
+      ...this.planningTripDraft,
+      label: this.planningTripDraft.label.trim(),
+      route: this.planningTripDraft.route.trim(),
+    };
+    const vehicle = this.vehicles.find((item) => item.id === draft.vehicle);
+    if (!vehicle || !draft.label || !draft.start || !draft.end || !draft.route) {
+      this.planningTripError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+
+    let id = `trip-${this.planningTrips.length + 1}`;
+    let suffix = 2;
+    while (this.planningTrips.some((trip) => trip.id === id)) {
+      id = `trip-${this.planningTrips.length + 1}-${suffix}`;
+      suffix += 1;
+    }
+    const trip: PlanningTripCard = {
+      id,
+      vehicle: vehicle.id,
+      time: `${draft.start} – ${draft.end}`,
+      route: draft.route,
+      label: draft.label,
+      tone: vehicle.tone,
+    };
+    this.planningTrips.push(trip);
+    this.planningTripFormOpen.set(false);
+    this.planningTripError.set('');
+    this.persistState();
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Fahrt hinzugefügt',
+      message: `${trip.label} · ${trip.time}`,
+    });
+  }
+
+  private emptyPlanningTripDraft(): PlanningTripDraft {
+    return { vehicle: '', label: 'Linienfahrt', start: '', end: '', route: '' };
   }
 
   protected editPlanningVehicleLabel(vehicle: PlanningVehicle): void {

@@ -866,6 +866,147 @@
         </div>
       </section>
     } @else {
+    @if (planningLineFormOpen()) {
+      <button class="driver-create-backdrop" type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()"></button>
+      <section class="driver-create-modal planning-line-modal" role="dialog" aria-modal="true" aria-labelledby="planning-line-title">
+        <header class="driver-create-head">
+          <div><span class="driver-create-icon">▤</span><div><small>Wochenplanung</small><h3 id="planning-line-title">Linie hinzufügen</h3></div></div>
+          <button type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()">×</button>
+        </header>
+        <form class="driver-create-form" novalidate (ngSubmit)="createPlanningLine()">
+          <p class="driver-create-intro">Die neue Linie wird als zusätzliche Spalte in der Wochenplanung angelegt.</p>
+          <div class="driver-create-grid">
+            <label class="driver-create-field">
+              <span>Bus einplanen *</span>
+              <div class="planning-vehicle-combobox">
+                <input
+                  #planningVehicleInput
+                  name="planningLineDisplayLabel"
+                  [(ngModel)]="planningLineDraft.displayLabel"
+                  placeholder="Kennzeichen auswählen oder eingeben"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="planning-vehicle-options"
+                  [attr.aria-expanded]="planningVehicleMenuOpen()"
+                  (click)="planningVehicleMenuOpen.set(true)"
+                  (input)="planningVehicleMenuOpen.set(true)"
+                  (blur)="closePlanningVehicleMenuLater()"
+                  required
+                />
+                <button class="planning-vehicle-picker-button" [class.planning-vehicle-picker-button--open]="planningVehicleMenuOpen()" type="button" aria-label="Gespeicherte Busse anzeigen" title="Gespeicherte Busse anzeigen" (mousedown)="$event.preventDefault()" (click)="togglePlanningVehicleMenu(planningVehicleInput)"><span aria-hidden="true">⌄</span></button>
+                @if (planningVehicleMenuOpen()) {
+                  <div class="planning-vehicle-menu" id="planning-vehicle-options" role="listbox" aria-label="Gespeicherte Busse">
+                    @for (vehicle of fleetVehicles; track vehicle.id) {
+                      <button class="planning-vehicle-option" type="button" role="option" [attr.aria-selected]="planningLineDraft.displayLabel === vehicle.id" (click)="selectPlanningVehicle(vehicle)">
+                        <strong>{{ vehicle.id }}</strong><span>{{ vehicle.model }}</span>
+                      </button>
+                    } @empty {
+                      <p>Keine Fahrzeuge gespeichert</p>
+                    }
+                  </div>
+                }
+              </div>
+            </label>
+            <label class="driver-create-field driver-create-field--wide">
+              <span>Linienbezeichnung *</span>
+              <input name="planningLineLabel" [(ngModel)]="planningLineDraft.lineLabel" placeholder="z. B. Gerolstein – Daun" required />
+            </label>
+            <label class="driver-create-field">
+              <span>Beginn *</span>
+              <input name="planningLineStart" type="time" [(ngModel)]="planningLineDraft.start" required />
+            </label>
+            <label class="driver-create-field">
+              <span>Ende *</span>
+              <input name="planningLineEnd" type="time" [(ngModel)]="planningLineDraft.end" required />
+            </label>
+          </div>
+          @if (planningLineError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningLineError() }}</div> }
+          <div class="driver-create-note"><span>i</span><p><b>Einsätze anschließend planen</b><small>Über das Plus in einer freien Zelle können Sie der Linie Fahrer und Dienstplan zuweisen.</small></p></div>
+          <footer class="driver-create-actions">
+            <button class="button" type="button" (click)="closePlanningLineForm()">Abbrechen</button>
+            <button class="button button--primary" type="submit">Linie speichern</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (driverFormOpen()) {
+      <button class="driver-create-backdrop" type="button" aria-label="Fahrerformular schließen" (click)="closeNewDriverForm()"></button>
+      <section class="driver-create-modal planning-driver-modal" role="dialog" aria-modal="true" aria-labelledby="planning-driver-title">
+        <header class="driver-create-head">
+          <div><span class="driver-create-icon">♙</span><div><small>Wochenplanung</small><h3 id="planning-driver-title">Fahrer hinzufügen</h3></div></div>
+          <button type="button" aria-label="Fahrerformular schließen" (click)="closeNewDriverForm()">×</button>
+        </header>
+        <form class="driver-create-form planning-driver-form" novalidate (ngSubmit)="createDriver()">
+          <p class="driver-create-intro">Der neue Fahrer steht nach dem Speichern sofort für Zuweisungen zur Verfügung.</p>
+          <div class="driver-create-grid">
+            <label class="driver-create-field driver-create-field--wide"><span>Name / Nachname *</span><input name="planningDriverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Fahrer 20" required /></label>
+            <label class="driver-create-field"><span>Telefon *</span><input name="planningDriverPhone" type="tel" [(ngModel)]="newDriver.phone" autocomplete="tel" placeholder="0000 000 0000" required /></label>
+            <label class="driver-create-field"><span>E-Mail *</span><input name="planningDriverEmail" type="email" [(ngModel)]="newDriver.email" autocomplete="email" placeholder="name@example.com" required /></label>
+            <label class="driver-create-field"><span>Status</span><select name="planningDriverStatus" [(ngModel)]="newDriver.status"><option>Verfügbar</option><option>Im Einsatz</option><option>Abwesend</option></select></label>
+            <label class="driver-create-field"><span>Führerscheinklasse *</span><input name="planningDriverLicense" [(ngModel)]="newDriver.license" placeholder="D, DE" required /></label>
+            <label class="driver-create-field"><span>Führerschein gültig bis *</span><input name="planningDriverLicenseExpiry" type="date" [(ngModel)]="newDriver.licenseExpiry" required /></label>
+            <label class="driver-create-field"><span>Nächste ärztliche Untersuchung *</span><input name="planningDriverMedicalCheck" type="date" [(ngModel)]="newDriver.medicalCheck" required /></label>
+          </div>
+          @if (driverFormError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ driverFormError() }}</div> }
+          <footer class="driver-create-actions">
+            <button class="button" type="button" (click)="closeNewDriverForm()">Abbrechen</button>
+            <button class="button button--primary" type="submit">Fahrer speichern</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (planningTripFormOpen()) {
+      <button class="driver-create-backdrop" type="button" aria-label="Fahrtformular schließen" (click)="closePlanningTripForm()"></button>
+      <section class="driver-create-modal planning-trip-modal" role="dialog" aria-modal="true" aria-labelledby="planning-trip-title">
+        <header class="driver-create-head">
+          <div><span class="driver-create-icon">↗</span><div><small>Wochenplanung</small><h3 id="planning-trip-title">Fahrt hinzufügen</h3></div></div>
+          <button type="button" aria-label="Fahrtformular schließen" (click)="closePlanningTripForm()">×</button>
+        </header>
+        <form class="driver-create-form planning-trip-form" novalidate (ngSubmit)="createPlanningTrip()">
+          <p class="driver-create-intro">Die Fahrt wird in der ausgewählten Linien-Spalte angezeigt.</p>
+          <div class="driver-create-grid">
+            <label class="driver-create-field">
+              <span>Linie</span>
+              <select name="planningTripVehicle" [(ngModel)]="planningTripDraft.vehicle">
+                @for (vehicle of vehicles; track vehicle.id) { <option [value]="vehicle.id">{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</option> }
+              </select>
+            </label>
+            <label class="driver-create-field">
+              <span>Fahrtart *</span>
+              <select name="planningTripLabel" [(ngModel)]="planningTripDraft.label"><option>Linienfahrt</option><option>Schulverkehr</option><option>SEV</option><option>Sonderfahrt</option><option>Leerfahrt</option></select>
+            </label>
+            <label class="driver-create-field"><span>Beginn *</span><input name="planningTripStart" type="time" [(ngModel)]="planningTripDraft.start" required /></label>
+            <label class="driver-create-field"><span>Ende *</span><input name="planningTripEnd" type="time" [(ngModel)]="planningTripDraft.end" required /></label>
+            <label class="driver-create-field driver-create-field--wide"><span>Route / Beschreibung *</span><input name="planningTripRoute" [(ngModel)]="planningTripDraft.route" placeholder="z. B. Demo Ort 01 → Demo Ort 02" required /></label>
+          </div>
+          @if (planningTripError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningTripError() }}</div> }
+          <footer class="driver-create-actions">
+            <button class="button" type="button" (click)="closePlanningTripForm()">Abbrechen</button>
+            <button class="button button--primary" type="submit">Fahrt speichern</button>
+          </footer>
+        </form>
+      </section>
+    }
+
+    @if (planningLinePendingDelete(); as vehicle) {
+      <button class="driver-create-backdrop" type="button" aria-label="Löschen abbrechen" (click)="cancelPlanningLineDelete()"></button>
+      <section class="driver-delete-modal planning-line-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="planning-line-delete-title" aria-describedby="planning-line-delete-description">
+        <span class="driver-delete-icon">!</span>
+        <h3 id="planning-line-delete-title">Spalte löschen?</h3>
+        <p id="planning-line-delete-description">
+          <strong>{{ vehicle.displayLabel }} · {{ vehicle.lineLabel }}</strong> sowie
+          {{ planningTripsFor(vehicle.id).length }} Fahrten und {{ planningLineAssignmentCount(vehicle.id) }} Einsätze werden dauerhaft entfernt.
+        </p>
+        <div class="driver-delete-actions">
+          <button class="button" type="button" (click)="cancelPlanningLineDelete()">Abbrechen</button>
+          <button class="button driver-delete-confirm planning-line-delete-confirm" type="button" (click)="deletePlanningLine()">Spalte löschen</button>
+        </div>
+      </section>
+    }
+
     <section class="toolbar">
       <div class="week-switcher">
         <button aria-label="Vorherige Woche" (click)="changeWeek(-1)">‹</button>
@@ -875,7 +1016,9 @@
         <button class="today-button" (click)="resetWeek()">Heute</button>
       </div>
       <div class="toolbar__actions">
-        <button class="button assignment-add-button" (click)="openNewAssignment()">+&nbsp; Einsatz planen</button>
+        <button class="button planning-line-add-button" (click)="openPlanningLineForm()">+&nbsp; Linie</button>
+        <button class="button planning-driver-add-button" (click)="openPlanningDriverForm()">+&nbsp; Fahrer</button>
+        <button class="button assignment-add-button" [disabled]="vehicles.length === 0" [title]="vehicles.length === 0 ? 'Legen Sie zuerst eine Linie an.' : 'Einsatz planen'" (click)="openNewAssignment()">+&nbsp; Einsatz planen</button>
         <button class="button">Plan kopieren</button>
         <button class="button">Drucken / Export <span>⌄</span></button>
         <button class="button button--primary" (click)="publish()"><span>♧</span> Plan veröffentlichen <span>⌄</span></button>
@@ -885,7 +1028,15 @@
     <div class="content-grid">
       <div class="main-column">
         <section class="schedule-card" aria-label="Wochenplan">
-          <div class="trip-grid trip-grid--header planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
+          @if (vehicles.length === 0) {
+            <div class="planning-empty-lines">
+              <span aria-hidden="true">▤</span>
+              <strong>Noch keine Linien eingeplant</strong>
+              <p>Fügen Sie eine Linie hinzu, um Busse, Fahrten und Fahrer einzuplanen.</p>
+              <button class="button button--primary" type="button" (click)="openPlanningLineForm()">+&nbsp; Linie hinzufügen</button>
+            </div>
+          } @else {
+          <div class="trip-grid trip-grid--header planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'">
             <div class="planning-week-corner"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id">
@@ -904,18 +1055,27 @@
                     (blur)="savePlanningVehicleLabel(vehicle)"
                   />
                 } @else {
-                  <button
-                    class="planning-vehicle-edit"
-                    type="button"
-                    title="Busnummer ändern"
-                    [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' ändern'"
-                    (click)="editPlanningVehicleLabel(vehicle)"
-                  ><strong>{{ planningVehicleLabel(vehicle.id) }}</strong><span aria-hidden="true">✎</span></button>
+                  <div class="planning-vehicle-actions">
+                    <button
+                      class="planning-vehicle-edit"
+                      type="button"
+                      title="Busnummer ändern"
+                      [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' ändern'"
+                      (click)="editPlanningVehicleLabel(vehicle)"
+                    ><strong>{{ planningVehicleLabel(vehicle.id) }}</strong><span aria-hidden="true">✎</span></button>
+                    <button
+                      class="planning-vehicle-delete"
+                      type="button"
+                      title="Spalte löschen"
+                      [attr.aria-label]="'Spalte ' + planningVehicleLabel(vehicle.id) + ' löschen'"
+                      (click)="requestPlanningLineDelete(vehicle)"
+                    >Löschen</button>
+                  </div>
                 }
               </div>
             }
           </div>
-          <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'">
+          <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'">
             <div class="planning-axis-spacer" aria-hidden="true"></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div
@@ -962,12 +1122,13 @@
                     }
                   </div>
                 }
+                <button class="planning-trip-add-button" type="button" (click)="openPlanningTripForm(vehicle.id)" [attr.aria-label]="'Fahrt für ' + planningVehicleLabel(vehicle.id) + ' hinzufügen'"><span>+</span> Fahrt</button>
               </div>
             }
           </div>
 
           @for (day of days; track day.date; let dayIndex = $index) {
-            <div class="schedule-grid schedule-row planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(135px, 1fr))'" [class.schedule-row--weekend]="dayIndex > 4">
+            <div class="schedule-grid schedule-row planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'" [class.schedule-row--weekend]="dayIndex > 4">
               <div class="matrix-day"><strong>{{ day.date }}</strong><span>{{ day.short }}</span></div>
               @for (vehicle of vehicles; track vehicle.id) {
                 <div
@@ -1002,6 +1163,7 @@
                 </div>
               }
             </div>
+          }
           }
         </section>
 
