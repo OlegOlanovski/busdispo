@@ -147,7 +147,7 @@
         <div class="overview-grid">
           <section class="dashboard-card today-card">
             <div class="dashboard-heading">
-              <div><h3>Heutige Einsätze</h3><p>Donnerstag, 23.07.2026</p></div>
+              <div><h3>Heutige Einsätze</h3><p>{{ currentDateLabel }}</p></div>
               <button (click)="showView('planning')">Alle anzeigen&nbsp; →</button>
             </div>
             <div class="assignment-list">
@@ -1127,9 +1127,9 @@
             }
           </div>
 
-          @for (day of days; track day.date; let dayIndex = $index) {
+          @for (day of days; track day.iso; let dayIndex = $index) {
             <div class="schedule-grid schedule-row planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'" [class.schedule-row--weekend]="dayIndex > 4">
-              <div class="matrix-day"><strong>{{ day.date }}</strong><span>{{ day.short }}</span></div>
+              <div class="matrix-day" [class.matrix-day--today]="day.isToday"><strong>{{ day.date }}</strong><span>{{ day.isToday ? 'Heute · ' : '' }}{{ day.short }}</span></div>
               @for (vehicle of vehicles; track vehicle.id) {
                 <div
                   class="schedule-cell"
@@ -1184,7 +1184,7 @@
             </label>
             <label class="assignment-field">Tag
               <select [ngModel]="newAssignment.day" (ngModelChange)="updateNewAssignmentSlot('day', $event)">
-                @for (day of days; track day.date; let dayIndex = $index) { <option [ngValue]="dayIndex" [disabled]="isAssignmentSlotUnavailable(dayIndex)">{{ day.short }}, {{ day.date }}.2026{{ isAssignmentSlotUnavailable(dayIndex) ? ' · belegt' : '' }}</option> }
+                @for (day of days; track day.iso; let dayIndex = $index) { <option [ngValue]="dayIndex" [disabled]="isAssignmentSlotUnavailable(dayIndex)">{{ day.short }}, {{ day.fullDate }}{{ isAssignmentSlotUnavailable(dayIndex) ? ' · belegt' : '' }}</option> }
               </select>
             </label>
             <label class="assignment-field">Fahrer
@@ -1215,7 +1215,7 @@
             <div class="vehicle-title"><span class="bus-glyph">▣</span><strong>{{ selectedShift().vehicle }}</strong></div>
 
             <dl class="details-list">
-              <dt>Datum</dt><dd>{{ days[selectedShift().day].short }}, {{ days[selectedShift().day].date }}.2026</dd>
+              <dt>Datum</dt><dd>{{ days[selectedShift().day].short }}, {{ days[selectedShift().day].fullDate }}</dd>
               <dt>Fahrer</dt>
               <dd>
                 <label class="select-control"><span>♙</span><select [ngModel]="selectedShift().driver" (ngModelChange)="updateSelectedShift('driver', $event)"><option [value]="selectedShift().driver">{{ selectedShift().driver }}</option>@for (driver of drivers; track driver.id) { @if (driver.name !== selectedShift().driver) { <option [value]="driver.name">{{ driver.name }}</option> } }</select></label>

@@ -20,12 +20,17 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+    const today = new Date();
+    const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    const expectedMonday = `${String(monday.getDate()).padStart(2, '0')}.${String(monday.getMonth() + 1).padStart(2, '0')}`;
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
     expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(7);
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(2);
     expect(compiled.querySelector('.trip-grid--header .line-heading')?.textContent).toContain('DEMO 91');
-    expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain('KW 25');
-    expect(compiled.querySelector('.matrix-day')?.textContent).toContain('15.06');
+    expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain(`KW ${(fixture.componentInstance as any).weekNumber()}`);
+    expect(compiled.querySelector('.matrix-day')?.textContent).toContain(expectedMonday);
+    expect(compiled.querySelector('.matrix-day--today')).toBeTruthy();
     expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(4);
     expect(compiled.querySelector('.trip-grid .matrix-corner')).toBeFalsy();
     expect(compiled.querySelector('.trip-side-label')).toBeFalsy();
@@ -402,11 +407,18 @@ describe('App', () => {
     const nextWeekButton = compiled.querySelector(
       'button[aria-label="Nächste Woche"]',
     ) as HTMLButtonElement;
+    const currentRange = compiled.querySelector('.week-switcher span')?.textContent;
 
     nextWeekButton.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.week-switcher strong')?.textContent).toContain('KW 26');
+    const app = fixture.componentInstance as any;
+    expect(compiled.querySelector('.week-switcher strong')?.textContent).toContain(`KW ${app.weekNumber()}`);
+    expect(compiled.querySelector('.week-switcher span')?.textContent).not.toBe(currentRange);
+
+    (compiled.querySelector('.today-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.week-switcher span')?.textContent).toBe(currentRange);
   });
 
   it('should switch between overview and weekly planning', async () => {

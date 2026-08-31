@@ -74,6 +74,14 @@ interface PlanningLineDraft {
   end: string;
 }
 
+interface PlanningDay {
+  short: string;
+  date: string;
+  fullDate: string;
+  iso: string;
+  isToday: boolean;
+}
+
 interface FleetVehicle extends Vehicle {
   model: string;
   year: number;
@@ -329,15 +337,26 @@ export class App {
     note: '',
   };
 
-  protected readonly days = [
-    { short: 'Mo', date: '15.06' },
-    { short: 'Di', date: '16.06' },
-    { short: 'Mi', date: '17.06' },
-    { short: 'Do', date: '18.06' },
-    { short: 'Fr', date: '19.06' },
-    { short: 'Sa', date: '20.06' },
-    { short: 'So', date: '21.06' },
-  ];
+  private readonly calendarToday = new Date();
+
+  protected get days(): PlanningDay[] {
+    const monday = this.calendarWeekStart();
+    const todayIso = this.localIsoDate(this.calendarToday);
+    const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + index);
+      const iso = this.localIsoDate(date);
+      return {
+        short: weekdayFormatter.format(date).replace('.', ''),
+        date: this.formatCalendarDate(date, false),
+        fullDate: this.formatCalendarDate(date, true),
+        iso,
+        isToday: iso === todayIso,
+      };
+    });
+  }
 
   protected readonly vehicles: PlanningVehicle[] = [
     { id: 'DEMO-91', displayLabel: 'DEMO 91', lineLabel: 'L 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
@@ -574,16 +593,51 @@ export class App {
     () => Number(this.driverEndMileage()) > Number(this.driverStartMileage()),
   );
 
-  protected readonly weekNumber = computed(() => 25 + this.weekOffset());
+  protected readonly currentDateLabel = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(this.calendarToday);
+
+  protected readonly weekNumber = computed(() => this.isoWeekNumber(this.calendarWeekStart()));
   protected readonly dateRange = computed(() => {
-    if (this.weekOffset() === 0) return '15.06.2026 – 21.06.2026';
-    const monday = new Date(2026, 5, 15 + this.weekOffset() * 7);
+    const monday = this.calendarWeekStart();
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const format = (date: Date) =>
-      new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-    return `${format(monday)} – ${format(sunday)}`;
+    return `${this.formatCalendarDate(monday, true)} – ${this.formatCalendarDate(sunday, true)}`;
   });
+
+  private calendarWeekStart(): Date {
+    const monday = new Date(
+      this.calendarToday.getFullYear(),
+      this.calendarToday.getMonth(),
+      this.calendarToday.getDate(),
+    );
+    const daysSinceMonday = (monday.getDay() + 6) % 7;
+    monday.setDate(monday.getDate() - daysSinceMonday + this.weekOffset() * 7);
+    return monday;
+  }
+
+  private isoWeekNumber(date: Date): number {
+    const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const weekday = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - weekday);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    return Math.ceil(((target.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  }
+
+  private formatCalendarDate(date: Date, includeYear: boolean): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return includeYear ? `${day}.${month}.${date.getFullYear()}` : `${day}.${month}`;
+  }
+
+  private localIsoDate(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+  }
 
   private restoreState(): void {
     try {

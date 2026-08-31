@@ -672,6 +672,13 @@ button {
 .matrix-corner span,
 .matrix-day span { color: #6d788c; font-size: var(--font-min); font-weight: 600; }
 
+.matrix-day--today {
+  background: #edf5ff;
+
+  strong,
+  span { color: var(--blue); }
+}
+
 .line-heading {
   border-top: 4px solid currentColor;
   background: color-mix(in srgb, currentColor 9%, white);
