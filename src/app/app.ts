@@ -92,6 +92,17 @@ interface FleetVehicle extends Vehicle {
   safetyInspection: string;
 }
 
+interface FleetVehicleDraft {
+  id: string;
+  model: string;
+  year: string;
+  seats: string;
+  mileage: string;
+  status: FleetVehicle['status'];
+  inspection: string;
+  safetyInspection: string;
+}
+
 interface DutyPlan {
   id: string;
   name: string;
@@ -279,6 +290,15 @@ export class App {
   protected readonly vehicleSearch = signal('');
   protected readonly vehicleStatus = signal('Alle Status');
   protected readonly vehicleSaved = signal(false);
+  protected readonly vehicleFormOpen = signal(false);
+  protected readonly vehicleEditing = signal(false);
+  protected readonly vehicleFormError = signal('');
+  protected readonly vehicleDeleteConfirmOpen = signal(false);
+  protected readonly vehicleCreated = signal<string | null>(null);
+  protected readonly vehicleUpdated = signal<string | null>(null);
+  protected readonly vehicleDeleted = signal<string | null>(null);
+  private readonly vehicleRevision = signal(0);
+  protected newVehicle: FleetVehicleDraft = this.emptyVehicleDraft();
   protected readonly selectedDutyPlanId = signal('demo-plan-91');
   protected readonly dutyPlanSearch = signal('');
   protected readonly dutyPlanStatus = signal('Alle Status');
@@ -473,6 +493,7 @@ export class App {
   );
 
   protected readonly filteredVehicles = computed(() => {
+    this.vehicleRevision();
     const query = this.vehicleSearch().trim().toLocaleLowerCase('de');
     const status = this.vehicleStatus();
     return this.fleetVehicles.filter(
@@ -483,8 +504,21 @@ export class App {
   });
 
   protected readonly selectedVehicle = computed(
-    () => this.fleetVehicles.find((vehicle) => vehicle.id === this.selectedVehicleId()) ?? this.fleetVehicles[0],
+    () => {
+      this.vehicleRevision();
+      return this.fleetVehicles.find((vehicle) => vehicle.id === this.selectedVehicleId()) ?? this.fleetVehicles[0];
+    },
   );
+
+  protected readonly vehicleCounts = computed(() => {
+    this.vehicleRevision();
+    return {
+      total: this.fleetVehicles.length,
+      active: this.fleetVehicles.filter((vehicle) => vehicle.status === 'Einsatz').length,
+      available: this.fleetVehicles.filter((vehicle) => vehicle.status === 'Verfügbar').length,
+      workshop: this.fleetVehicles.filter((vehicle) => vehicle.status === 'Werkstatt').length,
+    };
+  });
 
   protected readonly filteredDutyPlans = computed(() => {
     this.dutyPlanRevision();
@@ -689,6 +723,7 @@ export class App {
 
       this.dutyPlanRevision.update((revision) => revision + 1);
       this.driverRevision.update((revision) => revision + 1);
+      this.vehicleRevision.update((revision) => revision + 1);
     } catch {
       try {
         window.localStorage.removeItem(this.storageKey);
@@ -1354,7 +1389,7 @@ export class App {
         if (!this.getShift(vehicle.id, day)) return { vehicle: vehicle.id, day };
       }
     }
-    return { vehicle: this.vehicles[0].id, day: 0 };
+    return { vehicle: this.vehicles[0]?.id ?? '', day: 0 };
   }
 
   private driverHasConflict(
@@ -1394,15 +1429,241 @@ export class App {
   protected selectVehicle(vehicle: FleetVehicle): void {
     this.selectedVehicleId.set(vehicle.id);
     this.vehicleSaved.set(false);
+    this.vehicleDeleteConfirmOpen.set(false);
     if (window.innerWidth < 900) {
       window.setTimeout(() => document.querySelector('.vehicle-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
     }
   }
 
-  protected saveVehicle(): void {
-    this.vehicleSaved.set(true);
+  protected openNewVehicleForm(): void {
+    this.newVehicle = this.emptyVehicleDraft();
+    this.vehicleEditing.set(false);
+    this.vehicleFormError.set('');
+    this.vehicleFormOpen.set(true);
+  }
+
+  protected openVehicleEditForm(): void {
+    const vehicle = this.selectedVehicle();
+    if (!vehicle) return;
+    this.newVehicle = {
+      id: vehicle.id,
+      model: vehicle.model,
+      year: String(vehicle.year),
+      seats: String(vehicle.seats),
+      mileage: vehicle.mileage.replace(/[^\d]/g, ''),
+      status: vehicle.status,
+      inspection: this.toInputDate(vehicle.inspection),
+      safetyInspection: this.toInputDate(vehicle.safetyInspection),
+    };
+    this.vehicleEditing.set(true);
+    this.vehicleFormError.set('');
+    this.vehicleFormOpen.set(true);
+  }
+
+  protected closeNewVehicleForm(): void {
+    this.vehicleFormOpen.set(false);
+    this.vehicleEditing.set(false);
+    this.vehicleFormError.set('');
+  }
+
+  protected saveVehicleForm(): void {
+    if (this.vehicleEditing()) this.updateVehicle();
+    else this.createVehicle();
+  }
+
+  protected createVehicle(): void {
+    const draft = this.normalizedVehicleDraft();
+    const validationError = this.validateVehicleDraft(draft);
+    if (validationError) {
+      this.vehicleFormError.set(validationError);
+      return;
+    }
+
+    const vehicle: FleetVehicle = {
+      id: draft.id,
+      model: draft.model,
+      year: Number(draft.year),
+      seats: Number(draft.seats),
+      mileage: `${Number(draft.mileage).toLocaleString('de-DE')} km`,
+      status: draft.status,
+      driver: '–',
+      inspection: this.toGermanDate(draft.inspection),
+      safetyInspection: this.toGermanDate(draft.safetyInspection),
+    };
+
+    this.fleetVehicles.push(vehicle);
+    this.vehicleRevision.update((revision) => revision + 1);
+    this.vehicleSearch.set('');
+    this.vehicleStatus.set('Alle Status');
+    this.selectedVehicleId.set(vehicle.id);
+    this.vehicleFormOpen.set(false);
+    this.vehicleEditing.set(false);
+    this.vehicleFormError.set('');
+    this.vehicleCreated.set(vehicle.id);
     this.persistState();
-    window.setTimeout(() => this.vehicleSaved.set(false), 2400);
+    window.setTimeout(() => {
+      if (this.vehicleCreated() === vehicle.id) this.vehicleCreated.set(null);
+    }, 3200);
+  }
+
+  protected updateVehicle(): void {
+    const currentVehicle = this.selectedVehicle();
+    if (!currentVehicle) return;
+    const draft = this.normalizedVehicleDraft();
+    const validationError = this.validateVehicleDraft(draft, currentVehicle.id);
+    if (validationError) {
+      this.vehicleFormError.set(validationError);
+      return;
+    }
+
+    const previousId = currentVehicle.id;
+    if (draft.id !== previousId) this.replaceVehicleReferences(previousId, draft.id);
+    Object.assign(currentVehicle, {
+      id: draft.id,
+      model: draft.model,
+      year: Number(draft.year),
+      seats: Number(draft.seats),
+      mileage: `${Number(draft.mileage).toLocaleString('de-DE')} km`,
+      status: draft.status,
+      inspection: this.toGermanDate(draft.inspection),
+      safetyInspection: this.toGermanDate(draft.safetyInspection),
+    });
+
+    this.selectedVehicleId.set(currentVehicle.id);
+    this.vehicleRevision.update((revision) => revision + 1);
+    this.driverRevision.update((revision) => revision + 1);
+    this.vehicleFormOpen.set(false);
+    this.vehicleEditing.set(false);
+    this.vehicleFormError.set('');
+    this.vehicleSaved.set(true);
+    this.vehicleUpdated.set(currentVehicle.id);
+    this.persistState();
+    window.setTimeout(() => {
+      this.vehicleSaved.set(false);
+      if (this.vehicleUpdated() === currentVehicle.id) this.vehicleUpdated.set(null);
+    }, 3200);
+  }
+
+  private replaceVehicleReferences(previousId: string, nextId: string): void {
+    const planningVehicle = this.vehicles.find((vehicle) => vehicle.id === previousId);
+    if (planningVehicle) {
+      planningVehicle.id = nextId;
+      if (planningVehicle.displayLabel === previousId) planningVehicle.displayLabel = nextId;
+    }
+    for (const trip of this.planningTrips) {
+      if (trip.vehicle === previousId) trip.vehicle = nextId;
+    }
+    for (const shift of this.shifts) {
+      if (shift.vehicle === previousId) shift.vehicle = nextId;
+    }
+    for (const driver of this.drivers) {
+      if (driver.vehicle === previousId) driver.vehicle = nextId;
+    }
+    for (const trip of this.specialTrips) {
+      if (trip.vehicle === previousId) trip.vehicle = nextId;
+    }
+    if (this.newAssignment.vehicle === previousId) {
+      this.newAssignment = { ...this.newAssignment, vehicle: nextId };
+    }
+    if (this.planningTripDraft.vehicle === previousId) {
+      this.planningTripDraft = { ...this.planningTripDraft, vehicle: nextId };
+    }
+  }
+
+  protected requestVehicleDelete(): void {
+    if (!this.selectedVehicle()) return;
+    this.vehicleDeleteConfirmOpen.set(true);
+  }
+
+  protected cancelVehicleDelete(): void {
+    this.vehicleDeleteConfirmOpen.set(false);
+  }
+
+  protected deleteVehicle(): void {
+    const vehicle = this.selectedVehicle();
+    if (!vehicle) return;
+    const index = this.fleetVehicles.findIndex((item) => item.id === vehicle.id);
+    if (index < 0) return;
+
+    this.fleetVehicles.splice(index, 1);
+    const planningIndex = this.vehicles.findIndex((item) => item.id === vehicle.id);
+    if (planningIndex >= 0) this.vehicles.splice(planningIndex, 1);
+    this.planningTrips.splice(0, this.planningTrips.length, ...this.planningTrips.filter((trip) => trip.vehicle !== vehicle.id));
+    this.shifts.splice(0, this.shifts.length, ...this.shifts.filter((shift) => shift.vehicle !== vehicle.id));
+
+    for (const driver of this.drivers) {
+      if (driver.vehicle !== vehicle.id) continue;
+      driver.vehicle = '–';
+      driver.shift = driver.status === 'Abwesend' ? 'Abwesend' : 'Kein Einsatz';
+      if (driver.status === 'Im Einsatz') driver.status = 'Verfügbar';
+    }
+
+    if (!this.shifts.some((shift) => shift.id === this.selectedShiftId())) {
+      this.selectedShiftId.set(this.shifts[0]?.id ?? '');
+    }
+    if (this.newAssignment.vehicle === vehicle.id) {
+      this.newAssignment = { ...this.newAssignment, vehicle: this.vehicles[0]?.id ?? '' };
+    }
+    if (this.planningTripDraft.vehicle === vehicle.id) {
+      this.planningTripDraft = { ...this.planningTripDraft, vehicle: this.vehicles[0]?.id ?? '' };
+    }
+
+    const nextVehicle = this.fleetVehicles[Math.min(index, this.fleetVehicles.length - 1)];
+    this.selectedVehicleId.set(nextVehicle?.id ?? '');
+    this.vehicleRevision.update((revision) => revision + 1);
+    this.driverRevision.update((revision) => revision + 1);
+    this.vehicleDeleteConfirmOpen.set(false);
+    this.vehicleDeleted.set(vehicle.id);
+    this.persistState();
+    window.setTimeout(() => {
+      if (this.vehicleDeleted() === vehicle.id) this.vehicleDeleted.set(null);
+    }, 3200);
+  }
+
+  private normalizedVehicleDraft(): FleetVehicleDraft {
+    return {
+      ...this.newVehicle,
+      id: this.newVehicle.id.trim().toLocaleUpperCase('de'),
+      model: this.newVehicle.model.trim(),
+      year: String(this.newVehicle.year).trim(),
+      seats: String(this.newVehicle.seats).trim(),
+      mileage: String(this.newVehicle.mileage).trim(),
+    };
+  }
+
+  private validateVehicleDraft(draft: FleetVehicleDraft, excludedVehicleId?: string): string {
+    if (!draft.id || !draft.model || !draft.year || !draft.seats || !draft.mileage || !draft.inspection || !draft.safetyInspection) {
+      return 'Bitte füllen Sie alle Pflichtfelder aus.';
+    }
+    if (this.fleetVehicles.some((vehicle) => vehicle.id !== excludedVehicleId && vehicle.id.toLocaleUpperCase('de') === draft.id)) {
+      return 'Ein Fahrzeug mit diesem Kennzeichen ist bereits vorhanden.';
+    }
+    const year = Number(draft.year);
+    const seats = Number(draft.seats);
+    const mileage = Number(draft.mileage);
+    if (!Number.isInteger(year) || year < 1950 || year > new Date().getFullYear() + 1) {
+      return 'Bitte geben Sie ein gültiges Baujahr ein.';
+    }
+    if (!Number.isInteger(seats) || seats < 1 || seats > 200) {
+      return 'Bitte geben Sie eine gültige Anzahl an Sitzplätzen ein.';
+    }
+    if (!Number.isFinite(mileage) || mileage < 0) {
+      return 'Bitte geben Sie einen gültigen Kilometerstand ein.';
+    }
+    return '';
+  }
+
+  private emptyVehicleDraft(): FleetVehicleDraft {
+    return {
+      id: '',
+      model: '',
+      year: String(new Date().getFullYear()),
+      seats: '50',
+      mileage: '0',
+      status: 'Verfügbar',
+      inspection: '',
+      safetyInspection: '',
+    };
   }
 
   protected selectDutyPlan(plan: DutyPlan): void {

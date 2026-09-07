@@ -475,6 +475,104 @@ describe('App', () => {
     expect(compiled.querySelector('.fleet-row')?.textContent).toContain('DEMO-102');
   });
 
+  it('should add and persist a vehicle from the fleet form', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.vehicles-intro > .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const form = compiled.querySelector('.vehicle-create-form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(compiled.querySelector('.vehicle-create-form .driver-create-error')?.textContent).toContain('Pflichtfelder');
+
+    const app = fixture.componentInstance as any;
+    app.newVehicle = {
+      id: 'bit-bd 120',
+      model: 'MAN Lion\'s City',
+      year: '2024',
+      seats: '48',
+      mileage: '12500',
+      status: 'Verfügbar',
+      inspection: '2027-04-18',
+      safetyInspection: '2026-11-18',
+    };
+    app.createVehicle();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.vehicle-create-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(3);
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('BIT-BD 120');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('12.500 km');
+    expect(compiled.querySelector('.fleet-metrics article b')?.textContent).toBe('3');
+    expect(compiled.querySelector('.toast--vehicle')?.textContent).toContain('Fahrzeug hinzugefügt');
+
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.fleetVehicles.some((vehicle: { id: string }) => vehicle.id === 'BIT-BD 120')).toBe(true);
+  });
+
+  it('should edit a vehicle and update its planning references', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.vehicle-detail-actions .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('#vehicle-create-title')?.textContent).toContain('Fahrzeug bearbeiten');
+    const app = fixture.componentInstance as any;
+    expect(app.newVehicle.id).toBe('DEMO-91');
+    app.newVehicle = {
+      ...app.newVehicle,
+      id: 'BIT-BD 91',
+      model: 'Mercedes-Benz Intouro M',
+      mileage: '230500',
+      inspection: '2027-08-18',
+    };
+    app.updateVehicle();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.vehicle-create-modal')).toBeFalsy();
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('BIT-BD 91');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Mercedes-Benz Intouro M');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('230.500 km');
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('18.08.2027');
+    expect(compiled.querySelector('.toast--vehicle')?.textContent).toContain('Fahrzeug aktualisiert');
+    expect(app.vehicles.some((vehicle: { id: string }) => vehicle.id === 'BIT-BD 91')).toBe(true);
+    expect(app.planningTrips.some((trip: { vehicle: string }) => trip.vehicle === 'BIT-BD 91')).toBe(true);
+    expect(app.shifts.some((shift: { vehicle: string }) => shift.vehicle === 'BIT-BD 91')).toBe(true);
+    expect(app.drivers.find((driver: { id: string }) => driver.id === 'fahrer-10').vehicle).toBe('BIT-BD 91');
+  });
+
+  it('should delete the selected vehicle and related planning entries after confirmation', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.vehicle-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.vehicle-delete-modal')?.textContent).toContain('DEMO-91');
+    (compiled.querySelector('.vehicle-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const app = fixture.componentInstance as any;
+    expect(compiled.querySelector('.vehicle-delete-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(1);
+    expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('DEMO-102');
+    expect(compiled.querySelector('.toast--vehicle')?.textContent).toContain('Fahrzeug gelöscht');
+    expect(app.vehicles.some((vehicle: { id: string }) => vehicle.id === 'DEMO-91')).toBe(false);
+    expect(app.planningTrips.some((trip: { vehicle: string }) => trip.vehicle === 'DEMO-91')).toBe(false);
+    expect(app.shifts.some((shift: { vehicle: string }) => shift.vehicle === 'DEMO-91')).toBe(false);
+    expect(app.drivers.find((driver: { id: string }) => driver.id === 'fahrer-10').vehicle).toBe('–');
+  });
+
   it('should open the duty plan management view', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
