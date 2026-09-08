@@ -76,7 +76,7 @@ describe('App', () => {
     const app = fixture.componentInstance as any;
     app.planningLineDraft = {
       displayLabel: 'Bus 200',
-      lineLabel: 'L 200',
+      lineLabel: 'DB',
       start: '08:00',
       end: '16:00',
     };
@@ -85,7 +85,7 @@ describe('App', () => {
 
     expect(compiled.querySelector('.planning-line-modal')).toBeFalsy();
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(3);
-    expect(compiled.querySelector('.line-heading[data-vehicle="BUS-200"]')?.textContent).toContain('Bus 200');
+    expect(compiled.querySelector('.line-heading[data-vehicle="BUS-200"]')?.textContent).toContain('Bus 200 · DB');
     expect(compiled.querySelectorAll('.schedule-row')[0].querySelectorAll('.schedule-cell')).toHaveLength(3);
     expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Linie hinzugefügt');
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain('BUS-200');
@@ -127,7 +127,7 @@ describe('App', () => {
 
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(0);
     expect(compiled.querySelector('.planning-empty-lines')?.textContent).toContain('Noch keine Linien eingeplant');
-    expect((compiled.querySelector('.assignment-add-button') as HTMLButtonElement).disabled).toBe(true);
+    expect(compiled.querySelector('.assignment-add-button')).toBeFalsy();
 
     const emptyStateButton = compiled.querySelector('.planning-empty-lines .button--primary') as HTMLButtonElement;
     emptyStateButton.click();
@@ -142,33 +142,16 @@ describe('App', () => {
     expect(compiled.querySelector('.planning-empty-lines')).toBeFalsy();
   });
 
-  it('should add a driver from weekly planning and make them assignable', async () => {
+  it('should only show the add line action in the weekly planning toolbar', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+    const actions = compiled.querySelectorAll('.toolbar__actions > button');
 
-    (compiled.querySelector('.planning-driver-add-button') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('.planning-driver-modal')).toBeTruthy();
-
-    const app = fixture.componentInstance as any;
-    app.newDriver = {
-      name: 'Fahrer 20',
-      phone: '0000 000 0120',
-      email: 'fahrer20@example.com',
-      status: 'Verfügbar',
-      license: 'D, DE',
-      licenseExpiry: '2029-08-10',
-      medicalCheck: '2027-05-12',
-    };
-    app.createDriver();
-    fixture.detectChanges();
-
-    expect(compiled.querySelector('.planning-driver-modal')).toBeFalsy();
-    (compiled.querySelector('.assignment-add-button') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Fahrer 20');
-    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('fahrer20@example.com');
+    expect(actions).toHaveLength(1);
+    expect(actions[0].textContent).toContain('Dienstplan');
+    expect(compiled.querySelector('.planning-driver-add-button')).toBeFalsy();
+    expect(compiled.querySelector('.assignment-add-button')).toBeFalsy();
   });
 
   it('should add and persist a trip by clicking its line column', async () => {

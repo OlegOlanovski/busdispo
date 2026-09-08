@@ -948,7 +948,7 @@
       <button class="driver-create-backdrop" type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()"></button>
       <section class="driver-create-modal planning-line-modal" role="dialog" aria-modal="true" aria-labelledby="planning-line-title">
         <header class="driver-create-head">
-          <div><span class="driver-create-icon">▤</span><div><small>Wochenplanung</small><h3 id="planning-line-title">Linie hinzufügen</h3></div></div>
+          <div><span class="driver-create-icon">▤</span><div><small>Wochenplanung</small><h3 id="planning-line-title">Dienstplan hinzufügen</h3></div></div>
           <button type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()">×</button>
         </header>
         <form class="driver-create-form" novalidate (ngSubmit)="createPlanningLine()">
@@ -987,8 +987,8 @@
               </div>
             </label>
             <label class="driver-create-field driver-create-field--wide">
-              <span>Linienbezeichnung *</span>
-              <input name="planningLineLabel" [(ngModel)]="planningLineDraft.lineLabel" placeholder="z. B. Gerolstein – Daun" required />
+              <span>Auftraggeber *</span>
+              <input name="planningLineLabel" [(ngModel)]="planningLineDraft.lineLabel" placeholder="z. B. RMB, DB …" required />
             </label>
             <label class="driver-create-field">
               <span>Beginn *</span>
@@ -1003,7 +1003,7 @@
           <div class="driver-create-note"><span>i</span><p><b>Einsätze anschließend planen</b><small>Über das Plus in einer freien Zelle können Sie der Linie Fahrer und Dienstplan zuweisen.</small></p></div>
           <footer class="driver-create-actions">
             <button class="button" type="button" (click)="closePlanningLineForm()">Abbrechen</button>
-            <button class="button button--primary" type="submit">Linie speichern</button>
+            <button class="button button--primary" type="submit">Dienstplan speichern</button>
           </footer>
         </form>
       </section>
@@ -1094,12 +1094,7 @@
         <button class="today-button" (click)="resetWeek()">Heute</button>
       </div>
       <div class="toolbar__actions">
-        <button class="button planning-line-add-button" (click)="openPlanningLineForm()">+&nbsp; Linie</button>
-        <button class="button planning-driver-add-button" (click)="openPlanningDriverForm()">+&nbsp; Fahrer</button>
-        <button class="button assignment-add-button" [disabled]="vehicles.length === 0" [title]="vehicles.length === 0 ? 'Legen Sie zuerst eine Linie an.' : 'Einsatz planen'" (click)="openNewAssignment()">+&nbsp; Einsatz planen</button>
-        <button class="button">Plan kopieren</button>
-        <button class="button">Drucken / Export <span>⌄</span></button>
-        <button class="button button--primary" (click)="publish()"><span>♧</span> Plan veröffentlichen <span>⌄</span></button>
+        <button class="button planning-line-add-button" (click)="openPlanningLineForm()">+&nbsp; Dienstplan</button>
       </div>
     </section>
 
@@ -1138,14 +1133,14 @@
                       class="planning-vehicle-edit"
                       type="button"
                       title="Busnummer ändern"
-                      [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' ändern'"
+                      [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' ändern'"
                       (click)="editPlanningVehicleLabel(vehicle)"
-                    ><strong>{{ planningVehicleLabel(vehicle.id) }}</strong><span aria-hidden="true">✎</span></button>
+                    ><strong>{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</strong><span aria-hidden="true">✎</span></button>
                     <button
                       class="planning-vehicle-delete"
                       type="button"
                       title="Spalte löschen"
-                      [attr.aria-label]="'Spalte ' + planningVehicleLabel(vehicle.id) + ' löschen'"
+                      [attr.aria-label]="'Spalte ' + planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' löschen'"
                       (click)="requestPlanningLineDelete(vehicle)"
                     >Löschen</button>
                   </div>
