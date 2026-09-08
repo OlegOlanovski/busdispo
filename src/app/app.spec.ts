@@ -411,6 +411,9 @@ describe('App', () => {
     expect(assignmentForm.textContent).toContain('Fahrer einplanen');
     expect(assignmentForm.querySelectorAll('select')).toHaveLength(1);
     expect(assignmentForm.querySelector('textarea')).toBeTruthy();
+    expect(assignmentForm.querySelectorAll('.assignment-actions .button')).toHaveLength(2);
+    expect(assignmentForm.querySelector('.assignment-actions')?.textContent).toContain('Abbrechen');
+    expect(assignmentForm.querySelector('.assignment-actions')?.textContent).toContain('Fahrer einplanen');
     expect(assignmentForm.textContent).not.toContain('Fahrzeug');
     expect(assignmentForm.textContent).not.toContain('Dienstplan');
     expect(assignmentForm.textContent).not.toContain('Beginn');
@@ -428,12 +431,18 @@ describe('App', () => {
     noteInput.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    (compiled.querySelector('.assignment-form .save-button') as HTMLButtonElement).click();
+    (compiled.querySelector('.assignment-form .button--primary') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.shift')).toHaveLength(shiftsBefore + 1);
     expect(compiled.querySelector('.assignment-form')).toBeFalsy();
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain(availableDriver!.value);
+    const assignmentDetails = compiled.querySelector('.details-panel') as HTMLElement;
+    expect(assignmentDetails.textContent).toContain(availableDriver!.value);
+    expect(assignmentDetails.textContent).not.toContain('Dienstplan');
+    expect(assignmentDetails.textContent).not.toContain('Arbeitszeit');
+    expect(assignmentDetails.textContent).not.toContain('Pausen');
+    expect(assignmentDetails.textContent).not.toContain('Demo Ort 48n');
+    expect(assignmentDetails.querySelector('.save-button')).toBeFalsy();
     expect(compiled.querySelector('.shift--active .shift-note')?.textContent).toContain(note);
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain(note);
   });

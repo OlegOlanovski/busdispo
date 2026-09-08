@@ -1104,17 +1104,6 @@ button {
   text-align: center;
 }
 
-.assignment-cancel-button {
-  width: 100%;
-  min-height: 36px;
-  margin-top: 7px;
-  border: 0;
-  background: transparent;
-  color: #667287;
-  font-size: var(--font-min);
-  font-weight: 600;
-}
-
 .vehicle-title {
   display: flex;
   align-items: center;
@@ -1204,11 +1193,6 @@ button {
 
 .muted {
   color: #657087;
-}
-
-.save-button {
-  width: 100%;
-  margin-top: 14px;
 }
 
 .delete-button {
