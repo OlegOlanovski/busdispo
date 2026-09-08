@@ -398,7 +398,10 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const shiftsBefore = compiled.querySelectorAll('.shift').length;
 
-    (compiled.querySelector('.empty-cell') as HTMLButtonElement).click();
+    const addDriverButton = compiled.querySelector('.empty-cell') as HTMLButtonElement;
+    expect(addDriverButton.textContent?.trim()).toBe('+Fahrer');
+    expect(addDriverButton.getAttribute('aria-label')).toContain('Fahrer für');
+    addDriverButton.click();
     fixture.detectChanges();
 
     expect(compiled.querySelector('.assignment-form')).toBeTruthy();

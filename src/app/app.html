@@ -1194,7 +1194,7 @@
                       @if (shift.tone === 'green') { <i></i> }
                     </button>
                   } @else {
-                    <button class="empty-cell" (click)="openNewAssignment(vehicle.id, dayIndex)" [attr.aria-label]="'Einsatz für ' + vehicle.id + ' am ' + day.short + ' planen'"><span>+</span></button>
+                    <button class="empty-cell" (click)="openNewAssignment(vehicle.id, dayIndex)" [attr.aria-label]="'Fahrer für ' + vehicle.id + ' am ' + day.short + ' hinzufügen'"><span aria-hidden="true">+</span><strong>Fahrer</strong></button>
                   }
                 </div>
               }
