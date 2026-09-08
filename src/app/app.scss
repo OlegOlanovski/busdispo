@@ -254,13 +254,12 @@ button {
   width: 100%;
   max-width: 100vw;
   margin-left: 0;
-  padding-top: 66px;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .topbar {
-  position: fixed;
-  inset: 0 0 auto 0;
+  position: sticky;
+  top: 0;
   z-index: 20;
   width: 100%;
   height: 66px;
@@ -520,6 +519,15 @@ button {
   border-right: 1px solid var(--line);
   background: #f8fafc;
 }
+
+.planning-sticky-axis {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  box-shadow: 5px 0 10px rgb(16 24 40 / 7%);
+}
+
+.planning-week-corner.planning-sticky-axis { z-index: 6; }
 
 .planning-week-corner {
   display: flex;
@@ -877,6 +885,17 @@ button {
   }
 
   small { white-space: nowrap; }
+
+  .shift-note {
+    max-width: 100%;
+    overflow: hidden;
+    color: #c62828;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   i {
     position: absolute;
@@ -3693,7 +3712,7 @@ button {
   }
 
   .workspace {
-    padding-top: 61px;
+    padding-top: 0;
   }
 
   .topbar {

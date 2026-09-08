@@ -35,6 +35,8 @@ describe('App', () => {
     expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain(`KW ${(fixture.componentInstance as any).weekNumber()}`);
     expect(compiled.querySelector('.matrix-day')?.textContent).toContain(expectedMonday);
     expect(compiled.querySelector('.matrix-day--today')).toBeTruthy();
+    expect(compiled.querySelectorAll('.planning-sticky-axis')).toHaveLength(9);
+    expect(compiled.querySelectorAll('.matrix-day.planning-sticky-axis')).toHaveLength(7);
     expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(4);
     expect(compiled.querySelector('.trip-grid .matrix-corner')).toBeFalsy();
     expect(compiled.querySelector('.trip-side-label')).toBeFalsy();
@@ -404,16 +406,36 @@ describe('App', () => {
     addDriverButton.click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.assignment-form')).toBeTruthy();
-    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Neue Zuweisung');
-    expect(compiled.querySelector('.assignment-form')?.textContent).toContain('Tagesplan L 91');
+    const assignmentForm = compiled.querySelector('.assignment-form') as HTMLElement;
+    expect(assignmentForm).toBeTruthy();
+    expect(assignmentForm.textContent).toContain('Fahrer einplanen');
+    expect(assignmentForm.querySelectorAll('select')).toHaveLength(1);
+    expect(assignmentForm.querySelector('textarea')).toBeTruthy();
+    expect(assignmentForm.textContent).not.toContain('Fahrzeug');
+    expect(assignmentForm.textContent).not.toContain('Dienstplan');
+    expect(assignmentForm.textContent).not.toContain('Beginn');
+    expect(assignmentForm.textContent).not.toContain('Ende');
+
+    const driverSelect = assignmentForm.querySelector('select') as HTMLSelectElement;
+    const availableDriver = Array.from(driverSelect.options).find((option) => option.value && !option.disabled);
+    expect(availableDriver).toBeTruthy();
+    driverSelect.value = availableDriver!.value;
+    driverSelect.dispatchEvent(new Event('change'));
+
+    const note = 'Bitte Fahrzeug tanken';
+    const noteInput = assignmentForm.querySelector('textarea') as HTMLTextAreaElement;
+    noteInput.value = note;
+    noteInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
 
     (compiled.querySelector('.assignment-form .save-button') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.shift')).toHaveLength(shiftsBefore + 1);
     expect(compiled.querySelector('.assignment-form')).toBeFalsy();
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Fahrer 10');
+    expect(compiled.querySelector('.details-panel')?.textContent).toContain(availableDriver!.value);
+    expect(compiled.querySelector('.shift--active .shift-note')?.textContent).toContain(note);
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain(note);
   });
 
   it('should move an assignment to a free cell by drag and drop', async () => {

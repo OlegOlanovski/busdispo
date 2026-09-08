@@ -1311,15 +1311,11 @@ export class App {
     const suggestedPlan = this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DEMO-', 'L ')))
       ?? this.dutyPlans.find((plan) => plan.status === 'Aktiv')
       ?? this.dutyPlans[0];
-    const suggestedDriver = this.drivers.find(
-      (driver) => driver.status !== 'Abwesend'
-        && !this.driverHasConflict(driver.name, target.day, undefined, suggestedPlan.start, suggestedPlan.end),
-    );
 
     this.newAssignment = {
       vehicle: target.vehicle,
       day: target.day,
-      driver: suggestedDriver?.name ?? '',
+      driver: '',
       plan: suggestedPlan.name,
       start: suggestedPlan.start,
       end: suggestedPlan.end,
@@ -1346,34 +1342,6 @@ export class App {
     this.assignmentError.set('');
   }
 
-  protected updateNewAssignmentSlot(field: 'vehicle' | 'day', value: string | number): void {
-    if (field === 'day') {
-      this.updateNewAssignment('day', Number(value));
-      return;
-    }
-
-    const vehicle = String(value);
-    const currentDay = this.newAssignment.day;
-    const nextFreeDay = this.days.findIndex((_, day) => !this.getShift(vehicle, day));
-    this.newAssignment = {
-      ...this.newAssignment,
-      vehicle,
-      day: this.getShift(vehicle, currentDay) && nextFreeDay >= 0 ? nextFreeDay : currentDay,
-    };
-    this.assignmentError.set('');
-  }
-
-  protected selectNewAssignmentPlan(planName: string): void {
-    const plan = this.dutyPlans.find((item) => item.name === planName);
-    this.newAssignment = {
-      ...this.newAssignment,
-      plan: planName,
-      start: plan?.start ?? this.newAssignment.start,
-      end: plan?.end ?? this.newAssignment.end,
-    };
-    this.assignmentError.set('');
-  }
-
   protected isDriverOptionUnavailable(driverName: string): boolean {
     const driver = this.drivers.find((item) => item.name === driverName);
     return driver?.status === 'Abwesend'
@@ -1384,10 +1352,6 @@ export class App {
         this.newAssignment.start,
         this.newAssignment.end,
       );
-  }
-
-  protected isAssignmentSlotUnavailable(day: number): boolean {
-    return Boolean(this.getShift(this.newAssignment.vehicle, day));
   }
 
   protected createAssignment(): void {

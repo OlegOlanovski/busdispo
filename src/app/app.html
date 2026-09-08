@@ -1105,7 +1105,7 @@
             </div>
           } @else {
           <div class="trip-grid trip-grid--header planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'">
-            <div class="planning-week-corner"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
+            <div class="planning-week-corner planning-sticky-axis"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id">
                 <div class="planning-vehicle-actions">
@@ -1128,7 +1128,7 @@
             }
           </div>
           <div class="trip-grid trip-grid--body planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'">
-            <div class="planning-axis-spacer" aria-hidden="true"></div>
+            <div class="planning-axis-spacer planning-sticky-axis" aria-hidden="true"></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div
                 class="trip-column"
@@ -1165,7 +1165,7 @@
 
           @for (day of days; track day.iso; let dayIndex = $index) {
             <div class="schedule-grid schedule-row planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'" [class.schedule-row--weekend]="dayIndex > 4">
-              <div class="matrix-day" [class.matrix-day--today]="day.isToday"><strong>{{ day.date }}</strong><span>{{ day.isToday ? 'Heute · ' : '' }}{{ day.short }}</span></div>
+              <div class="matrix-day planning-sticky-axis" [class.matrix-day--today]="day.isToday"><strong>{{ day.date }}</strong><span>{{ day.isToday ? 'Heute · ' : '' }}{{ day.short }}</span></div>
               @for (vehicle of vehicles; track vehicle.id) {
                 <div
                   class="schedule-cell"
@@ -1191,6 +1191,9 @@
                       (click)="selectShift(shift)"
                     >
                       <strong>{{ shift.driver }}</strong>
+                      @if (shift.note && shift.note !== 'Keine besonderen Hinweise') {
+                        <small class="shift-note" [title]="shift.note">{{ shift.note }}</small>
+                      }
                       @if (shift.tone === 'green') { <i></i> }
                     </button>
                   } @else {
@@ -1207,22 +1210,12 @@
 
       @if (assignmentPanelOpen()) {
         <button class="planning-modal-backdrop" aria-label="Dialog schließen" (click)="closeAssignmentForm()"></button>
-        <section class="details-panel planning-modal" role="dialog" aria-modal="true" [attr.aria-label]="addingAssignment() ? 'Einsatz planen' : 'Einsatzdetails'">
-          <div class="panel-heading"><strong>{{ addingAssignment() ? 'Einsatz planen' : 'Einsatzdetails' }}</strong><button aria-label="Schließen" (click)="closeAssignmentForm()">×</button></div>
+        <section class="details-panel planning-modal" role="dialog" aria-modal="true" [attr.aria-label]="addingAssignment() ? 'Fahrer hinzufügen' : 'Einsatzdetails'">
+          <div class="panel-heading"><strong>{{ addingAssignment() ? 'Fahrer hinzufügen' : 'Einsatzdetails' }}</strong><button aria-label="Schließen" (click)="closeAssignmentForm()">×</button></div>
           @if (addingAssignment()) {
           <div class="details-body assignment-form">
-            <div class="assignment-form__title"><span>+</span><div><strong>Neue Zuweisung</strong><small>Fahrer und Bus einem Dienstplan zuordnen</small></div></div>
+            <div class="assignment-form__title"><span>+</span><div><strong>Fahrer einplanen</strong><small>Fahrer für die ausgewählte Planung auswählen</small></div></div>
 
-            <label class="assignment-field">Fahrzeug
-              <select [ngModel]="newAssignment.vehicle" (ngModelChange)="updateNewAssignmentSlot('vehicle', $event)">
-                @for (vehicle of vehicles; track vehicle.id) { <option [value]="vehicle.id">{{ planningVehicleLabel(vehicle.id) }}</option> }
-              </select>
-            </label>
-            <label class="assignment-field">Tag
-              <select [ngModel]="newAssignment.day" (ngModelChange)="updateNewAssignmentSlot('day', $event)">
-                @for (day of days; track day.iso; let dayIndex = $index) { <option [ngValue]="dayIndex" [disabled]="isAssignmentSlotUnavailable(dayIndex)">{{ day.short }}, {{ day.fullDate }}{{ isAssignmentSlotUnavailable(dayIndex) ? ' · belegt' : '' }}</option> }
-              </select>
-            </label>
             <label class="assignment-field">Fahrer
               <select [ngModel]="newAssignment.driver" (ngModelChange)="updateNewAssignment('driver', $event)">
                 <option value="" disabled>Fahrer auswählen</option>
@@ -1231,19 +1224,10 @@
                 }
               </select>
             </label>
-            <label class="assignment-field">Dienstplan
-              <select [ngModel]="newAssignment.plan" (ngModelChange)="selectNewAssignmentPlan($event)">
-                @for (plan of dutyPlans; track plan.id) { @if (plan.status !== 'Archiviert') { <option [value]="plan.name">{{ plan.name }} · {{ plan.route }}</option> } }
-              </select>
-            </label>
-            <div class="assignment-time-fields">
-              <label class="assignment-field">Beginn<input type="time" [ngModel]="newAssignment.start" (ngModelChange)="updateNewAssignment('start', $event)" /></label>
-              <label class="assignment-field">Ende<input type="time" [ngModel]="newAssignment.end" (ngModelChange)="updateNewAssignment('end', $event)" /></label>
-            </div>
             <label class="assignment-field">Bemerkung<textarea rows="3" [ngModel]="newAssignment.note" (ngModelChange)="updateNewAssignment('note', $event)" placeholder="Optionaler Hinweis für den Fahrer"></textarea></label>
 
             @if (assignmentError()) { <div class="assignment-error" role="alert"><span>!</span>{{ assignmentError() }}</div> }
-            <button class="button button--primary save-button" (click)="createAssignment()">Einsatz speichern</button>
+            <button class="button button--primary save-button" (click)="createAssignment()">Fahrer einplanen</button>
             <button class="assignment-cancel-button" (click)="closeAssignmentForm()">Abbrechen</button>
           </div>
           } @else {
