@@ -948,11 +948,11 @@
       <button class="driver-create-backdrop" type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()"></button>
       <section class="driver-create-modal planning-line-modal" role="dialog" aria-modal="true" aria-labelledby="planning-line-title">
         <header class="driver-create-head">
-          <div><span class="driver-create-icon">▤</span><div><small>Wochenplanung</small><h3 id="planning-line-title">Dienstplan hinzufügen</h3></div></div>
+          <div><span class="driver-create-icon">▤</span><div><small>Wochenplanung</small><h3 id="planning-line-title">{{ planningLineEditingId() ? 'Dienstplan bearbeiten' : 'Dienstplan hinzufügen' }}</h3></div></div>
           <button type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()">×</button>
         </header>
-        <form class="driver-create-form" novalidate (ngSubmit)="createPlanningLine()">
-          <p class="driver-create-intro">Die neue Linie wird als zusätzliche Spalte in der Wochenplanung angelegt.</p>
+        <form class="driver-create-form" novalidate (ngSubmit)="savePlanningLineForm()">
+          <p class="driver-create-intro">{{ planningLineEditingId() ? 'Ändern Sie Bus, Auftraggeber und Einsatzzeit des Dienstplans.' : 'Die neue Linie wird als zusätzliche Spalte in der Wochenplanung angelegt.' }}</p>
           <div class="driver-create-grid">
             <label class="driver-create-field">
               <span>Bus einplanen *</span>
@@ -1003,7 +1003,7 @@
           <div class="driver-create-note"><span>i</span><p><b>Einsätze anschließend planen</b><small>Über das Plus in einer freien Zelle können Sie der Linie Fahrer und Dienstplan zuweisen.</small></p></div>
           <footer class="driver-create-actions">
             <button class="button" type="button" (click)="closePlanningLineForm()">Abbrechen</button>
-            <button class="button button--primary" type="submit">Dienstplan speichern</button>
+            <button class="button button--primary" type="submit">{{ planningLineEditingId() ? 'Änderungen speichern' : 'Dienstplan speichern' }}</button>
           </footer>
         </form>
       </section>
@@ -1109,46 +1109,30 @@
               <button class="button button--primary" type="button" (click)="openPlanningLineForm()">+&nbsp; Linie hinzufügen</button>
             </div>
           } @else {
-          <div class="trip-grid trip-grid--header planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'">
+          <div class="trip-grid trip-grid--header planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'">
             <div class="planning-week-corner"><strong>KW {{ weekNumber() }}</strong><span>{{ days[0].date }} – {{ days[6].date }}</span></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div class="line-heading line-heading--vehicle line-heading--{{ planningLineTone(vehicle.id) }}" [attr.data-vehicle]="vehicle.id">
-                @if (editingPlanningVehicleId() === vehicle.id) {
-                  <input
-                    class="planning-vehicle-input"
-                    type="text"
-                    maxlength="24"
-                    [attr.data-vehicle-edit]="vehicle.id"
-                    [attr.aria-label]="'Busnummer für ' + planningVehicleLabel(vehicle.id) + ' bearbeiten'"
-                    [ngModel]="planningVehicleDraft()"
-                    (ngModelChange)="planningVehicleDraft.set($event)"
-                    (click)="$event.stopPropagation()"
-                    (keydown.enter)="savePlanningVehicleLabel(vehicle)"
-                    (keydown.escape)="cancelPlanningVehicleEdit()"
-                    (blur)="savePlanningVehicleLabel(vehicle)"
-                  />
-                } @else {
-                  <div class="planning-vehicle-actions">
-                    <button
-                      class="planning-vehicle-edit"
-                      type="button"
-                      title="Busnummer ändern"
-                      [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' ändern'"
-                      (click)="editPlanningVehicleLabel(vehicle)"
-                    ><strong>{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</strong><span aria-hidden="true">✎</span></button>
-                    <button
-                      class="planning-vehicle-delete"
-                      type="button"
-                      title="Spalte löschen"
-                      [attr.aria-label]="'Spalte ' + planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' löschen'"
-                      (click)="requestPlanningLineDelete(vehicle)"
-                    >Löschen</button>
-                  </div>
-                }
+                <div class="planning-vehicle-actions">
+                  <button
+                    class="planning-vehicle-edit"
+                    type="button"
+                    title="Dienstplan bearbeiten"
+                    [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' bearbeiten'"
+                    (click)="openPlanningLineEditForm(vehicle)"
+                  ><strong>{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</strong><span aria-hidden="true">✎</span></button>
+                  <button
+                    class="planning-vehicle-delete"
+                    type="button"
+                    title="Spalte löschen"
+                    [attr.aria-label]="'Spalte ' + planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' löschen'"
+                    (click)="requestPlanningLineDelete(vehicle)"
+                  >Löschen</button>
+                </div>
               </div>
             }
           </div>
-          <div class="trip-grid trip-grid--body planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'">
+          <div class="trip-grid trip-grid--body planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'">
             <div class="planning-axis-spacer" aria-hidden="true"></div>
             @for (vehicle of vehicles; track vehicle.id) {
               <div
@@ -1201,7 +1185,7 @@
           </div>
 
           @for (day of days; track day.iso; let dayIndex = $index) {
-            <div class="schedule-grid schedule-row planning-unified-grid" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', minmax(175px, 1fr))'" [class.schedule-row--weekend]="dayIndex > 4">
+            <div class="schedule-grid schedule-row planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'" [class.schedule-row--weekend]="dayIndex > 4">
               <div class="matrix-day" [class.matrix-day--today]="day.isToday"><strong>{{ day.date }}</strong><span>{{ day.isToday ? 'Heute · ' : '' }}{{ day.short }}</span></div>
               @for (vehicle of vehicles; track vehicle.id) {
                 <div

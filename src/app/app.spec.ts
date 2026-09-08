@@ -27,6 +27,10 @@ describe('App', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
     expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(7);
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(2);
+    const planningHeader = compiled.querySelector('.trip-grid--header') as HTMLElement;
+    expect(planningHeader.style.width).toBe('656px');
+    expect(planningHeader.style.minWidth).toBe('656px');
+    expect(planningHeader.style.gridTemplateColumns).toContain('280px');
     expect(compiled.querySelector('.trip-grid--header .line-heading')?.textContent).toContain('DEMO 91');
     expect(compiled.querySelector('.planning-week-corner')?.textContent).toContain(`KW ${(fixture.componentInstance as any).weekNumber()}`);
     expect(compiled.querySelector('.matrix-day')?.textContent).toContain(expectedMonday);
@@ -226,25 +230,58 @@ describe('App', () => {
     expect(compiled.querySelector('.route-table')).toBeFalsy();
   });
 
-  it('should edit a bus number from the planning header', async () => {
+  it('should edit a duty plan from the planning header modal and change its bus', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+    app.fleetVehicles.push({
+      id: 'BUS-4711',
+      seats: 50,
+      model: 'MAN Lion\'s City',
+      year: 2025,
+      mileage: '10.000 km',
+      status: 'Verfügbar',
+      driver: '–',
+      inspection: '01.06.2027',
+      safetyInspection: '01.12.2026',
+    });
+    fixture.detectChanges();
     const heading = compiled.querySelector('.trip-grid--header [data-vehicle="DEMO-91"]') as HTMLElement;
 
     (heading.querySelector('.planning-vehicle-edit') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    const input = heading.querySelector('.planning-vehicle-input') as HTMLInputElement;
-    expect(input).toBeTruthy();
-    input.value = 'Bus 4711';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    const modal = compiled.querySelector('.planning-line-modal') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.querySelector('#planning-line-title')?.textContent).toContain('Dienstplan bearbeiten');
+    expect(app.planningLineDraft).toEqual({
+      displayLabel: 'DEMO 91',
+      lineLabel: 'L 91',
+      start: '07:04',
+      end: '16:56',
+    });
+
+    (modal.querySelector('.planning-vehicle-picker-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const busOption = Array.from(modal.querySelectorAll<HTMLButtonElement>('.planning-vehicle-option'))
+      .find((option) => option.textContent?.includes('BUS-4711')) as HTMLButtonElement;
+    busOption.click();
+    fixture.detectChanges();
+    expect(app.planningLineDraft.displayLabel).toBe('BUS-4711');
+
+    app.planningLineDraft = { ...app.planningLineDraft, lineLabel: 'DB', start: '08:00', end: '17:00' };
+    app.savePlanningLineForm();
     fixture.detectChanges();
 
-    expect(heading.textContent).toContain('Bus 4711');
-    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Busnummer geändert');
-    expect(compiled.querySelector('.schedule-row [data-vehicle="DEMO-91"]')).toBeTruthy();
+    expect(compiled.querySelector('.planning-line-modal')).toBeFalsy();
+    expect(compiled.querySelector('.line-heading[data-vehicle="BUS-4711"]')?.textContent).toContain('BUS-4711 · DB');
+    expect(compiled.querySelector('.line-heading[data-vehicle="DEMO-91"]')).toBeFalsy();
+    expect(compiled.querySelector('.schedule-row [data-vehicle="BUS-4711"]')).toBeTruthy();
+    expect(app.planningTrips.some((trip: { vehicle: string }) => trip.vehicle === 'BUS-4711')).toBe(true);
+    expect(app.shifts.some((shift: { vehicle: string }) => shift.vehicle === 'BUS-4711')).toBe(true);
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Dienstplan aktualisiert');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('BUS-4711');
   });
 
   it('should move a trip card to another vehicle column by drag and drop', async () => {

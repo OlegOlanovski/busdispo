@@ -728,13 +728,20 @@ button {
 }
 
 .planning-vehicle-edit > span {
-  opacity: 0;
+  flex: 0 0 auto;
+  opacity: 1;
   color: currentColor;
   transition: opacity 120ms ease;
 }
 
 .planning-vehicle-edit:hover > span,
-.planning-vehicle-edit:focus-visible > span { opacity: .7; }
+.planning-vehicle-edit:focus-visible > span { opacity: 1; }
+
+.planning-vehicle-edit > strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .planning-vehicle-delete {
   min-width: 0;
@@ -760,22 +767,6 @@ button {
 }
 
 .planning-vehicle-delete:disabled { cursor: not-allowed; opacity: .32; }
-
-.planning-vehicle-input {
-  width: calc(100% - 12px);
-  min-width: 0;
-  height: 30px;
-  padding: 0 7px;
-  border: 1px solid currentColor;
-  border-radius: 5px;
-  outline: 2px solid color-mix(in srgb, currentColor 20%, transparent);
-  background: #fff;
-  color: #253044;
-  font-family: inherit;
-  font-size: var(--font-min);
-  font-weight: 700;
-  text-align: center;
-}
 
 .line-heading--green { color: #238c34; }
 .line-heading--blue { color: #176ac3; }
