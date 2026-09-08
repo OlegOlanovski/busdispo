@@ -65,6 +65,8 @@ describe('App', () => {
     fixture.detectChanges();
     const form = compiled.querySelector('.planning-line-modal form') as HTMLFormElement;
     expect(form).toBeTruthy();
+    expect(form.querySelector('input[name="planningLineStart"]')).toBeFalsy();
+    expect(form.querySelector('input[name="planningLineEnd"]')).toBeFalsy();
     const busInput = form.querySelector('input[name="planningLineDisplayLabel"]') as HTMLInputElement;
     expect(busInput.getAttribute('list')).toBeNull();
     (form.querySelector('.planning-vehicle-picker-button') as HTMLButtonElement).click();
@@ -81,8 +83,6 @@ describe('App', () => {
     app.planningLineDraft = {
       displayLabel: 'Bus 200',
       lineLabel: 'DB',
-      start: '08:00',
-      end: '16:00',
     };
     app.createPlanningLine();
     fixture.detectChanges();
@@ -130,14 +130,15 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(0);
-    expect(compiled.querySelector('.planning-empty-lines')?.textContent).toContain('Noch keine Linien eingeplant');
+    expect(compiled.querySelector('.planning-empty-lines')?.textContent).toContain('Noch keine Dienstpläne angelegt');
     expect(compiled.querySelector('.assignment-add-button')).toBeFalsy();
 
     const emptyStateButton = compiled.querySelector('.planning-empty-lines .button--primary') as HTMLButtonElement;
+    expect(emptyStateButton.textContent).toContain('Dienstplan');
     emptyStateButton.click();
     fixture.detectChanges();
     const app = fixture.componentInstance as any;
-    app.planningLineDraft = { displayLabel: 'BUS-300', lineLabel: 'Gerolstein – Daun', start: '08:00', end: '16:00' };
+    app.planningLineDraft = { displayLabel: 'BUS-300', lineLabel: 'Gerolstein – Daun' };
     app.createPlanningLine();
     fixture.detectChanges();
 
@@ -168,6 +169,7 @@ describe('App', () => {
     fixture.detectChanges();
     const form = compiled.querySelector('.planning-trip-form') as HTMLFormElement;
     expect(form).toBeTruthy();
+    expect(form.querySelector('.planning-trip-delete-button')).toBeFalsy();
 
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
@@ -217,17 +219,24 @@ describe('App', () => {
     expect(compiled.querySelector('.sidebar-scrim')).toBeFalsy();
   });
 
-  it('should open line details from a trip card', async () => {
+  it('should open the populated Fahrt modal from a planning card', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
 
     (compiled.querySelector('.planning-trip-card') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('DEMO-91');
-    expect(compiled.querySelector('.details-panel')?.textContent).toContain('Linie L 91');
-    expect(compiled.querySelector('.route-table')).toBeFalsy();
+    expect(compiled.querySelector('.planning-trip-modal')).toBeTruthy();
+    expect(compiled.querySelector('#planning-trip-title')?.textContent).toContain('Fahrt bearbeiten');
+    expect(app.planningTripDraft).toEqual({
+      vehicle: 'DEMO-91',
+      label: 'Linienfahrt',
+      start: '07:04',
+      end: '07:28',
+      route: 'Demo Ort 01 → Demo Ort 03',
+    });
   });
 
   it('should edit a duty plan from the planning header modal and change its bus', async () => {
@@ -258,8 +267,6 @@ describe('App', () => {
     expect(app.planningLineDraft).toEqual({
       displayLabel: 'DEMO 91',
       lineLabel: 'L 91',
-      start: '07:04',
-      end: '16:56',
     });
 
     (modal.querySelector('.planning-vehicle-picker-button') as HTMLButtonElement).click();
@@ -270,7 +277,7 @@ describe('App', () => {
     fixture.detectChanges();
     expect(app.planningLineDraft.displayLabel).toBe('BUS-4711');
 
-    app.planningLineDraft = { ...app.planningLineDraft, lineLabel: 'DB', start: '08:00', end: '17:00' };
+    app.planningLineDraft = { ...app.planningLineDraft, lineLabel: 'DB' };
     app.savePlanningLineForm();
     fixture.detectChanges();
 
@@ -280,6 +287,9 @@ describe('App', () => {
     expect(compiled.querySelector('.schedule-row [data-vehicle="BUS-4711"]')).toBeTruthy();
     expect(app.planningTrips.some((trip: { vehicle: string }) => trip.vehicle === 'BUS-4711')).toBe(true);
     expect(app.shifts.some((shift: { vehicle: string }) => shift.vehicle === 'BUS-4711')).toBe(true);
+    const updatedVehicle = app.vehicles.find((vehicle: { id: string }) => vehicle.id === 'BUS-4711');
+    expect(updatedVehicle.start).toBe('07:04');
+    expect(updatedVehicle.end).toBe('16:56');
     expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Dienstplan aktualisiert');
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain('BUS-4711');
   });
@@ -310,24 +320,54 @@ describe('App', () => {
     expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt verschoben');
   });
 
-  it('should edit a line directly on a planning card', async () => {
+  it('should edit a Fahrt and move it to the selected line', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     const card = compiled.querySelector('.planning-trip-card') as HTMLElement;
+    const app = fixture.componentInstance as any;
 
-    (card.querySelector('.planning-trip-route-edit') as HTMLButtonElement).click();
+    card.click();
     fixture.detectChanges();
 
-    const input = card.querySelector('.planning-trip-route-input') as HTMLInputElement;
-    expect(input).toBeTruthy();
-    input.value = 'Linie 4711';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    app.planningTripDraft = {
+      vehicle: 'DEMO-102',
+      label: 'SEV',
+      start: '10:15',
+      end: '11:05',
+      route: 'Demo Ort 20 → Demo Ort 30',
+    };
+    app.savePlanningTripForm();
     fixture.detectChanges();
 
-    expect(card.textContent).toContain('Linie 4711');
-    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Linie geändert');
+    const targetColumn = compiled.querySelector('.trip-column[data-vehicle="DEMO-102"]') as HTMLElement;
+    expect(compiled.querySelector('.planning-trip-modal')).toBeFalsy();
+    expect(targetColumn.textContent).toContain('SEV');
+    expect(targetColumn.textContent).toContain('10:15 – 11:05');
+    expect(targetColumn.textContent).toContain('Demo Ort 20 → Demo Ort 30');
+    expect(targetColumn.querySelector('.planning-trip-card--green')).toBeTruthy();
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt aktualisiert');
+  });
+
+  it('should delete a Fahrt from its edit modal', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const tripsBefore = compiled.querySelectorAll('.planning-trip-card').length;
+
+    (compiled.querySelector('.planning-trip-card') as HTMLElement).click();
+    fixture.detectChanges();
+    const deleteButton = compiled.querySelector('.planning-trip-delete-button') as HTMLButtonElement;
+
+    expect(deleteButton).toBeTruthy();
+    deleteButton.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.planning-trip-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(tripsBefore - 1);
+    expect(compiled.querySelector('.toast--planning')?.textContent).toContain('Fahrt gelöscht');
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.planningTrips).toHaveLength(tripsBefore - 1);
   });
 
   it('should restore saved changes from local storage', async () => {
@@ -335,13 +375,12 @@ describe('App', () => {
     await firstFixture.whenStable();
     const firstView = firstFixture.nativeElement as HTMLElement;
     const card = firstView.querySelector('.planning-trip-card') as HTMLElement;
+    const app = firstFixture.componentInstance as any;
 
-    (card.querySelector('.planning-trip-route-edit') as HTMLButtonElement).click();
+    card.click();
     firstFixture.detectChanges();
-    const input = card.querySelector('.planning-trip-route-input') as HTMLInputElement;
-    input.value = 'Gespeicherte Linie';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    app.planningTripDraft = { ...app.planningTripDraft, route: 'Gespeicherte Linie' };
+    app.savePlanningTripForm();
     firstFixture.detectChanges();
 
     expect(window.localStorage.getItem('busdispo.state.v1')).toBeTruthy();

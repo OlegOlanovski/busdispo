@@ -70,8 +70,6 @@ interface PlanningVehicle extends Vehicle {
 interface PlanningLineDraft {
   displayLabel: string;
   lineLabel: string;
-  start: string;
-  end: string;
 }
 
 interface PlanningDay {
@@ -280,9 +278,9 @@ export class App {
   protected readonly planningLineDeleteId = signal<string | null>(null);
   protected readonly planningVehicleMenuOpen = signal(false);
   protected readonly planningTripFormOpen = signal(false);
+  protected readonly planningTripEditingId = signal<string | null>(null);
   protected readonly planningTripError = signal('');
-  protected readonly editingPlanningTripId = signal<string | null>(null);
-  protected readonly planningTripRouteDraft = signal('');
+  private suppressPlanningTripClick = false;
   protected planningLineDraft: PlanningLineDraft = this.emptyPlanningLineDraft();
   protected planningTripDraft: PlanningTripDraft = this.emptyPlanningTripDraft();
   protected readonly selectedShiftId = signal('xls-3-demo-91');
@@ -800,8 +798,6 @@ export class App {
     this.planningLineDraft = {
       displayLabel: vehicle.displayLabel,
       lineLabel: vehicle.lineLabel,
-      start: vehicle.start,
-      end: vehicle.end,
     };
     this.planningLineEditingId.set(vehicle.id);
     this.planningLineError.set('');
@@ -925,8 +921,8 @@ export class App {
       lineLabel: draft.lineLabel,
       seats: 0,
       tone: tones[this.vehicles.length % tones.length],
-      start: draft.start,
-      end: draft.end,
+      start: '00:00',
+      end: '00:00',
     };
     this.vehicles.push(vehicle);
     this.closePlanningLineForm();
@@ -974,8 +970,6 @@ export class App {
       id: nextId,
       displayLabel: draft.displayLabel,
       lineLabel: draft.lineLabel,
-      start: draft.start,
-      end: draft.end,
     });
     this.driverRevision.update((revision) => revision + 1);
     this.saved.set(false);
@@ -992,8 +986,6 @@ export class App {
     return {
       displayLabel: this.planningLineDraft.displayLabel.trim(),
       lineLabel: this.planningLineDraft.lineLabel.trim(),
-      start: this.planningLineDraft.start,
-      end: this.planningLineDraft.end,
     };
   }
 
@@ -1005,7 +997,7 @@ export class App {
   }
 
   private validatePlanningLineDraft(draft: PlanningLineDraft, vehicleId: string, excludedVehicleId?: string): string {
-    if (!draft.displayLabel || !draft.lineLabel || !draft.start || !draft.end) {
+    if (!draft.displayLabel || !draft.lineLabel) {
       return 'Bitte füllen Sie alle Pflichtfelder aus.';
     }
     if (this.vehicles.some((vehicle) => vehicle.id !== excludedVehicleId && vehicle.id === vehicleId)) {
@@ -1015,7 +1007,7 @@ export class App {
   }
 
   private emptyPlanningLineDraft(): PlanningLineDraft {
-    return { displayLabel: '', lineLabel: '', start: '', end: '' };
+    return { displayLabel: '', lineLabel: '' };
   }
 
   protected openPlanningTripForm(vehicle: string): void {
@@ -1023,21 +1015,42 @@ export class App {
     this.closePlanningLineForm();
     this.driverFormOpen.set(false);
     this.planningTripDraft = { ...this.emptyPlanningTripDraft(), vehicle };
+    this.planningTripEditingId.set(null);
+    this.planningTripError.set('');
+    this.planningTripFormOpen.set(true);
+  }
+
+  protected openPlanningTripEditForm(trip: PlanningTripCard): void {
+    if (this.suppressPlanningTripClick) return;
+    const [start = '', end = ''] = trip.time.split(/\s+–\s+/);
+    this.closeAssignmentForm();
+    this.closePlanningLineForm();
+    this.driverFormOpen.set(false);
+    this.planningTripDraft = {
+      vehicle: trip.vehicle,
+      label: trip.label,
+      start,
+      end,
+      route: trip.route,
+    };
+    this.planningTripEditingId.set(trip.id);
     this.planningTripError.set('');
     this.planningTripFormOpen.set(true);
   }
 
   protected closePlanningTripForm(): void {
     this.planningTripFormOpen.set(false);
+    this.planningTripEditingId.set(null);
     this.planningTripError.set('');
   }
 
+  protected savePlanningTripForm(): void {
+    if (this.planningTripEditingId()) this.updatePlanningTrip();
+    else this.createPlanningTrip();
+  }
+
   protected createPlanningTrip(): void {
-    const draft: PlanningTripDraft = {
-      ...this.planningTripDraft,
-      label: this.planningTripDraft.label.trim(),
-      route: this.planningTripDraft.route.trim(),
-    };
+    const draft = this.normalizedPlanningTripDraft();
     const vehicle = this.vehicles.find((item) => item.id === draft.vehicle);
     if (!vehicle || !draft.label || !draft.start || !draft.end || !draft.route) {
       this.planningTripError.set('Bitte füllen Sie alle Pflichtfelder aus.');
@@ -1059,14 +1072,65 @@ export class App {
       tone: vehicle.tone,
     };
     this.planningTrips.push(trip);
-    this.planningTripFormOpen.set(false);
-    this.planningTripError.set('');
+    this.closePlanningTripForm();
     this.persistState();
     this.showPlanningFeedback({
       type: 'success',
       title: 'Fahrt hinzugefügt',
       message: `${trip.label} · ${trip.time}`,
     });
+  }
+
+  protected updatePlanningTrip(): void {
+    const editingId = this.planningTripEditingId();
+    const trip = this.planningTrips.find((item) => item.id === editingId);
+    const draft = this.normalizedPlanningTripDraft();
+    const vehicle = this.vehicles.find((item) => item.id === draft.vehicle);
+    if (!editingId || !trip) return;
+    if (!vehicle || !draft.label || !draft.start || !draft.end || !draft.route) {
+      this.planningTripError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+
+    Object.assign(trip, {
+      vehicle: vehicle.id,
+      label: draft.label,
+      time: `${draft.start} – ${draft.end}`,
+      route: draft.route,
+      tone: vehicle.tone,
+    });
+    this.saved.set(false);
+    this.closePlanningTripForm();
+    this.persistState();
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Fahrt aktualisiert',
+      message: `${trip.label} · ${trip.time}`,
+    });
+  }
+
+  protected deletePlanningTrip(): void {
+    const editingId = this.planningTripEditingId();
+    const tripIndex = this.planningTrips.findIndex((trip) => trip.id === editingId);
+    if (!editingId || tripIndex < 0) return;
+
+    const [trip] = this.planningTrips.splice(tripIndex, 1);
+    this.saved.set(false);
+    this.closePlanningTripForm();
+    this.persistState();
+    this.showPlanningFeedback({
+      type: 'success',
+      title: 'Fahrt gelöscht',
+      message: `${trip.label} · ${trip.time}`,
+    });
+  }
+
+  private normalizedPlanningTripDraft(): PlanningTripDraft {
+    return {
+      ...this.planningTripDraft,
+      label: this.planningTripDraft.label.trim(),
+      route: this.planningTripDraft.route.trim(),
+    };
   }
 
   private emptyPlanningTripDraft(): PlanningTripDraft {
@@ -1081,59 +1145,8 @@ export class App {
     return this.planningTrips.filter((trip) => trip.vehicle === vehicle);
   }
 
-  protected editPlanningTripRoute(event: Event, trip: PlanningTripCard): void {
-    event.stopPropagation();
-    this.editingPlanningTripId.set(trip.id);
-    this.planningTripRouteDraft.set(trip.route);
-    window.setTimeout(() => {
-      const input = Array.from(document.querySelectorAll<HTMLInputElement>('.planning-trip-route-input'))
-        .find((item) => item.dataset['tripEdit'] === trip.id);
-      input?.focus();
-      input?.select();
-    }, 0);
-  }
-
-  protected savePlanningTripRoute(event: Event, trip: PlanningTripCard): void {
-    event.stopPropagation();
-    if (this.editingPlanningTripId() !== trip.id) return;
-
-    const nextRoute = this.planningTripRouteDraft().trim();
-    if (!nextRoute) {
-      this.showPlanningFeedback({
-        type: 'error',
-        title: 'Linie fehlt',
-        message: 'Bitte geben Sie eine Linie ein.',
-      });
-      return;
-    }
-
-    const previousRoute = trip.route;
-    trip.route = nextRoute;
-    this.editingPlanningTripId.set(null);
-    this.saved.set(false);
-
-    if (previousRoute !== nextRoute) {
-      this.persistState();
-      this.showPlanningFeedback({
-        type: 'success',
-        title: 'Linie geändert',
-        message: `${previousRoute} → ${nextRoute}`,
-      });
-    }
-  }
-
-  protected cancelPlanningTripEdit(event: Event): void {
-    event.stopPropagation();
-    this.editingPlanningTripId.set(null);
-    this.planningTripRouteDraft.set('');
-  }
-
-  protected selectPlanningLine(vehicle: string): void {
-    const shift = this.shifts.find((item) => item.vehicle === vehicle);
-    if (shift) this.selectShift(shift);
-  }
-
   protected startPlanningTripDrag(event: DragEvent, trip: PlanningTripCard): void {
+    this.suppressPlanningTripClick = true;
     this.draggingTripId.set(trip.id);
     this.tripDragTargetVehicle.set(null);
     this.planningFeedback.set(null);
@@ -1191,6 +1204,9 @@ export class App {
   protected finishPlanningTripDrag(): void {
     this.draggingTripId.set(null);
     this.tripDragTargetVehicle.set(null);
+    window.setTimeout(() => {
+      this.suppressPlanningTripClick = false;
+    }, 0);
   }
 
   protected planningCellKey(vehicle: string, day: number): string {

@@ -952,7 +952,7 @@
           <button type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()">×</button>
         </header>
         <form class="driver-create-form" novalidate (ngSubmit)="savePlanningLineForm()">
-          <p class="driver-create-intro">{{ planningLineEditingId() ? 'Ändern Sie Bus, Auftraggeber und Einsatzzeit des Dienstplans.' : 'Die neue Linie wird als zusätzliche Spalte in der Wochenplanung angelegt.' }}</p>
+          <p class="driver-create-intro">{{ planningLineEditingId() ? 'Ändern Sie Bus und Auftraggeber des Dienstplans.' : 'Wählen Sie einen Bus und erfassen Sie den Auftraggeber für die Wochenplanung.' }}</p>
           <div class="driver-create-grid">
             <label class="driver-create-field">
               <span>Bus einplanen *</span>
@@ -986,17 +986,9 @@
                 }
               </div>
             </label>
-            <label class="driver-create-field driver-create-field--wide">
+            <label class="driver-create-field">
               <span>Auftraggeber *</span>
               <input name="planningLineLabel" [(ngModel)]="planningLineDraft.lineLabel" placeholder="z. B. RMB, DB …" required />
-            </label>
-            <label class="driver-create-field">
-              <span>Beginn *</span>
-              <input name="planningLineStart" type="time" [(ngModel)]="planningLineDraft.start" required />
-            </label>
-            <label class="driver-create-field">
-              <span>Ende *</span>
-              <input name="planningLineEnd" type="time" [(ngModel)]="planningLineDraft.end" required />
             </label>
           </div>
           @if (planningLineError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningLineError() }}</div> }
@@ -1040,11 +1032,11 @@
       <button class="driver-create-backdrop" type="button" aria-label="Fahrtformular schließen" (click)="closePlanningTripForm()"></button>
       <section class="driver-create-modal planning-trip-modal" role="dialog" aria-modal="true" aria-labelledby="planning-trip-title">
         <header class="driver-create-head">
-          <div><span class="driver-create-icon">↗</span><div><small>Wochenplanung</small><h3 id="planning-trip-title">Fahrt hinzufügen</h3></div></div>
+          <div><span class="driver-create-icon">↗</span><div><small>Wochenplanung</small><h3 id="planning-trip-title">{{ planningTripEditingId() ? 'Fahrt bearbeiten' : 'Fahrt hinzufügen' }}</h3></div></div>
           <button type="button" aria-label="Fahrtformular schließen" (click)="closePlanningTripForm()">×</button>
         </header>
-        <form class="driver-create-form planning-trip-form" novalidate (ngSubmit)="createPlanningTrip()">
-          <p class="driver-create-intro">Die Fahrt wird in der ausgewählten Linien-Spalte angezeigt.</p>
+        <form class="driver-create-form planning-trip-form" novalidate (ngSubmit)="savePlanningTripForm()">
+          <p class="driver-create-intro">{{ planningTripEditingId() ? 'Ändern Sie Linie, Fahrtart, Zeit und Route der Fahrt.' : 'Die Fahrt wird in der ausgewählten Linien-Spalte angezeigt.' }}</p>
           <div class="driver-create-grid">
             <label class="driver-create-field">
               <span>Linie</span>
@@ -1062,8 +1054,11 @@
           </div>
           @if (planningTripError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningTripError() }}</div> }
           <footer class="driver-create-actions">
+            @if (planningTripEditingId()) {
+              <button class="button planning-trip-delete-button" type="button" (click)="deletePlanningTrip()">Löschen</button>
+            }
             <button class="button" type="button" (click)="closePlanningTripForm()">Abbrechen</button>
-            <button class="button button--primary" type="submit">Fahrt speichern</button>
+            <button class="button button--primary" type="submit">{{ planningTripEditingId() ? 'Änderungen speichern' : 'Fahrt speichern' }}</button>
           </footer>
         </form>
       </section>
@@ -1104,9 +1099,9 @@
           @if (vehicles.length === 0) {
             <div class="planning-empty-lines">
               <span aria-hidden="true">▤</span>
-              <strong>Noch keine Linien eingeplant</strong>
-              <p>Fügen Sie eine Linie hinzu, um Busse, Fahrten und Fahrer einzuplanen.</p>
-              <button class="button button--primary" type="button" (click)="openPlanningLineForm()">+&nbsp; Linie hinzufügen</button>
+              <strong>Noch keine Dienstpläne angelegt</strong>
+              <p>Fügen Sie einen Dienstplan hinzu, um Busse, Fahrten und Fahrer einzuplanen.</p>
+              <button class="button button--primary planning-line-add-button" type="button" (click)="openPlanningLineForm()">+&nbsp; Dienstplan</button>
             </div>
           } @else {
           <div class="trip-grid trip-grid--header planning-unified-grid" [style.width.px]="planningGridWidth" [style.min-width.px]="planningGridWidth" [style.grid-template-columns]="'96px repeat(' + vehicles.length + ', ' + planningColumnWidth + 'px)'">
@@ -1147,36 +1142,20 @@
                   <div
                     class="planning-trip-card planning-trip-card--{{ trip.tone }}"
                     [class.planning-trip-card--dragging]="draggingTripId() === trip.id"
-                    [draggable]="editingPlanningTripId() !== trip.id"
+                    draggable="true"
                     role="button"
                     tabindex="0"
                     [attr.aria-grabbed]="draggingTripId() === trip.id"
-                    [attr.aria-label]="trip.label + ', ' + trip.time + ', ' + trip.route + '. Linie bearbeiten, Fahrt verschieben oder Details öffnen'"
-                    title="Linie bearbeiten, Fahrt verschieben oder Details öffnen"
+                    [attr.aria-label]="trip.label + ', ' + trip.time + ', ' + trip.route + '. Fahrt bearbeiten oder verschieben'"
+                    title="Fahrt bearbeiten oder verschieben"
                     (dragstart)="startPlanningTripDrag($event, trip)"
                     (dragend)="finishPlanningTripDrag()"
-                    (click)="selectPlanningLine(vehicle.id)"
-                    (keydown.enter)="selectPlanningLine(vehicle.id)"
+                    (click)="openPlanningTripEditForm(trip)"
+                    (keydown.enter)="openPlanningTripEditForm(trip)"
                   >
                     <span>{{ trip.label }}</span>
                     <strong>{{ trip.time }}</strong>
-                    @if (editingPlanningTripId() === trip.id) {
-                      <input
-                        class="planning-trip-route-input"
-                        type="text"
-                        maxlength="80"
-                        [attr.data-trip-edit]="trip.id"
-                        [attr.aria-label]="'Linie ' + trip.route + ' bearbeiten'"
-                        [ngModel]="planningTripRouteDraft()"
-                        (ngModelChange)="planningTripRouteDraft.set($event)"
-                        (click)="$event.stopPropagation()"
-                        (keydown.enter)="savePlanningTripRoute($event, trip)"
-                        (keydown.escape)="cancelPlanningTripEdit($event)"
-                        (blur)="savePlanningTripRoute($event, trip)"
-                      />
-                    } @else {
-                      <button class="planning-trip-route-edit" type="button" title="Linie ändern" (click)="editPlanningTripRoute($event, trip)" (keydown.enter)="$event.stopPropagation()"><span>{{ trip.route }}</span><i aria-hidden="true">✎</i></button>
-                    }
+                    <p>{{ trip.route }}</p>
                   </div>
                 }
                 <button class="planning-trip-add-button" type="button" (click)="openPlanningTripForm(vehicle.id)" [attr.aria-label]="'Fahrt für ' + planningVehicleLabel(vehicle.id) + ' hinzufügen'"><span>+</span> Fahrt</button>
