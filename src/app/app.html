@@ -1246,7 +1246,10 @@
               <dt>Bemerkung</dt><dd><input [ngModel]="selectedShift().note" (ngModelChange)="updateSelectedShift('note', $event)" placeholder="Keine besonderen Hinweise" aria-label="Bemerkung" /></dd>
               <dt>Status</dt><dd><span class="tag tag--green">{{ selectedShift().status || 'Geplant' }}</span></dd>
             </dl>
-            <button class="delete-button" (click)="deleteSelectedAssignment()">Einsatz löschen</button>
+            <footer class="assignment-detail-actions">
+              <button class="delete-button" type="button" (click)="deleteSelectedAssignment()">Einsatz löschen</button>
+              <button class="button button--primary assignment-ok-button" type="button" (click)="closeAssignmentForm()">OK</button>
+            </footer>
           </div>
           }
         </section>

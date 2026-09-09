@@ -443,8 +443,14 @@ describe('App', () => {
     expect(assignmentDetails.textContent).not.toContain('Pausen');
     expect(assignmentDetails.textContent).not.toContain('Demo Ort 48n');
     expect(assignmentDetails.querySelector('.save-button')).toBeFalsy();
+    const okButton = assignmentDetails.querySelector('.assignment-ok-button') as HTMLButtonElement;
+    expect(okButton.textContent?.trim()).toBe('OK');
     expect(compiled.querySelector('.shift--active .shift-note')?.textContent).toContain(note);
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain(note);
+
+    okButton.click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.planning-modal')).toBeFalsy();
   });
 
   it('should move an assignment to a free cell by drag and drop', async () => {

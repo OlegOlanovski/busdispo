@@ -1205,6 +1205,18 @@ button {
   font-size: var(--font-min);
 }
 
+.assignment-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+
+  .assignment-ok-button {
+    width: 100%;
+    margin-top: 7px;
+  }
+}
+
 .side-card {
   padding: 15px 14px;
 
