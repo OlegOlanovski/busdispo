@@ -50,11 +50,62 @@
       <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
         <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">✉ @if (unreadMessageCount() > 0) { <span>{{ unreadMessageCount() }}</span> }</button>
-        <div class="avatar">D</div>
-        <div class="user-copy"><strong>Demo Admin</strong><small>Dispatcher</small></div>
-        <span class="chevron">⌄</span>
+        @if (currentUser(); as user) {
+          <div class="signed-in-user">
+            <div class="avatar">{{ accountInitials() }}</div>
+            <div class="user-copy"><strong>{{ user.name }}</strong><small>Dispatcher</small></div>
+            <button class="logout-button" type="button" (click)="logout()">Abmelden</button>
+          </div>
+        } @else {
+          <div class="auth-top-actions">
+            <button class="auth-top-button" type="button" (click)="openAuth('login')">Anmelden</button>
+            <button class="auth-top-button auth-top-button--primary" type="button" (click)="openAuth('register')">Registrieren</button>
+          </div>
+        }
       </div>
     </header>
+
+    @if (authModalOpen()) {
+      <button class="auth-backdrop" type="button" aria-label="Anmeldung schließen" (click)="closeAuth()"></button>
+      <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <button class="auth-close" type="button" aria-label="Fenster schließen" (click)="closeAuth()">×</button>
+        <div class="auth-brand">
+          <div class="brand__mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div><strong>BusDispo</strong><small>Sicherer Zugang zur Disposition</small></div>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Zugangsart">
+          <button type="button" role="tab" [attr.aria-selected]="authMode() === 'login'" [class.active]="authMode() === 'login'" (click)="switchAuthMode('login')">Anmelden</button>
+          <button type="button" role="tab" [attr.aria-selected]="authMode() === 'register'" [class.active]="authMode() === 'register'" (click)="switchAuthMode('register')">Registrieren</button>
+        </div>
+
+        @if (authMode() === 'login') {
+          <form class="auth-form" novalidate (ngSubmit)="login()">
+            <div class="auth-heading"><span>Willkommen zurück</span><h2 id="auth-title">Bei BusDispo anmelden</h2><p>Öffnen Sie Ihre Planung und verwalten Sie den laufenden Betrieb.</p></div>
+            <label class="auth-field"><span>E-Mail-Adresse</span><div><i>✉</i><input name="loginEmail" type="email" [(ngModel)]="loginEmail" autocomplete="email" placeholder="name@unternehmen.de" required /></div></label>
+            <label class="auth-field"><span>Passwort</span><div><i>●</i><input name="loginPassword" type="password" [(ngModel)]="loginPassword" autocomplete="current-password" placeholder="Ihr Passwort" required /></div></label>
+            @if (authError()) { <div class="auth-error" role="alert"><span>!</span>{{ authError() }}</div> }
+            <button class="auth-submit" type="submit" [disabled]="authSubmitting()">{{ authSubmitting() ? 'Anmeldung läuft …' : 'Anmelden' }}</button>
+            <div class="auth-demo-hint"><span>i</span><p><b>Demo-Zugang</b><small>admin@busdispo.de &nbsp;·&nbsp; Passwort: demo123</small></p></div>
+            <p class="auth-switch-copy">Noch kein Konto? <button type="button" (click)="switchAuthMode('register')">Jetzt registrieren</button></p>
+          </form>
+        } @else {
+          <form class="auth-form" novalidate (ngSubmit)="register()">
+            <div class="auth-heading"><span>Neues Unternehmen</span><h2 id="auth-title">Konto erstellen</h2><p>Richten Sie Ihren persönlichen Zugang zur BusDispo ein.</p></div>
+            <label class="auth-field"><span>Name</span><div><i>♙</i><input name="registrationName" [(ngModel)]="registrationName" autocomplete="name" placeholder="Vor- und Nachname" required /></div></label>
+            <label class="auth-field"><span>E-Mail-Adresse</span><div><i>✉</i><input name="registrationEmail" type="email" [(ngModel)]="registrationEmail" autocomplete="email" placeholder="name@unternehmen.de" required /></div></label>
+            <div class="auth-field-row">
+              <label class="auth-field"><span>Passwort</span><div><i>●</i><input name="registrationPassword" type="password" [(ngModel)]="registrationPassword" autocomplete="new-password" placeholder="Mind. 8 Zeichen" required /></div></label>
+              <label class="auth-field"><span>Passwort wiederholen</span><div><i>●</i><input name="registrationPasswordConfirmation" type="password" [(ngModel)]="registrationPasswordConfirmation" autocomplete="new-password" placeholder="Erneut eingeben" required /></div></label>
+            </div>
+            <label class="auth-consent"><input name="registrationTerms" type="checkbox" [(ngModel)]="registrationTermsAccepted" /><span>✓</span><p>Ich akzeptiere die <a href="#terms">Nutzungsbedingungen</a> und die <a href="#privacy">Datenschutzerklärung</a>.</p></label>
+            @if (authError()) { <div class="auth-error" role="alert"><span>!</span>{{ authError() }}</div> }
+            <button class="auth-submit" type="submit" [disabled]="authSubmitting()">{{ authSubmitting() ? 'Konto wird erstellt …' : 'Konto erstellen' }}</button>
+            <p class="auth-switch-copy">Bereits registriert? <button type="button" (click)="switchAuthMode('login')">Zur Anmeldung</button></p>
+          </form>
+        }
+      </section>
+    }
 
     @if (activeView() === 'driver-portal') {
       <section class="driver-portal">
@@ -119,7 +170,7 @@
         <div class="overview-intro">
           <div>
             <span class="eyebrow">Donnerstag, 23. Juli 2026</span>
-            <h2>Guten Morgen, Demo Admin</h2>
+            <h2>Guten Morgen{{ currentUser() ? ', ' + currentUser()!.name : '' }}</h2>
             <p>Hier ist der aktuelle Stand Ihrer Disposition.</p>
           </div>
           <button class="button button--primary overview-plan-button" (click)="showView('planning')">□&nbsp; Woche planen</button>

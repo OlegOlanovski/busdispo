@@ -6,6 +6,16 @@ type ShiftTone = 'green' | 'blue' | 'amber' | 'violet' | 'cyan' | 'orange' | 'ro
 type AppView = 'overview' | 'planning' | 'vehicles' | 'schedules' | 'drivers' | 'absence' | 'trips' | 'messages' | 'driver-portal';
 type DriverShiftState = 'ready' | 'active' | 'completed';
 type DriverReportMode = 'none' | 'delay' | 'issue';
+type AuthMode = 'login' | 'register';
+
+interface AuthUser {
+  name: string;
+  email: string;
+}
+
+interface StoredAuthAccount extends AuthUser {
+  passwordHash: string;
+}
 
 interface Shift {
   id: string;
@@ -239,6 +249,8 @@ interface PersistedAppState {
 })
 export class App {
   private readonly storageKey = 'busdispo.state.v1';
+  private readonly authAccountsKey = 'busdispo.auth.accounts.v1';
+  private readonly authSessionKey = 'busdispo.auth.session.v1';
   protected readonly planningColumnWidth = 280;
   protected readonly activeView = signal<AppView>(
     window.location.hash === '#overview'
@@ -260,6 +272,18 @@ export class App {
                     : 'planning',
   );
   protected readonly menuOpen = signal(false);
+  protected readonly authModalOpen = signal(false);
+  protected readonly authMode = signal<AuthMode>('login');
+  protected readonly authError = signal('');
+  protected readonly authSubmitting = signal(false);
+  protected readonly currentUser = signal<AuthUser | null>(this.restoreAuthSession());
+  protected loginEmail = '';
+  protected loginPassword = '';
+  protected registrationName = '';
+  protected registrationEmail = '';
+  protected registrationPassword = '';
+  protected registrationPasswordConfirmation = '';
+  protected registrationTermsAccepted = false;
   protected readonly weekOffset = signal(0);
   protected readonly published = signal(false);
   protected readonly saved = signal(false);
@@ -489,6 +513,18 @@ export class App {
                   ? 'Fahrerportal'
                   : 'Wochenplanung',
   );
+
+  protected readonly accountInitials = computed(() => {
+    const name = this.currentUser()?.name.trim() ?? '';
+    if (!name) return '?';
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0))
+      .join('')
+      .toLocaleUpperCase('de');
+  });
 
   protected readonly filteredVehicles = computed(() => {
     this.vehicleRevision();
@@ -1444,6 +1480,193 @@ export class App {
     window.history.replaceState(null, '', `#${view}`);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+  }
+
+  protected openAuth(mode: AuthMode): void {
+    this.authMode.set(mode);
+    this.authError.set('');
+    this.authSubmitting.set(false);
+    this.authModalOpen.set(true);
+  }
+
+  protected closeAuth(): void {
+    if (this.authSubmitting()) return;
+    this.authModalOpen.set(false);
+    this.authError.set('');
+  }
+
+  protected switchAuthMode(mode: AuthMode): void {
+    this.authMode.set(mode);
+    this.authError.set('');
+  }
+
+  protected async login(): Promise<void> {
+    const email = this.loginEmail.trim().toLocaleLowerCase('de');
+    const password = this.loginPassword;
+    this.authError.set('');
+
+    if (!email || !password) {
+      this.authError.set('Bitte geben Sie E-Mail-Adresse und Passwort ein.');
+      return;
+    }
+    if (!this.isValidEmail(email)) {
+      this.authError.set('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+
+    this.authSubmitting.set(true);
+    try {
+      let user: AuthUser | null = null;
+      if (email === 'admin@busdispo.de' && password === 'demo123') {
+        user = { name: 'Demo Admin', email };
+      } else {
+        const passwordHash = await this.hashPassword(password);
+        const account = this.readAuthAccounts().find(
+          (item) => item.email.toLocaleLowerCase('de') === email && item.passwordHash === passwordHash,
+        );
+        if (account) user = { name: account.name, email: account.email };
+      }
+
+      if (!user) {
+        this.authError.set('E-Mail-Adresse oder Passwort ist nicht korrekt.');
+        return;
+      }
+
+      this.setAuthSession(user);
+      this.loginPassword = '';
+      this.authModalOpen.set(false);
+    } finally {
+      this.authSubmitting.set(false);
+    }
+  }
+
+  protected async register(): Promise<void> {
+    const name = this.registrationName.trim();
+    const email = this.registrationEmail.trim().toLocaleLowerCase('de');
+    const password = this.registrationPassword;
+    this.authError.set('');
+
+    if (!name || !email || !password || !this.registrationPasswordConfirmation) {
+      this.authError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    if (!this.isValidEmail(email)) {
+      this.authError.set('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+    if (password.length < 8) {
+      this.authError.set('Das Passwort muss mindestens 8 Zeichen lang sein.');
+      return;
+    }
+    if (password !== this.registrationPasswordConfirmation) {
+      this.authError.set('Die Passwörter stimmen nicht überein.');
+      return;
+    }
+    if (!this.registrationTermsAccepted) {
+      this.authError.set('Bitte bestätigen Sie die Nutzungsbedingungen und den Datenschutz.');
+      return;
+    }
+
+    const accounts = this.readAuthAccounts();
+    if (email === 'admin@busdispo.de' || accounts.some((item) => item.email.toLocaleLowerCase('de') === email)) {
+      this.authError.set('Für diese E-Mail-Adresse besteht bereits ein Konto.');
+      return;
+    }
+
+    this.authSubmitting.set(true);
+    try {
+      const account: StoredAuthAccount = {
+        name,
+        email,
+        passwordHash: await this.hashPassword(password),
+      };
+      window.localStorage.setItem(this.authAccountsKey, JSON.stringify([...accounts, account]));
+      this.setAuthSession({ name, email });
+      this.resetRegistrationForm();
+      this.authModalOpen.set(false);
+    } catch {
+      this.authError.set('Das Konto konnte in diesem Browser nicht gespeichert werden.');
+    } finally {
+      this.authSubmitting.set(false);
+    }
+  }
+
+  protected logout(): void {
+    this.currentUser.set(null);
+    this.loginPassword = '';
+    try {
+      window.sessionStorage.removeItem(this.authSessionKey);
+    } catch {
+      // The signed-out state still applies for the current page session.
+    }
+  }
+
+  private restoreAuthSession(): AuthUser | null {
+    try {
+      const stored = window.sessionStorage.getItem(this.authSessionKey);
+      if (!stored) return null;
+      const parsed = JSON.parse(stored) as Partial<AuthUser>;
+      return typeof parsed.name === 'string' && typeof parsed.email === 'string'
+        ? { name: parsed.name, email: parsed.email }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private setAuthSession(user: AuthUser): void {
+    this.currentUser.set(user);
+    try {
+      window.sessionStorage.setItem(this.authSessionKey, JSON.stringify(user));
+    } catch {
+      // Authentication remains active until the page is reloaded.
+    }
+  }
+
+  private readAuthAccounts(): StoredAuthAccount[] {
+    try {
+      const stored = window.localStorage.getItem(this.authAccountsKey);
+      if (!stored) return [];
+      const parsed = JSON.parse(stored) as StoredAuthAccount[];
+      return Array.isArray(parsed)
+        ? parsed.filter(
+            (item) =>
+              typeof item?.name === 'string' &&
+              typeof item?.email === 'string' &&
+              typeof item?.passwordHash === 'string',
+          )
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    if (globalThis.crypto?.subtle) {
+      const data = new TextEncoder().encode(password);
+      const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Compatibility fallback for older embedded browsers. This demo has no server-side authentication.
+    let hash = 2166136261;
+    for (const character of password) {
+      hash ^= character.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `fallback-${(hash >>> 0).toString(16)}`;
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  private resetRegistrationForm(): void {
+    this.registrationName = '';
+    this.registrationEmail = '';
+    this.registrationPassword = '';
+    this.registrationPasswordConfirmation = '';
+    this.registrationTermsAccepted = false;
   }
 
   protected selectVehicle(vehicle: FleetVehicle): void {

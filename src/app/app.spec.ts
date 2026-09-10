@@ -4,6 +4,7 @@ import { App } from './app';
 describe('App', () => {
   beforeEach(async () => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     window.history.replaceState(null, '', '#planning');
     await TestBed.configureTestingModule({
       imports: [App],
@@ -14,6 +15,50 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
+  });
+
+  it('should open the login form and sign in with the demo account', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.auth-top-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.auth-modal')?.textContent).toContain('Bei BusDispo anmelden');
+
+    const app = fixture.componentInstance as any;
+    app.loginEmail = 'admin@busdispo.de';
+    app.loginPassword = 'demo123';
+    await app.login();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.auth-modal')).toBeFalsy();
+    expect(compiled.querySelector('.signed-in-user')?.textContent).toContain('Demo Admin');
+    expect(window.sessionStorage.getItem('busdispo.auth.session.v1')).toContain('admin@busdispo.de');
+
+    (compiled.querySelector('.logout-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.auth-top-actions')).toBeTruthy();
+    expect(window.sessionStorage.getItem('busdispo.auth.session.v1')).toBeNull();
+  });
+
+  it('should register a new account and store only its password hash', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const app = fixture.componentInstance as any;
+
+    app.registrationName = 'Anna Beispiel';
+    app.registrationEmail = 'anna@example.de';
+    app.registrationPassword = 'sicher123';
+    app.registrationPasswordConfirmation = 'sicher123';
+    app.registrationTermsAccepted = true;
+    await app.register();
+    fixture.detectChanges();
+
+    const storedAccounts = window.localStorage.getItem('busdispo.auth.accounts.v1') ?? '';
+    expect(storedAccounts).toContain('anna@example.de');
+    expect(storedAccounts).not.toContain('sicher123');
+    expect((app.currentUser() as { name: string }).name).toBe('Anna Beispiel');
   });
 
   it('should render the weekly planning dashboard', async () => {
