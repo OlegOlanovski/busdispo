@@ -12,14 +12,14 @@
     </div>
 
     <nav class="nav" aria-label="Hauptnavigation">
-      <button [class.active]="activeView() === 'overview'" (click)="showView('overview')"><span class="nav__icon">⌂</span>Übersicht</button>
-      <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon">□</span>Wochenplanung</button>
+      <button [class.active]="activeView() === 'overview'" (click)="showView('overview')"><span class="nav__icon home-icon" aria-hidden="true"></span>Übersicht</button>
+      <button [class.active]="activeView() === 'planning'" (click)="showView('planning')"><span class="nav__icon calendar-icon" aria-hidden="true"></span>Wochenplanung</button>
       <button [class.active]="activeView() === 'vehicles'" (click)="showView('vehicles')"><span class="nav__icon"><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span>Fahrzeuge</button>
-      <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon">▤</span>Dienstpläne</button>
-      <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon">♙</span>Fahrer</button>
+      <button [class.active]="activeView() === 'schedules'" (click)="showView('schedules')"><span class="nav__icon schedules-icon" aria-hidden="true"></span>Dienstpläne</button>
+      <button [class.active]="activeView() === 'drivers'" (click)="showView('drivers')"><span class="nav__icon drivers-icon" aria-hidden="true"></span>Fahrer</button>
       <button [class.active]="activeView() === 'absence'" (click)="showView('absence')"><span class="nav__icon">⊠</span>Abwesenheiten</button>
-      <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon">♧</span>Sonderfahrten</button>
-      <button [class.active]="activeView() === 'messages'" (click)="showView('messages')"><span class="nav__icon">✉</span>Nachrichten @if (unreadMessageCount() > 0) { <span class="nav__badge">{{ unreadMessageCount() }}</span> }</button>
+      <button [class.active]="activeView() === 'trips'" (click)="showView('trips')"><span class="nav__icon special-trips-icon" aria-hidden="true"></span>Sonderfahrten</button>
+      <button [class.active]="activeView() === 'messages'" (click)="showView('messages')"><span class="nav__icon messages-icon" aria-hidden="true"></span>Nachrichten @if (unreadMessageCount() > 0) { <span class="nav__badge">{{ unreadMessageCount() }}</span> }</button>
     </nav>
 
     <section class="week-card" aria-label="Aktuelle Woche">

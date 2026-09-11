@@ -188,6 +188,54 @@ button {
   text-align: center;
 }
 
+.home-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/heim.svg') center / contain no-repeat;
+}
+
+.calendar-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/kalender.svg') center / contain no-repeat;
+}
+
+.schedules-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/auffuhren.svg') center / contain no-repeat;
+}
+
+.drivers-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/benutzer.svg') center / contain no-repeat;
+}
+
+.special-trips-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/taxibus.svg') center / contain no-repeat;
+}
+
+.messages-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  background: currentColor;
+  mask: url('/umschlag.svg') center / contain no-repeat;
+}
+
 .nav .active .nav__icon {
   color: var(--blue);
 }
