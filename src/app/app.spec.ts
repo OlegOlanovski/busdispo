@@ -603,6 +603,50 @@ describe('App', () => {
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).not.toContain('Tankfüllung');
   });
 
+  it('should derive a planned vehicle status from the weekly plan', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+
+    app.fleetVehicles[0].status = 'Verfügbar';
+    app.persistState();
+    fixture.detectChanges();
+
+    expect(app.fleetVehicles[0].status).toBe('Einsatz');
+    expect(compiled.querySelector('.fleet-row .vehicle-status')?.textContent).toContain('Einsatz');
+    expect(app.vehicleCounts().active).toBe(2);
+  });
+
+  it('should mark the exact fleet vehicle as active when added through Dienstplan', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const app = fixture.componentInstance as any;
+
+    app.fleetVehicles.push({
+      id: 'BIT-BD 120',
+      seats: 48,
+      model: 'MAN Lion\'s City',
+      year: 2024,
+      mileage: '12.500 km',
+      status: 'Verfügbar',
+      driver: '–',
+      inspection: '18.04.2027',
+      safetyInspection: '18.11.2026',
+    });
+    app.planningLineDraft = { displayLabel: 'BIT-BD 120', lineLabel: 'DB' };
+    app.createPlanningLine();
+    fixture.detectChanges();
+
+    expect(app.vehicles.some((vehicle: { id: string }) => vehicle.id === 'BIT-BD 120')).toBe(true);
+    expect(app.fleetVehicles.find((vehicle: { id: string }) => vehicle.id === 'BIT-BD 120').status).toBe('Einsatz');
+    const fleetRow = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.fleet-row'))
+      .find((row) => row.textContent?.includes('BIT-BD 120'));
+    expect(fleetRow?.textContent).toContain('Einsatz');
+  });
+
   it('should filter the fleet by search text', async () => {
     window.history.replaceState(null, '', '#vehicles');
     const fixture = TestBed.createComponent(App);

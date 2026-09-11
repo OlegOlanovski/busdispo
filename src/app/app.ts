@@ -724,6 +724,7 @@ export class App {
       this.restoreArray(this.messageThreads, state.messageThreads);
       this.restoreArray(this.shifts, state.shifts);
       this.restoreArray(this.planningTrips, state.planningTrips);
+      this.synchronizeFleetVehicleStatuses();
 
       if (Array.isArray(state.unreadMessageIds)) {
         this.unreadMessageIds.set(state.unreadMessageIds.filter((id): id is string => typeof id === 'string'));
@@ -773,6 +774,7 @@ export class App {
   }
 
   private persistState(): void {
+    this.synchronizeFleetVehicleStatuses();
     const state: PersistedAppState = {
       version: 1,
       vehicles: this.vehicles,
@@ -802,6 +804,30 @@ export class App {
     } catch {
       // The app remains usable if browser storage is unavailable or full.
     }
+  }
+
+  private synchronizeFleetVehicleStatuses(): void {
+    const plannedVehicleIds = new Set([
+      ...this.vehicles.map((vehicle) => this.vehicleIdentityKey(vehicle.id)),
+      ...this.shifts.map((shift) => this.vehicleIdentityKey(shift.vehicle)),
+      ...this.planningTrips.map((trip) => this.vehicleIdentityKey(trip.vehicle)),
+      ...this.specialTrips
+        .filter((trip) => trip.status !== 'Abgeschlossen')
+        .map((trip) => this.vehicleIdentityKey(trip.vehicle)),
+    ]);
+    let statusChanged = false;
+
+    for (const vehicle of this.fleetVehicles) {
+      if (vehicle.status === 'Werkstatt') continue;
+      const nextStatus: FleetVehicle['status'] = plannedVehicleIds.has(this.vehicleIdentityKey(vehicle.id))
+        ? 'Einsatz'
+        : 'Verfügbar';
+      if (vehicle.status === nextStatus) continue;
+      vehicle.status = nextStatus;
+      statusChanged = true;
+    }
+
+    if (statusChanged) this.vehicleRevision.update((revision) => revision + 1);
   }
 
   protected persistDriverPortalState(): void {
@@ -1026,10 +1052,22 @@ export class App {
   }
 
   private planningVehicleId(displayLabel: string): string {
+    const fleetVehicle = this.fleetVehicles.find(
+      (vehicle) => this.vehicleIdentityKey(vehicle.id) === this.vehicleIdentityKey(displayLabel),
+    );
+    if (fleetVehicle) return fleetVehicle.id;
+
     return displayLabel
       .toLocaleUpperCase('de')
       .replace(/[^A-Z0-9ÄÖÜ]+/g, '-')
       .replace(/^-+|-+$/g, '') || `LINIE-${this.vehicles.length + 1}`;
+  }
+
+  private vehicleIdentityKey(value: string): string {
+    return value
+      .trim()
+      .toLocaleUpperCase('de')
+      .replace(/[^A-Z0-9ÄÖÜ]/g, '');
   }
 
   private validatePlanningLineDraft(draft: PlanningLineDraft, vehicleId: string, excludedVehicleId?: string): string {
