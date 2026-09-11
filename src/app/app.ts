@@ -111,6 +111,13 @@ interface FleetVehicleDraft {
   safetyInspection: string;
 }
 
+interface VehicleWeekAssignment {
+  driver: string;
+  initials: string;
+  schedule: string;
+  firstDay: number;
+}
+
 interface DutyPlan {
   id: string;
   name: string;
@@ -320,6 +327,7 @@ export class App {
   protected readonly vehicleUpdated = signal<string | null>(null);
   protected readonly vehicleDeleted = signal<string | null>(null);
   private readonly vehicleRevision = signal(0);
+  private readonly shiftRevision = signal(0);
   protected newVehicle: FleetVehicleDraft = this.emptyVehicleDraft();
   protected readonly selectedDutyPlanId = signal('demo-plan-91');
   protected readonly dutyPlanSearch = signal('');
@@ -533,7 +541,7 @@ export class App {
     return this.fleetVehicles.filter(
       (vehicle) =>
         (status === 'Alle Status' || vehicle.status === status) &&
-        (!query || `${vehicle.id} ${vehicle.model} ${vehicle.driver}`.toLocaleLowerCase('de').includes(query)),
+        (!query || `${vehicle.id} ${vehicle.model}`.toLocaleLowerCase('de').includes(query)),
     );
   });
 
@@ -775,6 +783,7 @@ export class App {
 
   private persistState(): void {
     this.synchronizeFleetVehicleStatuses();
+    this.shiftRevision.update((revision) => revision + 1);
     const state: PersistedAppState = {
       version: 1,
       vehicles: this.vehicles,
@@ -844,6 +853,34 @@ export class App {
 
   protected planningVehicleLabel(vehicle: string): string {
     return this.vehicles.find((item) => item.id === vehicle)?.displayLabel ?? vehicle;
+  }
+
+  protected currentWeekVehicleAssignments(vehicleId: string): VehicleWeekAssignment[] {
+    this.shiftRevision();
+    const matchingShifts = this.shifts.filter(
+      (shift) => this.vehicleIdentityKey(shift.vehicle) === this.vehicleIdentityKey(vehicleId),
+    );
+    const shiftsByDriver = new Map<string, Shift[]>();
+
+    for (const shift of matchingShifts) {
+      const assignments = shiftsByDriver.get(shift.driver) ?? [];
+      assignments.push(shift);
+      shiftsByDriver.set(shift.driver, assignments);
+    }
+
+    return Array.from(shiftsByDriver, ([driverName, assignments]) => {
+      const orderedAssignments = [...assignments].sort((first, second) => first.day - second.day);
+      const dayLabels = [...new Set(orderedAssignments.map((shift) => this.days[shift.day]?.short ?? ''))]
+        .filter(Boolean);
+      const timeLabels = [...new Set(orderedAssignments.map((shift) => `${shift.start} – ${shift.end}`))];
+      const driver = this.drivers.find((item) => item.name === driverName);
+      return {
+        driver: driverName,
+        initials: driver?.initials ?? this.driverInitials(driverName),
+        schedule: `${dayLabels.join(', ')} · ${timeLabels.join(', ')}`,
+        firstDay: orderedAssignments[0]?.day ?? 7,
+      };
+    }).sort((first, second) => first.firstDay - second.firstDay || first.driver.localeCompare(second.driver, 'de'));
   }
 
   protected openPlanningLineForm(): void {

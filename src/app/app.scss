@@ -1939,7 +1939,7 @@ button {
 
 .fleet-layout {
   display: grid;
-  grid-template-columns: minmax(660px, 1fr) 330px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -1991,7 +1991,7 @@ button {
 .fleet-table-head,
 .fleet-row {
   display: grid;
-  grid-template-columns: minmax(225px, 1.5fr) 116px minmax(105px, 0.8fr) 90px 14px;
+  grid-template-columns: minmax(225px, 1fr) 116px 14px;
   align-items: center;
   gap: 12px;
 }
@@ -2063,17 +2063,6 @@ button {
 .vehicle-status--ready { border-color: #aed4fa; background: #ecf6ff; color: #1674cf; }
 .vehicle-status--service { border-color: #f0c994; background: #fff5e6; color: #cb7713; }
 
-.fleet-driver {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #394457;
-  font-size: var(--font-min);
-
-  i { width: 22px; height: 22px; border-radius: 50%; background: #f1f4f8; color: #727e91; font-size: var(--font-min); font-style: normal; line-height: 22px; text-align: center; }
-}
-
-.fleet-inspection { color: #4f5a6d; font-size: var(--font-min); }
 .fleet-chevron { color: #8c97a8; font-size: 19px; }
 
 .fleet-footer {
@@ -2148,6 +2137,11 @@ button {
   dd { margin: 5px 0 0; color: #202a39; font-size: var(--font-min); font-weight: 600; }
 }
 
+.current-assignment-list {
+  display: grid;
+  gap: 8px;
+}
+
 .current-assignment {
   display: grid;
   grid-template-columns: 34px 1fr auto;
@@ -2163,6 +2157,8 @@ button {
   small { margin-top: 4px; color: #788296; font-size: var(--font-min); }
   button { border: 0; background: transparent; color: var(--blue); font-size: var(--font-min); font-weight: 600; }
 }
+
+.current-assignment--empty { grid-template-columns: 34px 1fr; }
 
 .driver-avatar {
   width: 31px;
@@ -4268,11 +4264,6 @@ button {
 
   .fleet-row {
     grid-template-columns: minmax(0, 1fr) auto 14px;
-  }
-
-  .fleet-driver,
-  .fleet-inspection {
-    display: none;
   }
 
   .duty-intro {

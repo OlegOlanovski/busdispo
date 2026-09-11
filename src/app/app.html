@@ -326,19 +326,17 @@
         <div class="fleet-layout">
           <section class="dashboard-card fleet-list-card">
             <div class="fleet-toolbar">
-              <label class="fleet-search"><span>⌕</span><input [ngModel]="vehicleSearch()" (ngModelChange)="vehicleSearch.set($event)" placeholder="Fahrzeug, Modell oder Fahrer suchen" /></label>
+              <label class="fleet-search"><span>⌕</span><input [ngModel]="vehicleSearch()" (ngModelChange)="vehicleSearch.set($event)" placeholder="Fahrzeug oder Modell suchen" /></label>
               <select [ngModel]="vehicleStatus()" (ngModelChange)="vehicleStatus.set($event)" aria-label="Status filtern">
                 <option>Alle Status</option><option>Einsatz</option><option>Verfügbar</option><option>Werkstatt</option>
               </select>
             </div>
-            <div class="fleet-table-head"><span>Fahrzeug</span><span>Status</span><span>Fahrer</span><span>Nächste HU</span><span></span></div>
+            <div class="fleet-table-head"><span>Fahrzeug</span><span>Status</span><span></span></div>
             <div class="fleet-list">
               @for (vehicle of filteredVehicles(); track vehicle.id) {
                 <button class="fleet-row" [class.fleet-row--selected]="selectedVehicleId() === vehicle.id" (click)="selectVehicle(vehicle)">
                   <span class="fleet-identity"><i><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></i><span><b>{{ vehicle.id }}</b><small>{{ vehicle.model }} · {{ vehicle.year }}</small></span></span>
                   <span class="vehicle-status vehicle-status--{{ vehicle.status === 'Einsatz' ? 'active' : vehicle.status === 'Verfügbar' ? 'ready' : 'service' }}"><i></i>{{ vehicle.status }}</span>
-                  <span class="fleet-driver"><i>♙</i>{{ vehicle.driver }}</span>
-                  <span class="fleet-inspection">{{ vehicle.inspection }}</span>
                   <span class="fleet-chevron">›</span>
                 </button>
               } @empty {
@@ -365,10 +363,19 @@
                 </dl>
 
                 <h4>Aktuelle Zuweisung</h4>
-                <div class="current-assignment">
-                  <span class="driver-avatar">{{ vehicle.driver === '–' ? '?' : vehicle.driver.charAt(0) }}</span>
-                  <div><strong>{{ vehicle.driver === '–' ? 'Nicht zugewiesen' : vehicle.driver }}</strong><small>{{ vehicle.driver === '–' ? 'Noch keinem Einsatz zugewiesen' : 'Heute · 06:05 – 14:24' }}</small></div>
-                  @if (vehicle.driver !== '–') { <button (click)="showView('planning')">Plan →</button> }
+                <div class="current-assignment-list">
+                  @for (assignment of currentWeekVehicleAssignments(vehicle.id); track assignment.driver) {
+                    <div class="current-assignment">
+                      <span class="driver-avatar">{{ assignment.initials }}</span>
+                      <div><strong>{{ assignment.driver }}</strong><small>{{ assignment.schedule }}</small></div>
+                      <button (click)="showView('planning')">Plan →</button>
+                    </div>
+                  } @empty {
+                    <div class="current-assignment current-assignment--empty">
+                      <span class="driver-avatar">?</span>
+                      <div><strong>Nicht zugewiesen</strong><small>Für diese Woche ist kein Fahrer eingeplant.</small></div>
+                    </div>
+                  }
                 </div>
 
                 <h4>Prüftermine</h4>

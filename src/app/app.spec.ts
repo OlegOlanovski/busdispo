@@ -597,6 +597,10 @@ describe('App', () => {
 
     expect(compiled.querySelector('h1')?.textContent).toContain('Fahrzeuge');
     expect(compiled.querySelectorAll('.fleet-row')).toHaveLength(2);
+    expect(compiled.querySelector('.fleet-table-head')?.textContent).not.toContain('Fahrer');
+    expect(compiled.querySelector('.fleet-table-head')?.textContent).not.toContain('Nächste HU');
+    expect(compiled.querySelector('.fleet-row .fleet-driver')).toBeFalsy();
+    expect(compiled.querySelector('.fleet-row .fleet-inspection')).toBeFalsy();
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('DEMO-91');
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste HU');
     expect(compiled.querySelector('.vehicle-detail-card')?.textContent).toContain('Nächste SP');
@@ -617,6 +621,34 @@ describe('App', () => {
     expect(app.fleetVehicles[0].status).toBe('Einsatz');
     expect(compiled.querySelector('.fleet-row .vehicle-status')?.textContent).toContain('Einsatz');
     expect(app.vehicleCounts().active).toBe(2);
+  });
+
+  it('should list all drivers assigned to the selected vehicle for the current week', async () => {
+    window.history.replaceState(null, '', '#vehicles');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const app = fixture.componentInstance as any;
+
+    app.fleetVehicles[0].driver = 'Falscher Fahrer';
+    app.shifts.push({
+      id: 'additional-driver-demo-91',
+      vehicle: 'DEMO-91',
+      day: 5,
+      driver: 'Fahrer 07',
+      start: '09:00',
+      end: '15:00',
+      plan: 'Wochenendfahrt',
+      tone: 'green',
+      status: 'Geplant',
+    });
+    app.persistState();
+    fixture.detectChanges();
+
+    const assignments = (fixture.nativeElement as HTMLElement).querySelector('.current-assignment-list');
+    expect(assignments?.textContent).toContain('Fahrer 10');
+    expect(assignments?.textContent).toContain('Fahrer 07');
+    expect(assignments?.textContent).toContain('09:00 – 15:00');
+    expect(assignments?.textContent).not.toContain('Falscher Fahrer');
   });
 
   it('should mark the exact fleet vehicle as active when added through Dienstplan', async () => {
