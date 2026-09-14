@@ -49,7 +49,10 @@
       >☰</button>
       <h1>{{ pageTitle() }}</h1>
       <div class="user-tools">
-        <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">✉ @if (unreadMessageCount() > 0) { <span>{{ unreadMessageCount() }}</span> }</button>
+        <button class="icon-button notification" aria-label="Nachrichten öffnen" (click)="showView('messages')">
+          <span class="messages-icon header-messages-icon" aria-hidden="true"></span>
+          @if (unreadMessageCount() > 0) { <span class="notification-badge">{{ unreadMessageCount() }}</span> }
+        </button>
         @if (currentUser(); as user) {
           <div class="signed-in-user">
             <div class="avatar">{{ accountInitials() }}</div>

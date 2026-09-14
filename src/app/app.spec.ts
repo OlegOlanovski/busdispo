@@ -70,6 +70,8 @@ describe('App', () => {
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
     const expectedMonday = `${String(monday.getDate()).padStart(2, '0')}.${String(monday.getMonth() + 1).padStart(2, '0')}`;
     expect(compiled.querySelector('h1')?.textContent).toContain('Wochenplanung');
+    expect(compiled.querySelector('.notification .header-messages-icon')).toBeTruthy();
+    expect(compiled.querySelector('.notification-badge')?.textContent).toContain('2');
     expect(compiled.querySelectorAll('.schedule-row')).toHaveLength(7);
     expect(compiled.querySelectorAll('.line-heading')).toHaveLength(2);
     const planningHeader = compiled.querySelector('.trip-grid--header') as HTMLElement;

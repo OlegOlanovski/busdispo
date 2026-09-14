@@ -362,6 +362,8 @@ button {
   position: relative;
   width: 38px;
   height: 38px;
+  display: grid;
+  place-items: center;
   margin-right: 6px;
   border: 0;
   border-radius: 50%;
@@ -370,18 +372,28 @@ button {
   font-size: 21px;
 }
 
-.notification span {
+.header-messages-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.notification .notification-badge {
   position: absolute;
-  top: 1px;
-  right: 0;
-  width: 15px;
-  height: 15px;
+  top: -2px;
+  right: -3px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
   border: 2px solid #fff;
-  border-radius: 50%;
+  border-radius: 10px;
   background: #e63946;
   color: #fff;
-  font-size: var(--font-min);
-  line-height: 11px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .avatar {
