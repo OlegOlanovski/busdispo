@@ -1033,6 +1033,96 @@ describe('App', () => {
     expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Auswirkung auf die Planung');
   });
 
+  it('should edit an absence in the populated modal and delete it after confirmation', async () => {
+    window.history.replaceState(null, '', '#absence');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+    const detailActions = compiled.querySelector('.absence-detail-actions') as HTMLElement;
+
+    expect(detailActions.textContent).not.toContain('Wochenplanung');
+    expect(detailActions.textContent).toContain('Bearbeiten');
+    expect(detailActions.textContent).toContain('Löschen');
+    (detailActions.querySelector('.button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('#absence-create-title')?.textContent).toContain('Abwesenheit bearbeiten');
+    expect(app.newAbsence.driverId).toBe('fahrer-07');
+    expect(app.newAbsence.start).toBe('2026-08-03');
+    expect(app.newAbsence.note).toContain('Schulung Fahrgastsicherheit');
+
+    app.newAbsence.note = 'Aktualisierte Schulungsdaten.';
+    app.saveAbsenceForm();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.absence-create-modal')).toBeFalsy();
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Aktualisierte Schulungsdaten.');
+
+    (compiled.querySelector('.absence-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.absence-delete-modal')?.textContent).toContain('Abwesenheit löschen?');
+    (compiled.querySelector('.absence-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.absence-delete-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(1);
+    expect(app.absences.some((absence: { id: string }) => absence.id === 'fahrer-07-training')).toBe(false);
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.absences).toHaveLength(1);
+  });
+
+  it('should create and persist an absence from the modal form', async () => {
+    window.history.replaceState(null, '', '#absence');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+
+    (compiled.querySelector('.absences-intro > .button--primary') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const form = compiled.querySelector('.absence-create-form') as HTMLFormElement;
+    expect(form).toBeTruthy();
+    expect(form.querySelector('select[name="absenceDriver"]')).toBeTruthy();
+    expect(form.querySelector('input[name="absenceStart"]')).toBeTruthy();
+    expect(form.querySelector('input[name="absenceEnd"]')).toBeTruthy();
+    expect(form.querySelector('textarea[name="absenceReason"]')).toBeTruthy();
+
+    app.newAbsence = { ...app.newAbsence, start: '', end: '', note: '' };
+    app.createAbsence();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.absence-create-form .driver-create-error')?.textContent).toContain('Pflichtfelder');
+
+    app.newAbsence = {
+      driverId: 'fahrer-10',
+      type: 'Sonstige',
+      start: app.days[0].iso,
+      end: app.days[4].iso,
+      note: '',
+    };
+    app.createAbsence();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.absence-create-form .driver-create-error')?.textContent).toContain('Grund');
+
+    app.newAbsence = {
+      driverId: 'fahrer-10',
+      type: 'Urlaub',
+      start: app.days[0].iso,
+      end: app.days[4].iso,
+      note: '',
+    };
+    app.createAbsence();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.absence-create-modal')).toBeFalsy();
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(3);
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Fahrer 10');
+    expect(compiled.querySelector('.absence-detail-card')?.textContent).toContain('Keine Bemerkung angegeben.');
+    expect(app.selectedAbsence().workingDays).toBe(5);
+    expect(app.selectedAbsence().conflicts).toBe(5);
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.absences.some((absence: { driver: string; note: string }) => absence.driver === 'Fahrer 10' && absence.note === '')).toBe(true);
+  });
+
   it('should filter absences by type', async () => {
     window.history.replaceState(null, '', '#absence');
     const fixture = TestBed.createComponent(App);

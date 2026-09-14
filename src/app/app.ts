@@ -187,6 +187,14 @@ interface Absence {
   color: 'blue' | 'violet' | 'green' | 'orange' | 'rose';
 }
 
+interface AbsenceDraft {
+  driverId: string;
+  type: Absence['type'];
+  start: string;
+  end: string;
+  note: string;
+}
+
 interface SpecialTrip {
   id: string;
   title: string;
@@ -356,7 +364,12 @@ export class App {
   protected readonly selectedAbsenceId = signal('fahrer-07-training');
   protected readonly absenceSearch = signal('');
   protected readonly absenceType = signal('Alle Arten');
-  protected readonly absenceSaved = signal(false);
+  protected readonly absenceFormOpen = signal(false);
+  protected readonly absenceEditing = signal(false);
+  protected readonly absenceDeleteConfirmOpen = signal(false);
+  protected readonly absenceFormError = signal('');
+  private readonly absenceRevision = signal(0);
+  protected newAbsence: AbsenceDraft = this.emptyAbsenceDraft();
   protected readonly selectedSpecialTripId = signal('demo-trip-03');
   protected readonly specialTripSearch = signal('');
   protected readonly specialTripStatus = signal('Alle Status');
@@ -613,6 +626,7 @@ export class App {
   });
 
   protected readonly filteredAbsences = computed(() => {
+    this.absenceRevision();
     const query = this.absenceSearch().trim().toLocaleLowerCase('de');
     const type = this.absenceType();
     return this.absences.filter(
@@ -623,8 +637,21 @@ export class App {
   });
 
   protected readonly selectedAbsence = computed(
-    () => this.absences.find((absence) => absence.id === this.selectedAbsenceId()) ?? this.absences[1],
+    () => {
+      this.absenceRevision();
+      return this.absences.find((absence) => absence.id === this.selectedAbsenceId()) ?? this.absences[0];
+    },
   );
+
+  protected readonly absenceCounts = computed(() => {
+    this.absenceRevision();
+    return {
+      total: this.absences.length,
+      active: this.absences.filter((absence) => absence.status === 'Aktiv').length,
+      planned: this.absences.filter((absence) => absence.status === 'Geplant').length,
+      finished: this.absences.filter((absence) => absence.status === 'Beendet').length,
+    };
+  });
 
   protected readonly filteredSpecialTrips = computed(() => {
     const query = this.specialTripSearch().trim().toLocaleLowerCase('de');
@@ -767,6 +794,7 @@ export class App {
       this.dutyPlanRevision.update((revision) => revision + 1);
       this.driverRevision.update((revision) => revision + 1);
       this.vehicleRevision.update((revision) => revision + 1);
+      this.absenceRevision.update((revision) => revision + 1);
     } catch {
       try {
         window.localStorage.removeItem(this.storageKey);
@@ -2381,16 +2409,186 @@ export class App {
 
   protected selectAbsence(absence: Absence): void {
     this.selectedAbsenceId.set(absence.id);
-    this.absenceSaved.set(false);
+    this.absenceDeleteConfirmOpen.set(false);
     if (window.innerWidth < 900) {
       window.setTimeout(() => document.querySelector('.absence-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
     }
   }
 
-  protected saveAbsence(): void {
-    this.absenceSaved.set(true);
+  protected openNewAbsenceForm(): void {
+    this.newAbsence = { ...this.emptyAbsenceDraft(), driverId: this.drivers[0]?.id ?? '' };
+    this.absenceEditing.set(false);
+    this.absenceFormError.set('');
+    this.absenceFormOpen.set(true);
+  }
+
+  protected openAbsenceEditForm(): void {
+    const absence = this.selectedAbsence();
+    if (!absence) return;
+    const driver = this.drivers.find((item) => item.name === absence.driver);
+    this.newAbsence = {
+      driverId: driver?.id ?? '',
+      type: absence.type,
+      start: this.toInputDate(absence.start),
+      end: this.toInputDate(absence.end),
+      note: absence.note,
+    };
+    this.absenceEditing.set(true);
+    this.absenceFormError.set('');
+    this.absenceFormOpen.set(true);
+  }
+
+  protected closeNewAbsenceForm(): void {
+    this.absenceFormOpen.set(false);
+    this.absenceEditing.set(false);
+    this.absenceFormError.set('');
+  }
+
+  protected saveAbsenceForm(): void {
+    if (this.absenceEditing()) this.updateAbsence();
+    else this.createAbsence();
+  }
+
+  protected createAbsence(): void {
+    const absence = this.buildAbsence();
+    if (!absence) return;
+
+    this.absences.push(absence);
+    this.finishAbsenceSave(absence);
+  }
+
+  protected updateAbsence(): void {
+    const currentAbsence = this.selectedAbsence();
+    if (!currentAbsence) return;
+    const updatedAbsence = this.buildAbsence(currentAbsence.id);
+    if (!updatedAbsence) return;
+
+    Object.assign(currentAbsence, updatedAbsence);
+    this.finishAbsenceSave(currentAbsence);
+  }
+
+  private buildAbsence(existingId?: string): Absence | null {
+    const draft: AbsenceDraft = {
+      ...this.newAbsence,
+      note: this.newAbsence.note.trim(),
+    };
+    const driver = this.drivers.find((item) => item.id === draft.driverId);
+    if (!driver || !draft.start || !draft.end) {
+      this.absenceFormError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return null;
+    }
+    if (draft.type === 'Sonstige' && !draft.note) {
+      this.absenceFormError.set('Bitte geben Sie einen Grund für die sonstige Abwesenheit ein.');
+      return null;
+    }
+
+    const startDate = this.dateFromInput(draft.start);
+    const endDate = this.dateFromInput(draft.end);
+    if (!startDate || !endDate || endDate < startDate) {
+      this.absenceFormError.set('Das Enddatum darf nicht vor dem Startdatum liegen.');
+      return null;
+    }
+
+    const startUtc = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const endUtc = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    const calendarDays = Math.round((endUtc - startUtc) / 86_400_000) + 1;
+    const workingDays = this.countWorkingDays(startDate, endDate);
+    const today = new Date(
+      this.calendarToday.getFullYear(),
+      this.calendarToday.getMonth(),
+      this.calendarToday.getDate(),
+    );
+    const status: Absence['status'] = endDate < today ? 'Beendet' : startDate > today ? 'Geplant' : 'Aktiv';
+    const conflicts = this.shifts.filter((shift) => {
+      if (shift.driver !== driver.name) return false;
+      const shiftDate = this.dateFromInput(this.days[shift.day]?.iso ?? '');
+      return Boolean(shiftDate && shiftDate >= startDate && shiftDate <= endDate);
+    }).length;
+    const color: Absence['color'] = driver.color === 'cyan' ? 'blue' : driver.color;
+    const idBase = `${driver.id}-${draft.start}-${draft.end}`;
+    let id = idBase;
+    let suffix = 2;
+    while (this.absences.some((absence) => absence.id === id && absence.id !== existingId)) {
+      id = `${idBase}-${suffix}`;
+      suffix += 1;
+    }
+
+    return {
+      id: existingId ?? id,
+      driver: driver.name,
+      initials: driver.initials,
+      type: draft.type,
+      start: this.toGermanDate(draft.start),
+      end: this.toGermanDate(draft.end),
+      duration: `${calendarDays} ${calendarDays === 1 ? 'Tag' : 'Tage'}`,
+      workingDays,
+      status,
+      note: draft.note,
+      conflicts,
+      color,
+    };
+  }
+
+  private finishAbsenceSave(absence: Absence): void {
+    this.selectedAbsenceId.set(absence.id);
+    this.absenceRevision.update((revision) => revision + 1);
+    this.absenceSearch.set('');
+    this.absenceType.set('Alle Arten');
+    this.absenceFormOpen.set(false);
+    this.absenceEditing.set(false);
+    this.absenceFormError.set('');
     this.persistState();
-    window.setTimeout(() => this.absenceSaved.set(false), 2400);
+  }
+
+  protected requestAbsenceDelete(): void {
+    if (this.absences.length <= 1) return;
+    this.absenceDeleteConfirmOpen.set(true);
+  }
+
+  protected cancelAbsenceDelete(): void {
+    this.absenceDeleteConfirmOpen.set(false);
+  }
+
+  protected deleteAbsence(): void {
+    if (this.absences.length <= 1) return;
+    const absence = this.selectedAbsence();
+    if (!absence) return;
+    const index = this.absences.findIndex((item) => item.id === absence.id);
+    if (index < 0) return;
+
+    this.absences.splice(index, 1);
+    const nextAbsence = this.absences[Math.min(index, this.absences.length - 1)];
+    this.selectedAbsenceId.set(nextAbsence.id);
+    this.absenceRevision.update((revision) => revision + 1);
+    this.absenceDeleteConfirmOpen.set(false);
+    this.persistState();
+  }
+
+  private emptyAbsenceDraft(): AbsenceDraft {
+    return {
+      driverId: '',
+      type: 'Urlaub',
+      start: '',
+      end: '',
+      note: '',
+    };
+  }
+
+  private dateFromInput(value: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+  }
+
+  private countWorkingDays(start: Date, end: Date): number {
+    let count = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      if (current.getDay() !== 0 && current.getDay() !== 6) count += 1;
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
   }
 
   protected selectSpecialTrip(trip: SpecialTrip): void {

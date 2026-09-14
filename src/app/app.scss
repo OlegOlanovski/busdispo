@@ -1884,6 +1884,11 @@ button {
   small { margin-top: 4px; color: #7c8698; font-size: var(--font-min); }
 }
 
+.quick-actions .quick-driver-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .overview-absence-card > div:not(.dashboard-heading) {
   min-height: 67px;
   display: grid;
@@ -3082,10 +3087,16 @@ button {
 
   > span { color: #4e596d; font-size: var(--font-min); font-weight: 600; }
   input,
-  select { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #d5dce6; border-radius: 6px; outline: 0; background: #fff; color: #202a39; font-size: var(--font-min); }
+  select,
+  textarea { width: 100%; border: 1px solid #d5dce6; border-radius: 6px; outline: 0; background: #fff; color: #202a39; font-family: inherit; font-size: var(--font-min); }
+  input,
+  select { height: 44px; padding: 0 11px; }
+  textarea { min-height: 104px; padding: 11px; resize: vertical; line-height: 1.45; }
   input:focus,
-  select:focus { border-color: #77aef1; box-shadow: 0 0 0 3px rgb(9 108 242 / 11%); }
-  input::placeholder { color: #929bad; }
+  select:focus,
+  textarea:focus { border-color: #77aef1; box-shadow: 0 0 0 3px rgb(9 108 242 / 11%); }
+  input::placeholder,
+  textarea::placeholder { color: #929bad; }
 }
 
 .driver-create-field--wide { grid-column: 1 / -1; }
@@ -3449,6 +3460,11 @@ button {
 
 .absence-detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 18px; }
 .absence-detail-actions .button { padding: 0 8px; }
+.absence-delete-button { border-color: #efb4b8; color: #b4232d; }
+.absence-delete-button:hover:not(:disabled) { border-color: #d9787f; background: #fff3f3; }
+.absence-delete-button:disabled { cursor: not-allowed; opacity: .5; }
+.absence-delete-confirm { border-color: #bd2933; background: #bd2933; color: #fff; }
+.absence-delete-confirm:hover { border-color: #a91f29; background: #a91f29; }
 
 .special-trips-page { min-width: 0; padding: 30px 31px 36px; }
 

@@ -230,7 +230,7 @@
             <div class="quick-actions">
               <button (click)="showView('planning')"><span>+</span><b>Einsatz planen</b><small>Neue Zuweisung erstellen</small></button>
               <button (click)="showView('vehicles')"><span><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span><b>Fahrzeug anlegen</b><small>Fuhrpark verwalten</small></button>
-              <button><span>♙</span><b>Fahrer hinzufügen</b><small>Personal verwalten</small></button>
+              <button><span class="drivers-icon quick-driver-icon" aria-hidden="true"></span><b>Fahrer hinzufügen</b><small>Personal verwalten</small></button>
             </div>
           </section>
           <section class="dashboard-card overview-absence-card">
@@ -765,14 +765,70 @@
             <h2>Abwesenheiten</h2>
             <p>Erfassen Sie Urlaub, Krankheit und weitere Abwesenheiten Ihrer Fahrer.</p>
           </div>
-          <button class="button button--primary">+&nbsp; Abwesenheit erfassen</button>
+          <button class="button button--primary" type="button" (click)="openNewAbsenceForm()">+&nbsp; Abwesenheit erfassen</button>
         </div>
 
+        @if (absenceFormOpen()) {
+          <button class="driver-create-backdrop" type="button" aria-label="Abwesenheitsformular schließen" (click)="closeNewAbsenceForm()"></button>
+          <section class="driver-create-modal absence-create-modal" role="dialog" aria-modal="true" aria-labelledby="absence-create-title">
+            <header class="driver-create-head">
+              <div><span class="driver-create-icon">⊠</span><div><small>Abwesenheitsverwaltung</small><h3 id="absence-create-title">{{ absenceEditing() ? 'Abwesenheit bearbeiten' : 'Abwesenheit erfassen' }}</h3></div></div>
+              <button type="button" aria-label="Formular schließen" (click)="closeNewAbsenceForm()">×</button>
+            </header>
+            <form class="driver-create-form absence-create-form" novalidate (ngSubmit)="saveAbsenceForm()">
+              <p class="driver-create-intro">{{ absenceEditing() ? 'Ändern Sie Fahrer, Kategorie, Zeitraum oder Bemerkung der Abwesenheit.' : 'Wählen Sie den betroffenen Fahrer und erfassen Sie Zeitraum und Grund der Abwesenheit.' }}</p>
+              <div class="driver-create-grid">
+                <label class="driver-create-field">
+                  <span>Fahrer *</span>
+                  <select name="absenceDriver" [(ngModel)]="newAbsence.driverId" required>
+                    @for (driver of drivers; track driver.id) { <option [value]="driver.id">{{ driver.name }}</option> }
+                  </select>
+                </label>
+                <label class="driver-create-field">
+                  <span>Art der Abwesenheit *</span>
+                  <select name="absenceCreateType" [(ngModel)]="newAbsence.type" required><option>Krank</option><option>Urlaub</option><option>Fortbildung</option><option>Sonstige</option></select>
+                </label>
+                <label class="driver-create-field">
+                  <span>Von *</span>
+                  <input name="absenceStart" type="date" [(ngModel)]="newAbsence.start" required />
+                </label>
+                <label class="driver-create-field">
+                  <span>Bis *</span>
+                  <input name="absenceEnd" type="date" [(ngModel)]="newAbsence.end" [min]="newAbsence.start" required />
+                </label>
+                <label class="driver-create-field driver-create-field--wide absence-reason-field">
+                  <span>Grund der Abwesenheit{{ newAbsence.type === 'Sonstige' ? ' *' : '' }}</span>
+                  <textarea name="absenceReason" rows="4" [(ngModel)]="newAbsence.note" [required]="newAbsence.type === 'Sonstige'" [placeholder]="newAbsence.type === 'Sonstige' ? 'Bitte Grund der Abwesenheit angeben' : 'Optional: Grund oder zusätzliche Bemerkung eingeben'"></textarea>
+                </label>
+              </div>
+              @if (absenceFormError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ absenceFormError() }}</div> }
+              <div class="driver-create-note"><span>i</span><p><b>Planung wird automatisch geprüft</b><small>Betroffene Einsätze der aktuellen Woche werden nach dem Speichern in der Detailansicht angezeigt.</small></p></div>
+              <footer class="driver-create-actions">
+                <button class="button" type="button" (click)="closeNewAbsenceForm()">Abbrechen</button>
+                <button class="button button--primary" type="submit">{{ absenceEditing() ? 'Änderungen speichern' : 'Abwesenheit speichern' }}</button>
+              </footer>
+            </form>
+          </section>
+        }
+
+        @if (absenceDeleteConfirmOpen() && selectedAbsence(); as absence) {
+          <button class="driver-create-backdrop" type="button" aria-label="Löschen abbrechen" (click)="cancelAbsenceDelete()"></button>
+          <section class="driver-delete-modal absence-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="absence-delete-title" aria-describedby="absence-delete-description">
+            <span class="driver-delete-icon">!</span>
+            <h3 id="absence-delete-title">Abwesenheit löschen?</h3>
+            <p id="absence-delete-description">Die Abwesenheit von <strong>{{ absence.driver }}</strong> vom {{ absence.start }} bis {{ absence.end }} wird dauerhaft gelöscht.</p>
+            <div class="driver-delete-actions">
+              <button class="button" type="button" (click)="cancelAbsenceDelete()">Abbrechen</button>
+              <button class="button driver-delete-confirm absence-delete-confirm" type="button" (click)="deleteAbsence()">Abwesenheit löschen</button>
+            </div>
+          </section>
+        }
+
         <div class="absence-metrics">
-          <article><span class="absence-metric-icon absence-metric-icon--blue">⊠</span><div><b>2</b><small>Einträge gesamt</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--rose">!</span><div><b>0</b><small>Aktuell abwesend</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--orange">◌</span><div><b>2</b><small>Geplant</small></div></article>
-          <article><span class="absence-metric-icon absence-metric-icon--green">✓</span><div><b>0</b><small>Beendet</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--blue">⊠</span><div><b>{{ absenceCounts().total }}</b><small>Einträge gesamt</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--rose">!</span><div><b>{{ absenceCounts().active }}</b><small>Aktuell abwesend</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--orange">◌</span><div><b>{{ absenceCounts().planned }}</b><small>Geplant</small></div></article>
+          <article><span class="absence-metric-icon absence-metric-icon--green">✓</span><div><b>{{ absenceCounts().finished }}</b><small>Beendet</small></div></article>
         </div>
 
         <div class="absence-layout">
@@ -787,7 +843,7 @@
             <div class="absence-list">
               @for (absence of filteredAbsences(); track absence.id) {
                 <button class="absence-row" [class.absence-row--selected]="selectedAbsenceId() === absence.id" (click)="selectAbsence(absence)">
-                  <span class="absence-identity"><i class="absence-list-avatar absence-list-avatar--{{ absence.color }}">{{ absence.initials }}</i><span><b>{{ absence.driver }}</b><small>{{ absence.note }}</small></span></span>
+                  <span class="absence-identity"><i class="absence-list-avatar absence-list-avatar--{{ absence.color }}">{{ absence.initials }}</i><span><b>{{ absence.driver }}</b><small>{{ absence.note || 'Keine Bemerkung' }}</small></span></span>
                   <span class="absence-type absence-type--{{ absence.type === 'Krank' ? 'sick' : absence.type === 'Urlaub' ? 'vacation' : absence.type === 'Fortbildung' ? 'training' : 'other' }}">{{ absence.type }}</span>
                   <span class="absence-period"><b>{{ absence.start }}</b><small>bis {{ absence.end }}</small></span>
                   <span class="absence-duration">{{ absence.duration }}</span>
@@ -818,7 +874,7 @@
               </dl>
 
               <h4>Bemerkung</h4>
-              <div class="absence-note"><span>≡</span><p>{{ selectedAbsence().note }}</p></div>
+              <div class="absence-note"><span>≡</span><p>{{ selectedAbsence().note || 'Keine Bemerkung angegeben.' }}</p></div>
 
               <h4>Auswirkung auf die Planung</h4>
               <div class="absence-conflict" [class.absence-conflict--clear]="selectedAbsence().conflicts === 0">
@@ -831,8 +887,8 @@
               <div class="absence-driver-link"><span class="absence-list-avatar absence-list-avatar--{{ selectedAbsence().color }}">{{ selectedAbsence().initials }}</span><div><b>{{ selectedAbsence().driver }}</b><small>Fahrerdetails und Einsatzhistorie</small></div><button (click)="showView('drivers')">Anzeigen →</button></div>
 
               <div class="absence-detail-actions">
-                <button class="button" (click)="showView('planning')">Wochenplanung</button>
-                <button class="button button--primary" (click)="saveAbsence()">{{ absenceSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
+                <button class="button button--primary" type="button" (click)="openAbsenceEditForm()">Bearbeiten</button>
+                <button class="button absence-delete-button" type="button" [disabled]="absences.length === 1" [title]="absences.length === 1 ? 'Der letzte Eintrag kann nicht gelöscht werden.' : 'Abwesenheit löschen'" (click)="requestAbsenceDelete()">Löschen</button>
               </div>
             </div>
           </aside>
