@@ -1734,9 +1734,11 @@ button {
   width: 43px;
   height: 43px;
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
   border-radius: 9px;
   font-size: 20px;
-  line-height: 43px;
+  line-height: 1;
   text-align: center;
 }
 
@@ -1744,6 +1746,11 @@ button {
 .metric-icon--violet { background: #f4edff; color: #7a31d2; }
 .metric-icon--green { background: #eaf9ee; color: #21913c; }
 .metric-icon--orange { background: #fff3e5; color: #df7b0b; }
+
+.metric-driver-icon {
+  width: 22px;
+  height: 22px;
+}
 
 .overview-grid {
   display: grid;
