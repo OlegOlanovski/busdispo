@@ -478,6 +478,19 @@
           </section>
         }
 
+        @if (dutyPlanDeleteConfirmOpen() && selectedDutyPlan(); as plan) {
+          <button class="driver-create-backdrop" type="button" aria-label="Löschen abbrechen" (click)="cancelDutyPlanDelete()"></button>
+          <section class="driver-delete-modal duty-plan-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="duty-plan-delete-title" aria-describedby="duty-plan-delete-description">
+            <span class="driver-delete-icon">!</span>
+            <h3 id="duty-plan-delete-title">Dienstplan löschen?</h3>
+            <p id="duty-plan-delete-description"><strong>{{ plan.name }}</strong> wird dauerhaft aus der Dienstplanverwaltung entfernt. Bereits geplante Einsätze bleiben erhalten.</p>
+            <div class="driver-delete-actions">
+              <button class="button" type="button" (click)="cancelDutyPlanDelete()">Abbrechen</button>
+              <button class="button driver-delete-confirm duty-plan-delete-confirm" type="button" (click)="deleteDutyPlan()">Dienstplan löschen</button>
+            </div>
+          </section>
+        }
+
         <div class="duty-metrics">
           <article><span class="duty-metric-icon duty-metric-icon--blue">▤</span><div><b>{{ dutyPlanCounts().total }}</b><small>Dienstpläne gesamt</small></div></article>
           <article><span class="duty-metric-icon duty-metric-icon--green">✓</span><div><b>{{ dutyPlanCounts().active }}</b><small>Aktive Pläne</small></div></article>
@@ -511,6 +524,7 @@
           </section>
 
           <aside class="dashboard-card duty-detail-card">
+            @if (selectedDutyPlan()) {
             <div class="duty-detail-head">
               <span class="duty-plan-icon duty-plan-icon--{{ selectedDutyPlan().tone }}">▤</span>
               <div><span>Dienstplan</span><h3>{{ selectedDutyPlan().name }}</h3><p>{{ selectedDutyPlan().route }}</p></div>
@@ -593,11 +607,14 @@
               <div class="duty-usage"><span><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span><div><b>{{ selectedDutyPlan().assignedVehicles }} Fahrzeug{{ selectedDutyPlan().assignedVehicles === 1 ? '' : 'e' }} zugewiesen</b><small>In der aktuellen Wochenplanung verwendet</small></div><button (click)="showView('planning')">Anzeigen →</button></div>
 
               <div class="duty-detail-actions">
-                <button class="button">Duplizieren</button>
+                <button class="button duty-plan-delete-button" type="button" (click)="requestDutyPlanDelete()">Dienstplan löschen</button>
                 <button class="button button--primary" (click)="startDutyPlanEdit()">{{ dutyPlanSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
               </div>
               }
             </div>
+            } @else {
+              <div class="duty-empty duty-detail-empty"><span>▤</span><strong>Keine Dienstpläne vorhanden</strong><small>Erstellen Sie einen neuen Dienstplan.</small><button class="button button--primary" type="button" (click)="openNewDutyPlanForm()">Dienstplan erstellen</button></div>
+            }
           </aside>
         </div>
       </section>
@@ -858,39 +875,43 @@
           </section>
 
           <aside class="dashboard-card absence-detail-card">
-            <div class="absence-detail-head">
-              <span class="absence-detail-avatar absence-list-avatar--{{ selectedAbsence().color }}">{{ selectedAbsence().initials }}</span>
-              <div><span>Abwesenheit</span><h3>{{ selectedAbsence().driver }}</h3><p>{{ selectedAbsence().type }} · {{ selectedAbsence().duration }}</p></div>
-              <span class="absence-status absence-status--{{ selectedAbsence().status === 'Aktiv' ? 'active' : selectedAbsence().status === 'Geplant' ? 'planned' : 'finished' }}"><i></i>{{ selectedAbsence().status }}</span>
-            </div>
-            <div class="absence-detail-body">
-              <h4>Zeitraum</h4>
-              <div class="absence-date-range"><div><span>Von</span><strong>{{ selectedAbsence().start }}</strong></div><i>→</i><div><span>Bis</span><strong>{{ selectedAbsence().end }}</strong></div></div>
-              <dl class="absence-data">
-                <div><dt>Kalendertage</dt><dd>{{ selectedAbsence().duration }}</dd></div>
-                <div><dt>Arbeitstage</dt><dd>{{ selectedAbsence().workingDays }}</dd></div>
-                <div><dt>Abwesenheitsart</dt><dd>{{ selectedAbsence().type }}</dd></div>
-                <div><dt>Status</dt><dd>{{ selectedAbsence().status }}</dd></div>
-              </dl>
-
-              <h4>Bemerkung</h4>
-              <div class="absence-note"><span>≡</span><p>{{ selectedAbsence().note || 'Keine Bemerkung angegeben.' }}</p></div>
-
-              <h4>Auswirkung auf die Planung</h4>
-              <div class="absence-conflict" [class.absence-conflict--clear]="selectedAbsence().conflicts === 0">
-                <span>{{ selectedAbsence().conflicts === 0 ? '✓' : '!' }}</span>
-                <div><b>{{ selectedAbsence().conflicts === 0 ? 'Keine offenen Konflikte' : selectedAbsence().conflicts + ' betroffene Einsätze' }}</b><small>{{ selectedAbsence().conflicts === 0 ? 'Die Wochenplanung ist vollständig abgedeckt.' : 'Für diese Einsätze wird eine Vertretung benötigt.' }}</small></div>
-                @if (selectedAbsence().conflicts > 0) { <button (click)="showView('planning')">Prüfen →</button> }
+            @if (selectedAbsence(); as absence) {
+              <div class="absence-detail-head">
+                <span class="absence-detail-avatar absence-list-avatar--{{ absence.color }}">{{ absence.initials }}</span>
+                <div><span>Abwesenheit</span><h3>{{ absence.driver }}</h3><p>{{ absence.type }} · {{ absence.duration }}</p></div>
+                <span class="absence-status absence-status--{{ absence.status === 'Aktiv' ? 'active' : absence.status === 'Geplant' ? 'planned' : 'finished' }}"><i></i>{{ absence.status }}</span>
               </div>
+              <div class="absence-detail-body">
+                <h4>Zeitraum</h4>
+                <div class="absence-date-range"><div><span>Von</span><strong>{{ absence.start }}</strong></div><i>→</i><div><span>Bis</span><strong>{{ absence.end }}</strong></div></div>
+                <dl class="absence-data">
+                  <div><dt>Kalendertage</dt><dd>{{ absence.duration }}</dd></div>
+                  <div><dt>Arbeitstage</dt><dd>{{ absence.workingDays }}</dd></div>
+                  <div><dt>Abwesenheitsart</dt><dd>{{ absence.type }}</dd></div>
+                  <div><dt>Status</dt><dd>{{ absence.status }}</dd></div>
+                </dl>
 
-              <h4>Betroffener Fahrer</h4>
-              <div class="absence-driver-link"><span class="absence-list-avatar absence-list-avatar--{{ selectedAbsence().color }}">{{ selectedAbsence().initials }}</span><div><b>{{ selectedAbsence().driver }}</b><small>Fahrerdetails und Einsatzhistorie</small></div><button (click)="showView('drivers')">Anzeigen →</button></div>
+                <h4>Bemerkung</h4>
+                <div class="absence-note"><span>≡</span><p>{{ absence.note || 'Keine Bemerkung angegeben.' }}</p></div>
 
-              <div class="absence-detail-actions">
-                <button class="button button--primary" type="button" (click)="openAbsenceEditForm()">Bearbeiten</button>
-                <button class="button absence-delete-button" type="button" [disabled]="absences.length === 1" [title]="absences.length === 1 ? 'Der letzte Eintrag kann nicht gelöscht werden.' : 'Abwesenheit löschen'" (click)="requestAbsenceDelete()">Löschen</button>
+                <h4>Auswirkung auf die Planung</h4>
+                <div class="absence-conflict" [class.absence-conflict--clear]="absence.conflicts === 0">
+                  <span>{{ absence.conflicts === 0 ? '✓' : '!' }}</span>
+                  <div><b>{{ absence.conflicts === 0 ? 'Keine offenen Konflikte' : absence.conflicts + ' betroffene Einsätze' }}</b><small>{{ absence.conflicts === 0 ? 'Die Wochenplanung ist vollständig abgedeckt.' : 'Für diese Einsätze wird eine Vertretung benötigt.' }}</small></div>
+                  @if (absence.conflicts > 0) { <button (click)="showView('planning')">Prüfen →</button> }
+                </div>
+
+                <h4>Betroffener Fahrer</h4>
+                <div class="absence-driver-link"><span class="absence-list-avatar absence-list-avatar--{{ absence.color }}">{{ absence.initials }}</span><div><b>{{ absence.driver }}</b><small>Fahrerdetails und Einsatzhistorie</small></div><button (click)="showView('drivers')">Anzeigen →</button></div>
+
+                <div class="absence-detail-actions">
+                  <button class="button button--primary" type="button" (click)="openAbsenceEditForm()">Bearbeiten</button>
+                  <button class="button absence-delete-button" type="button" title="Abwesenheit löschen" (click)="requestAbsenceDelete()">Löschen</button>
+                </div>
               </div>
-            </div>
+            } @else {
+              <div class="absence-empty absence-detail-empty"><span>⊠</span><strong>Keine Abwesenheiten vorhanden</strong><small>Erfassen Sie eine neue Abwesenheit.</small></div>
+            }
           </aside>
         </div>
       </section>

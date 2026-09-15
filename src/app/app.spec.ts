@@ -810,6 +810,34 @@ describe('App', () => {
     expect(compiled.querySelector('.duty-detail-card')?.textContent).toContain('Linienverlauf');
   });
 
+  it('should delete duty plans after confirmation and show the empty state', async () => {
+    window.history.replaceState(null, '', '#schedules');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.duty-detail-actions')?.textContent).not.toContain('Duplizieren');
+    (compiled.querySelector('.duty-plan-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.duty-plan-delete-modal')?.textContent).toContain('Tagesplan L 91');
+    (compiled.querySelector('.duty-plan-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.duty-row')).toHaveLength(1);
+    expect(compiled.querySelector('.duty-row--selected')?.textContent).toContain('Tagesplan L 102');
+
+    (compiled.querySelector('.duty-plan-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (compiled.querySelector('.duty-plan-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.duty-row')).toHaveLength(0);
+    expect(compiled.querySelector('.duty-detail-empty')?.textContent).toContain('Keine Dienstpläne vorhanden');
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.dutyPlans).toHaveLength(0);
+  });
+
   it('should create and persist a duty plan from the modal', async () => {
     window.history.replaceState(null, '', '#schedules');
     const fixture = TestBed.createComponent(App);
@@ -1069,6 +1097,33 @@ describe('App', () => {
     expect(app.absences.some((absence: { id: string }) => absence.id === 'fahrer-07-training')).toBe(false);
     const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
     expect(stored.absences).toHaveLength(1);
+  });
+
+  it('should allow deleting the last absence and show the empty state', async () => {
+    window.history.replaceState(null, '', '#absence');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.absence-delete-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (compiled.querySelector('.absence-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const lastDeleteButton = compiled.querySelector('.absence-delete-button') as HTMLButtonElement;
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(1);
+    expect(lastDeleteButton.disabled).toBe(false);
+
+    lastDeleteButton.click();
+    fixture.detectChanges();
+    (compiled.querySelector('.absence-delete-confirm') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelectorAll('.absence-row')).toHaveLength(0);
+    expect(compiled.querySelector('.absence-detail-empty')?.textContent).toContain('Keine Abwesenheiten vorhanden');
+    expect(compiled.querySelector('.absence-delete-button')).toBeFalsy();
+    const stored = JSON.parse(window.localStorage.getItem('busdispo.state.v1') ?? '{}');
+    expect(stored.absences).toHaveLength(0);
   });
 
   it('should create and persist an absence from the modal form', async () => {

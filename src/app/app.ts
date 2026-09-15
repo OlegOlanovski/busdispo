@@ -343,6 +343,7 @@ export class App {
   protected readonly dutyPlanSaved = signal(false);
   protected readonly dutyPlanEditing = signal(false);
   protected readonly dutyPlanCreateOpen = signal(false);
+  protected readonly dutyPlanDeleteConfirmOpen = signal(false);
   protected readonly dutyPlanEditError = signal('');
   private readonly dutyPlanRevision = signal(0);
   protected dutyPlanDraft: DutyPlanDraft = {
@@ -1455,9 +1456,9 @@ export class App {
       vehicle: target.vehicle,
       day: target.day,
       driver: '',
-      plan: suggestedPlan.name,
-      start: suggestedPlan.start,
-      end: suggestedPlan.end,
+      plan: suggestedPlan?.name ?? '',
+      start: suggestedPlan?.start ?? '',
+      end: suggestedPlan?.end ?? '',
       note: '',
     };
     this.addingAssignment.set(true);
@@ -2016,6 +2017,7 @@ export class App {
     this.selectedDutyPlanId.set(plan.id);
     this.dutyPlanSaved.set(false);
     this.dutyPlanEditing.set(false);
+    this.dutyPlanDeleteConfirmOpen.set(false);
     this.dutyPlanEditError.set('');
     if (window.innerWidth < 900) {
       window.setTimeout(() => document.querySelector('.duty-detail-card')?.scrollIntoView({ behavior: 'smooth' }), 0);
@@ -2105,6 +2107,38 @@ export class App {
   protected cancelDutyPlanEdit(): void {
     this.dutyPlanEditing.set(false);
     this.dutyPlanEditError.set('');
+  }
+
+  protected requestDutyPlanDelete(): void {
+    if (!this.selectedDutyPlan()) return;
+    this.dutyPlanDeleteConfirmOpen.set(true);
+  }
+
+  protected cancelDutyPlanDelete(): void {
+    this.dutyPlanDeleteConfirmOpen.set(false);
+  }
+
+  protected deleteDutyPlan(): void {
+    const plan = this.selectedDutyPlan();
+    if (!plan) return;
+    const index = this.dutyPlans.findIndex((item) => item.id === plan.id);
+    if (index < 0) return;
+
+    this.dutyPlans.splice(index, 1);
+    const nextPlan = this.dutyPlans[Math.min(index, this.dutyPlans.length - 1)];
+    this.selectedDutyPlanId.set(nextPlan?.id ?? '');
+    if (this.newAssignment.plan === plan.name) {
+      this.newAssignment = {
+        ...this.newAssignment,
+        plan: nextPlan?.name ?? '',
+        start: nextPlan?.start ?? '',
+        end: nextPlan?.end ?? '',
+      };
+    }
+    this.dutyPlanRevision.update((revision) => revision + 1);
+    this.dutyPlanEditing.set(false);
+    this.dutyPlanDeleteConfirmOpen.set(false);
+    this.persistState();
   }
 
   protected addDutyPlanStop(): void {
@@ -2541,7 +2575,7 @@ export class App {
   }
 
   protected requestAbsenceDelete(): void {
-    if (this.absences.length <= 1) return;
+    if (!this.selectedAbsence()) return;
     this.absenceDeleteConfirmOpen.set(true);
   }
 
@@ -2550,7 +2584,6 @@ export class App {
   }
 
   protected deleteAbsence(): void {
-    if (this.absences.length <= 1) return;
     const absence = this.selectedAbsence();
     if (!absence) return;
     const index = this.absences.findIndex((item) => item.id === absence.id);
@@ -2558,7 +2591,7 @@ export class App {
 
     this.absences.splice(index, 1);
     const nextAbsence = this.absences[Math.min(index, this.absences.length - 1)];
-    this.selectedAbsenceId.set(nextAbsence.id);
+    this.selectedAbsenceId.set(nextAbsence?.id ?? '');
     this.absenceRevision.update((revision) => revision + 1);
     this.absenceDeleteConfirmOpen.set(false);
     this.persistState();
