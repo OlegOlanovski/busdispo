@@ -144,6 +144,45 @@ describe('App', () => {
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain('BUS-200');
   });
 
+  it('should link a saved duty plan when adding a weekly planning line', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+
+    (compiled.querySelector('.planning-line-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const dutyPlanSelect = compiled.querySelector('select[name="planningDutyPlanId"]') as HTMLSelectElement;
+    expect(dutyPlanSelect).toBeTruthy();
+    expect(dutyPlanSelect.options).toHaveLength(3);
+    expect(dutyPlanSelect.textContent).toContain('Tagesplan L 102');
+
+    app.planningLineDraft = {
+      displayLabel: 'BUS-200',
+      lineLabel: 'Demo Auftraggeber',
+      dutyPlanId: 'demo-plan-102',
+    };
+    app.createPlanningLine();
+    fixture.detectChanges();
+
+    const createdLine = app.vehicles.find((vehicle: { id: string }) => vehicle.id === 'BUS-200');
+    expect(createdLine.dutyPlanId).toBe('demo-plan-102');
+    expect(createdLine.start).toBe('06:05');
+    expect(createdLine.end).toBe('14:20');
+    expect(compiled.querySelector('.line-heading[data-vehicle="BUS-200"]')?.textContent).toContain('Tagesplan L 102');
+
+    const createdColumn = compiled.querySelector('.trip-column[data-vehicle="BUS-200"]') as HTMLElement;
+    const dutyPlanCards = createdColumn.querySelectorAll('.planning-duty-plan-card');
+    expect(dutyPlanCards).toHaveLength(1);
+    expect(dutyPlanCards[0].textContent).toContain('06:05 – 14:20');
+    expect(dutyPlanCards[0].textContent).toContain('Demo Ort 03 → Demo Ort 04');
+
+    app.openNewAssignment('BUS-200', 0);
+    expect(app.newAssignment.plan).toBe('Tagesplan L 102');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('demo-plan-102');
+  });
+
   it('should delete a planning column with its trips and assignments after confirmation', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
@@ -244,6 +283,41 @@ describe('App', () => {
     expect(window.localStorage.getItem('busdispo.state.v1')).toContain('09:15 – 10:05');
   });
 
+  it('should add another Fahrt from a saved duty plan', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const app = fixture.componentInstance as any;
+    const column = compiled.querySelector('.trip-column[data-vehicle="DEMO-91"]') as HTMLElement;
+
+    (column.querySelector('.planning-trip-add-button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const dutyPlanSelect = compiled.querySelector('select[name="planningTripDutyPlanId"]') as HTMLSelectElement;
+    expect(dutyPlanSelect).toBeTruthy();
+    expect(dutyPlanSelect.options).toHaveLength(3);
+
+    app.selectPlanningTripDutyPlan('demo-plan-102');
+    fixture.detectChanges();
+
+    expect(app.planningTripDraft).toEqual({
+      vehicle: 'DEMO-91',
+      label: 'Linienfahrt',
+      start: '06:05',
+      end: '14:20',
+      route: 'Demo Ort 03 → Demo Ort 04',
+      dutyPlanId: 'demo-plan-102',
+    });
+
+    app.createPlanningTrip();
+    fixture.detectChanges();
+
+    expect(column.textContent).toContain('06:05 – 14:20');
+    expect(column.textContent).toContain('Demo Ort 03 → Demo Ort 04');
+    expect(app.planningTrips.at(-1).dutyPlanId).toBe('demo-plan-102');
+    expect(window.localStorage.getItem('busdispo.state.v1')).toContain('demo-plan-102');
+  });
+
   it('should slide the main menu in and out', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
@@ -285,6 +359,7 @@ describe('App', () => {
       start: '07:04',
       end: '07:28',
       route: 'Demo Ort 01 → Demo Ort 03',
+      dutyPlanId: '',
     });
   });
 
@@ -316,6 +391,7 @@ describe('App', () => {
     expect(app.planningLineDraft).toEqual({
       displayLabel: 'DEMO 91',
       lineLabel: 'L 91',
+      dutyPlanId: '',
     });
 
     (modal.querySelector('.planning-vehicle-picker-button') as HTMLButtonElement).click();

@@ -1089,7 +1089,7 @@
           <button type="button" aria-label="Linienformular schließen" (click)="closePlanningLineForm()">×</button>
         </header>
         <form class="driver-create-form" novalidate (ngSubmit)="savePlanningLineForm()">
-          <p class="driver-create-intro">{{ planningLineEditingId() ? 'Ändern Sie Bus und Auftraggeber des Dienstplans.' : 'Wählen Sie einen Bus und erfassen Sie den Auftraggeber für die Wochenplanung.' }}</p>
+          <p class="driver-create-intro">{{ planningLineEditingId() ? 'Ändern Sie Bus, Auftraggeber und den verknüpften Dienstplan.' : 'Wählen Sie einen Bus, den Auftraggeber und optional einen gespeicherten Dienstplan.' }}</p>
           <div class="driver-create-grid">
             <label class="driver-create-field">
               <span>Bus einplanen *</span>
@@ -1126,6 +1126,15 @@
             <label class="driver-create-field">
               <span>Auftraggeber *</span>
               <input name="planningLineLabel" [(ngModel)]="planningLineDraft.lineLabel" placeholder="z. B. RMB, DB …" required />
+            </label>
+            <label class="driver-create-field driver-create-field--wide">
+              <span>Linie aus Dienstpläne</span>
+              <select name="planningDutyPlanId" [(ngModel)]="planningLineDraft.dutyPlanId">
+                <option value="">Keinen gespeicherten Dienstplan auswählen</option>
+                @for (plan of dutyPlans; track plan.id) {
+                  <option [value]="plan.id">{{ plan.name }} · {{ plan.route }} · {{ plan.start }}–{{ plan.end }}</option>
+                }
+              </select>
             </label>
           </div>
           @if (planningLineError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningLineError() }}</div> }
@@ -1175,6 +1184,15 @@
         <form class="driver-create-form planning-trip-form" novalidate (ngSubmit)="savePlanningTripForm()">
           <p class="driver-create-intro">{{ planningTripEditingId() ? 'Ändern Sie Linie, Fahrtart, Zeit und Route der Fahrt.' : 'Die Fahrt wird in der ausgewählten Linien-Spalte angezeigt.' }}</p>
           <div class="driver-create-grid">
+            <label class="driver-create-field driver-create-field--wide">
+              <span>Linie aus Dienstpläne auswählen</span>
+              <select name="planningTripDutyPlanId" [ngModel]="planningTripDraft.dutyPlanId" (ngModelChange)="selectPlanningTripDutyPlan($event)">
+                <option value="">Fahrt manuell eingeben</option>
+                @for (plan of dutyPlans; track plan.id) {
+                  <option [value]="plan.id">{{ plan.name }} · {{ plan.route }} · {{ plan.start }}–{{ plan.end }}</option>
+                }
+              </select>
+            </label>
             <label class="driver-create-field">
               <span>Linie</span>
               <select name="planningTripVehicle" [(ngModel)]="planningTripDraft.vehicle">
@@ -1252,7 +1270,7 @@
                     title="Dienstplan bearbeiten"
                     [attr.aria-label]="planningVehicleLabel(vehicle.id) + ' · ' + vehicle.lineLabel + ' bearbeiten'"
                     (click)="openPlanningLineEditForm(vehicle)"
-                  ><strong>{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</strong><span aria-hidden="true">✎</span></button>
+                  ><div><strong>{{ planningVehicleLabel(vehicle.id) }} · {{ vehicle.lineLabel }}</strong>@if (planningDutyPlanLabel(vehicle); as dutyPlanLabel) { <small>{{ dutyPlanLabel }}</small> }</div><span aria-hidden="true">✎</span></button>
                   <button
                     class="planning-vehicle-delete"
                     type="button"
@@ -1275,6 +1293,13 @@
                 (dragleave)="leavePlanningTripDropTarget($event, vehicle.id)"
                 (drop)="dropPlanningTrip($event, vehicle.id)"
               >
+                @if (planningDutyPlanFor(vehicle); as dutyPlan) {
+                  <div class="planning-trip-card planning-trip-card--{{ vehicle.tone }} planning-duty-plan-card" role="group" [attr.aria-label]="'Linienfahrt, ' + dutyPlan.start + ' bis ' + dutyPlan.end + ', ' + dutyPlan.route">
+                    <span>Linienfahrt</span>
+                    <strong>{{ dutyPlan.start }} – {{ dutyPlan.end }}</strong>
+                    <p>{{ dutyPlan.route }}</p>
+                  </div>
+                }
                 @for (trip of planningTripsFor(vehicle.id); track trip.id) {
                   <div
                     class="planning-trip-card planning-trip-card--{{ trip.tone }}"

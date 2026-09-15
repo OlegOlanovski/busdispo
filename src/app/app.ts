@@ -54,6 +54,7 @@ interface PlanningTripCard {
   route: string;
   label: string;
   tone: ShiftTone;
+  dutyPlanId?: string;
 }
 
 interface PlanningTripDraft {
@@ -62,6 +63,7 @@ interface PlanningTripDraft {
   start: string;
   end: string;
   route: string;
+  dutyPlanId: string;
 }
 
 interface Vehicle {
@@ -72,6 +74,7 @@ interface Vehicle {
 interface PlanningVehicle extends Vehicle {
   displayLabel: string;
   lineLabel: string;
+  dutyPlanId?: string;
   tone: ShiftTone;
   start: string;
   end: string;
@@ -80,6 +83,7 @@ interface PlanningVehicle extends Vehicle {
 interface PlanningLineDraft {
   displayLabel: string;
   lineLabel: string;
+  dutyPlanId: string;
 }
 
 interface PlanningDay {
@@ -884,6 +888,14 @@ export class App {
     return this.vehicles.find((item) => item.id === vehicle)?.displayLabel ?? vehicle;
   }
 
+  protected planningDutyPlanLabel(vehicle: PlanningVehicle): string {
+    return this.dutyPlans.find((plan) => plan.id === vehicle.dutyPlanId)?.name ?? '';
+  }
+
+  protected planningDutyPlanFor(vehicle: PlanningVehicle): DutyPlan | undefined {
+    return this.dutyPlans.find((plan) => plan.id === vehicle.dutyPlanId);
+  }
+
   protected currentWeekVehicleAssignments(vehicleId: string): VehicleWeekAssignment[] {
     this.shiftRevision();
     const matchingShifts = this.shifts.filter(
@@ -926,6 +938,7 @@ export class App {
     this.planningLineDraft = {
       displayLabel: vehicle.displayLabel,
       lineLabel: vehicle.lineLabel,
+      dutyPlanId: vehicle.dutyPlanId ?? '',
     };
     this.planningLineEditingId.set(vehicle.id);
     this.planningLineError.set('');
@@ -1043,14 +1056,16 @@ export class App {
     }
 
     const tones: ShiftTone[] = ['blue', 'violet', 'green', 'cyan', 'orange', 'rose', 'amber'];
+    const dutyPlan = this.dutyPlans.find((plan) => plan.id === draft.dutyPlanId);
     const vehicle: PlanningVehicle = {
       id: vehicleId,
       displayLabel: draft.displayLabel,
       lineLabel: draft.lineLabel,
+      dutyPlanId: dutyPlan?.id,
       seats: 0,
       tone: tones[this.vehicles.length % tones.length],
-      start: '00:00',
-      end: '00:00',
+      start: dutyPlan?.start ?? '00:00',
+      end: dutyPlan?.end ?? '00:00',
     };
     this.vehicles.push(vehicle);
     this.closePlanningLineForm();
@@ -1094,10 +1109,15 @@ export class App {
       }
     }
 
+    const previousDutyPlanId = vehicle.dutyPlanId;
+    const dutyPlan = this.dutyPlans.find((plan) => plan.id === draft.dutyPlanId);
     Object.assign(vehicle, {
       id: nextId,
       displayLabel: draft.displayLabel,
       lineLabel: draft.lineLabel,
+      dutyPlanId: dutyPlan?.id,
+      start: dutyPlan && dutyPlan.id !== previousDutyPlanId ? dutyPlan.start : vehicle.start,
+      end: dutyPlan && dutyPlan.id !== previousDutyPlanId ? dutyPlan.end : vehicle.end,
     });
     this.driverRevision.update((revision) => revision + 1);
     this.saved.set(false);
@@ -1114,6 +1134,7 @@ export class App {
     return {
       displayLabel: this.planningLineDraft.displayLabel.trim(),
       lineLabel: this.planningLineDraft.lineLabel.trim(),
+      dutyPlanId: (this.planningLineDraft.dutyPlanId ?? '').trim(),
     };
   }
 
@@ -1143,11 +1164,14 @@ export class App {
     if (this.vehicles.some((vehicle) => vehicle.id !== excludedVehicleId && vehicle.id === vehicleId)) {
       return 'Dieser Bus ist bereits eingeplant.';
     }
+    if (draft.dutyPlanId && !this.dutyPlans.some((plan) => plan.id === draft.dutyPlanId)) {
+      return 'Der ausgewählte Dienstplan ist nicht mehr verfügbar.';
+    }
     return '';
   }
 
   private emptyPlanningLineDraft(): PlanningLineDraft {
-    return { displayLabel: '', lineLabel: '' };
+    return { displayLabel: '', lineLabel: '', dutyPlanId: '' };
   }
 
   protected openPlanningTripForm(vehicle: string): void {
@@ -1172,6 +1196,7 @@ export class App {
       start,
       end,
       route: trip.route,
+      dutyPlanId: trip.dutyPlanId ?? '',
     };
     this.planningTripEditingId.set(trip.id);
     this.planningTripError.set('');
@@ -1189,11 +1214,32 @@ export class App {
     else this.createPlanningTrip();
   }
 
+  protected selectPlanningTripDutyPlan(dutyPlanId: string): void {
+    const dutyPlan = this.dutyPlans.find((plan) => plan.id === dutyPlanId);
+    if (!dutyPlan) {
+      this.planningTripDraft = { ...this.planningTripDraft, dutyPlanId: '' };
+      return;
+    }
+    this.planningTripDraft = {
+      ...this.planningTripDraft,
+      dutyPlanId: dutyPlan.id,
+      label: 'Linienfahrt',
+      start: dutyPlan.start,
+      end: dutyPlan.end,
+      route: dutyPlan.route,
+    };
+    this.planningTripError.set('');
+  }
+
   protected createPlanningTrip(): void {
     const draft = this.normalizedPlanningTripDraft();
     const vehicle = this.vehicles.find((item) => item.id === draft.vehicle);
     if (!vehicle || !draft.label || !draft.start || !draft.end || !draft.route) {
       this.planningTripError.set('Bitte füllen Sie alle Pflichtfelder aus.');
+      return;
+    }
+    if (draft.dutyPlanId && !this.dutyPlans.some((plan) => plan.id === draft.dutyPlanId)) {
+      this.planningTripError.set('Der ausgewählte Dienstplan ist nicht mehr verfügbar.');
       return;
     }
 
@@ -1210,6 +1256,7 @@ export class App {
       route: draft.route,
       label: draft.label,
       tone: vehicle.tone,
+      dutyPlanId: draft.dutyPlanId || undefined,
     };
     this.planningTrips.push(trip);
     this.closePlanningTripForm();
@@ -1231,6 +1278,10 @@ export class App {
       this.planningTripError.set('Bitte füllen Sie alle Pflichtfelder aus.');
       return;
     }
+    if (draft.dutyPlanId && !this.dutyPlans.some((plan) => plan.id === draft.dutyPlanId)) {
+      this.planningTripError.set('Der ausgewählte Dienstplan ist nicht mehr verfügbar.');
+      return;
+    }
 
     Object.assign(trip, {
       vehicle: vehicle.id,
@@ -1238,6 +1289,7 @@ export class App {
       time: `${draft.start} – ${draft.end}`,
       route: draft.route,
       tone: vehicle.tone,
+      dutyPlanId: draft.dutyPlanId || undefined,
     });
     this.saved.set(false);
     this.closePlanningTripForm();
@@ -1270,11 +1322,12 @@ export class App {
       ...this.planningTripDraft,
       label: this.planningTripDraft.label.trim(),
       route: this.planningTripDraft.route.trim(),
+      dutyPlanId: (this.planningTripDraft.dutyPlanId ?? '').trim(),
     };
   }
 
   private emptyPlanningTripDraft(): PlanningTripDraft {
-    return { vehicle: '', label: 'Linienfahrt', start: '', end: '', route: '' };
+    return { vehicle: '', label: 'Linienfahrt', start: '', end: '', route: '', dutyPlanId: '' };
   }
 
   protected planningLineTone(vehicle: string): ShiftTone {
@@ -1448,7 +1501,9 @@ export class App {
     const target = vehicle && day !== undefined
       ? { vehicle, day }
       : this.findFirstEmptyCell();
-    const suggestedPlan = this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DEMO-', 'L ')))
+    const linkedDutyPlanId = this.vehicles.find((item) => item.id === target.vehicle)?.dutyPlanId;
+    const suggestedPlan = this.dutyPlans.find((plan) => plan.id === linkedDutyPlanId)
+      ?? this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DEMO-', 'L ')))
       ?? this.dutyPlans.find((plan) => plan.status === 'Aktiv')
       ?? this.dutyPlans[0];
 
@@ -2127,6 +2182,12 @@ export class App {
     this.dutyPlans.splice(index, 1);
     const nextPlan = this.dutyPlans[Math.min(index, this.dutyPlans.length - 1)];
     this.selectedDutyPlanId.set(nextPlan?.id ?? '');
+    for (const vehicle of this.vehicles) {
+      if (vehicle.dutyPlanId === plan.id) vehicle.dutyPlanId = undefined;
+    }
+    for (const trip of this.planningTrips) {
+      if (trip.dutyPlanId === plan.id) trip.dutyPlanId = undefined;
+    }
     if (this.newAssignment.plan === plan.name) {
       this.newAssignment = {
         ...this.newAssignment,
