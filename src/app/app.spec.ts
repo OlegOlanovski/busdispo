@@ -1030,7 +1030,7 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
-    (compiled.querySelector('.drivers-intro > .button--primary') as HTMLButtonElement).click();
+    (compiled.querySelector('.drivers-intro-actions .button--primary') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     const form = compiled.querySelector('.driver-create-form') as HTMLFormElement;
@@ -1337,14 +1337,16 @@ describe('App', () => {
     expect(compiled.querySelector('.message-thread-list')?.textContent).toContain('Kontakt 03');
   });
 
-  it('should open the driver portal from driver details', async () => {
+  it('should open the driver portal from the driver page header', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
 
     (compiled.querySelector('.nav button:nth-child(5)') as HTMLButtonElement).click();
     fixture.detectChanges();
-    (compiled.querySelector('.driver-portal-preview') as HTMLButtonElement).click();
+    const portalButton = compiled.querySelector('.driver-portal-action') as HTMLButtonElement;
+    expect(portalButton.textContent?.trim()).toBe('Mobile Fahreransicht');
+    portalButton.click();
     fixture.detectChanges();
 
     expect(compiled.querySelector('.driver-portal')).toBeTruthy();

@@ -626,7 +626,10 @@
             <h2>Fahrer</h2>
             <p>Verwalten Sie Fahrer, Einsatzzeiten und erforderliche Nachweise.</p>
           </div>
-          <button class="button button--primary" (click)="openNewDriverForm()">+&nbsp; Fahrer hinzufügen</button>
+          <div class="drivers-intro-actions">
+            <button class="button driver-portal-action" type="button" (click)="showView('driver-portal')">Mobile Fahreransicht</button>
+            <button class="button button--primary" type="button" (click)="openNewDriverForm()">+&nbsp; Fahrer hinzufügen</button>
+          </div>
         </div>
 
         @if (driverFormOpen()) {
@@ -763,10 +766,7 @@
                 <div><span class="document-icon document-icon--medical">+</span><p><b>Ärztliche Untersuchung</b><small>Personenbeförderung</small></p><p><em>{{ selectedDriver().medicalCheck }}</em><small [class.document-due]="selectedDriver().id === 'fahrer-10'">{{ selectedDriver().id === 'fahrer-10' ? 'In 48 Tagen' : 'Gültig' }}</small></p></div>
               </div>
 
-              <button class="driver-portal-preview" (click)="showView('driver-portal')"><span><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span><div><b>Fahrerportal öffnen</b><small>Mobile Fahreransicht als {{ selectedDriver().name }} testen</small></div><i>→</i></button>
-
               <div class="driver-detail-actions">
-                <button class="button" (click)="showView('planning')">Einsatz planen</button>
                 <button class="button button--primary" (click)="saveDriver()">{{ driverSaved() ? 'Gespeichert ✓' : 'Bearbeiten' }}</button>
                 <button class="button driver-delete-button" [disabled]="drivers.length === 1" [title]="drivers.length === 1 ? 'Der letzte Fahrer kann nicht gelöscht werden.' : 'Fahrer löschen'" (click)="requestDriverDelete()">Fahrer löschen</button>
               </div>
