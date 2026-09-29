@@ -222,7 +222,7 @@
             @for (trip of specialTrips.slice(0, 2); track trip.id) {
               <article><time><b>{{ trip.date.slice(0, 2) }}</b><span>{{ trip.date.slice(3, 5) }}</span></time><div><strong>{{ trip.type }}</strong><p>{{ trip.from }} → {{ trip.to }}</p></div><em>{{ trip.start }}</em></article>
             } @empty {
-              <article><div><strong>Keine Sonderfahrten</strong><p>Für diese Woche sind keine Sonderfahrten geplant.</p></div></article>
+              <article><div><strong>Keine Sonderfahrten</strong></div></article>
             }
           </section>
         </div>
@@ -241,7 +241,7 @@
             @for (absence of absences.slice(0, 2); track absence.id) {
               <div><span class="absence-avatar absence-avatar--{{ absence.color }}">{{ absence.initials }}</span><p><b>{{ absence.driver }}</b><small>{{ absence.start }} – {{ absence.end }} · {{ absence.type }}</small></p><em>{{ absence.duration }}</em></div>
             } @empty {
-              <div><p><b>Keine Abwesenheiten</b><small>Aktuell sind keine Abwesenheiten eingetragen.</small></p></div>
+              <div><p><b>Keine Abwesenheiten</b></p></div>
             }
           </section>
         </div>
