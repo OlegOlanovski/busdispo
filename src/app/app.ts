@@ -326,8 +326,8 @@ export class App {
   private suppressPlanningTripClick = false;
   protected planningLineDraft: PlanningLineDraft = this.emptyPlanningLineDraft();
   protected planningTripDraft: PlanningTripDraft = this.emptyPlanningTripDraft();
-  protected readonly selectedShiftId = signal('xls-3-demo-91');
-  protected readonly selectedVehicleId = signal('DEMO-91');
+  protected readonly selectedShiftId = signal('xls-0-dau-rh-91');
+  protected readonly selectedVehicleId = signal('DAU RH 91');
   protected readonly vehicleSearch = signal('');
   protected readonly vehicleStatus = signal('Alle Status');
   protected readonly vehicleSaved = signal(false);
@@ -341,7 +341,7 @@ export class App {
   private readonly vehicleRevision = signal(0);
   private readonly shiftRevision = signal(0);
   protected newVehicle: FleetVehicleDraft = this.emptyVehicleDraft();
-  protected readonly selectedDutyPlanId = signal('demo-plan-91');
+  protected readonly selectedDutyPlanId = signal('sev-usch-gerolstein');
   protected readonly dutyPlanSearch = signal('');
   protected readonly dutyPlanStatus = signal('Alle Status');
   protected readonly dutyPlanSaved = signal(false);
@@ -353,7 +353,7 @@ export class App {
   protected dutyPlanDraft: DutyPlanDraft = {
     name: '', route: '', start: '', end: '', breakTime: '', weekdays: 'Mo – Fr', status: 'Entwurf', stops: [],
   };
-  protected readonly selectedDriverId = signal('fahrer-10');
+  protected readonly selectedDriverId = signal('oleg-olanovski');
   protected readonly driverSearch = signal('');
   protected readonly driverStatus = signal('Alle Status');
   protected readonly driverSaved = signal(false);
@@ -366,7 +366,7 @@ export class App {
   protected readonly driverDeleted = signal<string | null>(null);
   private readonly driverRevision = signal(0);
   protected newDriver: DriverDraft = this.emptyDriverDraft();
-  protected readonly selectedAbsenceId = signal('fahrer-07-training');
+  protected readonly selectedAbsenceId = signal('');
   protected readonly absenceSearch = signal('');
   protected readonly absenceType = signal('Alle Arten');
   protected readonly absenceFormOpen = signal(false);
@@ -375,19 +375,19 @@ export class App {
   protected readonly absenceFormError = signal('');
   private readonly absenceRevision = signal(0);
   protected newAbsence: AbsenceDraft = this.emptyAbsenceDraft();
-  protected readonly selectedSpecialTripId = signal('demo-trip-03');
+  protected readonly selectedSpecialTripId = signal('');
   protected readonly specialTripSearch = signal('');
   protected readonly specialTripStatus = signal('Alle Status');
   protected readonly specialTripSaved = signal(false);
-  protected readonly selectedMessageId = signal('fahrer-10-delay');
+  protected readonly selectedMessageId = signal('');
   protected readonly messageSearch = signal('');
   protected readonly messageFilter = signal('Alle Nachrichten');
-  protected readonly unreadMessageIds = signal(['fahrer-10-delay', 'demo-trip-passengers']);
+  protected readonly unreadMessageIds = signal<string[]>([]);
   protected readonly messageReply = signal('');
   protected readonly messageSent = signal(false);
   protected readonly driverShiftState = signal<DriverShiftState>('ready');
   protected readonly driverReportMode = signal<DriverReportMode>('none');
-  protected readonly driverStartMileage = signal('221450');
+  protected readonly driverStartMileage = signal('');
   protected readonly driverEndMileage = signal('');
   protected readonly driverVehicleChecked = signal(false);
   protected readonly driverDocumentsChecked = signal(false);
@@ -396,16 +396,16 @@ export class App {
   protected readonly driverShiftNote = signal('');
 
   protected newAssignment: AssignmentDraft = {
-    vehicle: 'DEMO-91',
+    vehicle: 'DAU RH 91',
     day: 0,
     driver: '',
-    plan: 'Tagesplan L 91',
-    start: '06:05',
-    end: '14:24',
+    plan: 'SEV Usch – Gerolstein',
+    start: '06:56',
+    end: '07:28',
     note: '',
   };
 
-  private readonly calendarToday = new Date();
+  protected readonly calendarToday = new Date();
 
   protected get days(): PlanningDay[] {
     const monday = this.calendarWeekStart();
@@ -427,51 +427,38 @@ export class App {
   }
 
   protected readonly vehicles: PlanningVehicle[] = [
-    { id: 'DEMO-91', displayLabel: 'DEMO 91', lineLabel: 'L 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
-    { id: 'DEMO-102', displayLabel: 'DEMO 102', lineLabel: 'L 102', seats: 0, tone: 'green', start: '06:05', end: '14:20' },
+    { id: 'DAU RH 91', displayLabel: 'DAU RH 91', lineLabel: 'SEV Usch – Gerolstein', dutyPlanId: 'sev-usch-gerolstein', seats: 0, tone: 'violet', start: '06:56', end: '07:28' },
   ];
   protected get planningGridWidth(): number {
     return 96 + this.vehicles.length * this.planningColumnWidth;
   }
 
   protected readonly fleetVehicles: FleetVehicle[] = [
-    { id: 'DEMO-91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Fahrer 10', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
-    { id: 'DEMO-102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Fahrer 07', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
+    { id: 'DAU RH 91', seats: 50, model: 'Nicht angegeben', year: 2026, mileage: '0 km', status: 'Einsatz', driver: 'Oleg Olanovski', inspection: '–', safetyInspection: '–' },
   ];
 
   protected readonly dutyPlans: DutyPlan[] = [
-    { id: 'demo-plan-91', name: 'Tagesplan L 91', route: 'Demo Ort 01 → Demo Ort 02', start: '06:05', end: '14:24', duration: '8h 19m', breakTime: '30m', stops: ['Demo Ort 01', 'Demo Halt A', 'Demo Ort 13', 'Demo Ort 03', 'Demo Ort 47', 'Demo Ort 02'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
-    { id: 'demo-plan-102', name: 'Tagesplan L 102', route: 'Demo Ort 03 → Demo Ort 04', start: '06:05', end: '14:20', duration: '8h 15m', breakTime: '30m', stops: ['Demo Ort 03', 'Demo Ort 12', 'Demo Ort 13', 'Demo Ort 04 ZOB'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'green' },
+    { id: 'sev-usch-gerolstein', name: 'SEV Usch – Gerolstein', route: 'Usch → Gerolstein', start: '06:56', end: '07:28', duration: '0h 32m', breakTime: '0m', stops: ['Usch', 'Gerolstein'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
   ];
 
   protected readonly drivers: Driver[] = [
-    { id: 'fahrer-10', name: 'Fahrer 10', initials: '10', phone: '0000 000 0110', email: 'fahrer10@example.com', status: 'Im Einsatz', vehicle: 'DEMO-91', shift: '06:05 – 14:24', weeklyHours: 33.3, targetHours: 40, overtime: '+3h 05m', license: 'D, DE', licenseExpiry: '16.12.2027', medicalCheck: '18.09.2026', color: 'violet' },
-    { id: 'fahrer-07', name: 'Fahrer 07', initials: '07', phone: '0000 000 0107', email: 'fahrer07@example.com', status: 'Im Einsatz', vehicle: 'DEMO-102', shift: '06:05 – 14:20', weeklyHours: 32, targetHours: 40, overtime: '+2h 15m', license: 'D, DE', licenseExpiry: '18.03.2028', medicalCheck: '12.01.2027', color: 'green' },
+    { id: 'oleg-olanovski', name: 'Oleg Olanovski', initials: 'OO', phone: '–', email: '–', status: 'Im Einsatz', vehicle: 'DAU RH 91', shift: '06:56 – 07:28', weeklyHours: 0.5, targetHours: 40, overtime: '+0h 00m', license: '–', licenseExpiry: '–', medicalCheck: '–', color: 'violet' },
   ];
 
-  protected readonly absences: Absence[] = [
-    { id: 'fahrer-07-training', driver: 'Fahrer 07', initials: '07', type: 'Fortbildung', start: '03.08.2026', end: '04.08.2026', duration: '2 Tage', workingDays: 2, status: 'Geplant', note: 'Schulung Fahrgastsicherheit.', conflicts: 2, color: 'green' },
-    { id: 'fahrer-10-vacation', driver: 'Fahrer 10', initials: '10', type: 'Urlaub', start: '10.08.2026', end: '14.08.2026', duration: '5 Tage', workingDays: 5, status: 'Geplant', note: 'Genehmigter Erholungsurlaub.', conflicts: 0, color: 'violet' },
-  ];
+  protected readonly absences: Absence[] = [];
 
-  protected readonly specialTrips: SpecialTrip[] = [
-    { id: 'demo-trip-03', title: 'Vereinsausflug Demo Ort 47', type: 'Vereinsfahrt', date: '01.08.2026', start: '08:30', end: '20:45', from: 'Demo Ort 04 ZOB', to: 'Demo Ort 47 Porta Nigra', stops: ['Demo Ort 04 ZOB', 'Demo Ort 03 Bahnhof', 'Demo Ort 47 Porta Nigra'], driver: 'Fahrer 10', vehicle: 'DEMO-91', passengers: 49, customer: 'Demo-Kunde 03', contact: 'Kontakt 03', phone: '0000 000 0203', status: 'Geplant', note: 'Ein Zustieg in Demo Ort 03. Rückfahrt um 19:00 Uhr.', tone: 'violet' },
-    { id: 'demo-trip-06', title: 'Seniorenfahrt Demo Ort 08', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Demo Ort 10 Rathaus', to: 'Demo Ort 08 Marktplatz', stops: ['Demo Ort 10 Rathaus', 'Demo Ort 56 Kirche', 'Demo Ort 08 Marktplatz'], driver: 'Fahrer 07', vehicle: 'DEMO-102', passengers: 41, customer: 'Demo-Kunde 06', contact: 'Kontakt 06', phone: '0000 000 0206', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
-  ];
+  protected readonly specialTrips: SpecialTrip[] = [];
 
-  protected readonly messageThreads: MessageThread[] = [
-    { id: 'fahrer-10-delay', sender: 'Fahrer 10', initials: '10', role: 'Fahrer · DEMO-91', subject: 'Verspätung auf der Demo-Straße', preview: 'Wegen einer Baustelle komme ich voraussichtlich 15 Minuten später in Demo Ort 02 an.', date: 'Heute', time: '11:42', category: 'Fahrer', body: ['Hallo Demo Admin,', 'wegen einer kurzfristigen Baustelle auf der Demo-Straße verzögert sich die Fahrt. Ich rechne aktuell mit etwa 15 Minuten Verspätung bei der Ankunft in Demo Ort 02.', 'Die Fahrgäste sind informiert. Ich melde mich, falls sich die Situation verändert.'], relatedLabel: 'Einsatz in Wochenplanung öffnen', relatedView: 'planning', tone: 'violet' },
-    { id: 'demo-trip-passengers', sender: 'Kontakt 03', initials: 'C3', role: 'Kundin · Demo-Kunde 03', subject: 'Teilnehmerzahl für Demo Ort 47', preview: 'Die endgültige Teilnehmerzahl für Samstag beträgt 49 Personen inklusive Betreuung.', date: 'Heute', time: '10:18', category: 'Kunde', body: ['Guten Morgen,', 'für unsere Fahrt nach Demo Ort 47 am Samstag sind es endgültig 49 Personen inklusive Betreuung.', 'Bitte bestätigen Sie kurz, dass der eingeplante Bus ausreichend Sitzplätze hat. Vielen Dank!'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
-  ];
+  protected readonly messageThreads: MessageThread[] = [];
 
   private readonly weeklyDriverAssignments: string[][] = [
-    ['Fahrer 10', 'Fahrer 07'],
-    ['Fahrer 10', 'Fahrer 07'],
-    ['Fahrer 10', 'Fahrer 07'],
-    ['Fahrer 10', 'Fahrer 07'],
-    ['Fahrer 10', 'Fahrer 07'],
-    ['', ''],
-    ['', ''],
+    ['Oleg Olanovski'],
+    [''],
+    [''],
+    [''],
+    [''],
+    [''],
+    [''],
   ];
 
   protected readonly shifts: Shift[] = this.weeklyDriverAssignments.flatMap((assignments, day) =>
@@ -486,7 +473,7 @@ export class App {
         driver,
         start: vehicle.start,
         end: vehicle.end,
-        plan: `Linie ${vehicle.lineLabel}`,
+        plan: vehicle.lineLabel,
         tone: vehicle.tone,
         status: 'Geplant',
       } satisfies Shift];
@@ -498,22 +485,15 @@ export class App {
   }
 
   protected readonly planningTrips: PlanningTripCard[] = [
-    { id: 'rh91-1', vehicle: 'DEMO-91', time: '07:04 – 07:28', route: 'Demo Ort 01 → Demo Ort 03', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh91-2', vehicle: 'DEMO-91', time: '15:16 – 16:00', route: 'Demo Ort 03 → Demo Ort 02', label: 'Linienfahrt', tone: 'violet' },
-    { id: 'rh102-1', vehicle: 'DEMO-102', time: '07:07 – 07:35', route: 'Demo Ort 03 → Demo Ort 13', label: 'Linienfahrt', tone: 'green' },
-    { id: 'rh102-2', vehicle: 'DEMO-102', time: '13:15 – 13:48', route: 'Demo Ort 13 → Demo Ort 04', label: 'Linienfahrt', tone: 'green' },
+    { id: 'sev-usch-gerolstein-0656', vehicle: 'DAU RH 91', time: '06:56 – 07:28', route: 'Usch → Gerolstein', label: 'SEV', tone: 'violet', dutyPlanId: 'sev-usch-gerolstein' },
   ];
 
   constructor() {
     this.restoreState();
   }
   protected readonly driverPortalStops = [
-    { time: '06:05', place: 'Demo Ort 01', meta: 'Abfahrt · Start' },
-    { time: '06:50', place: 'Demo Halt A', meta: 'Planmäßiger Halt' },
-    { time: '08:05', place: 'Demo Ort 13', meta: 'Planmäßiger Halt' },
-    { time: '11:00', place: 'Demo Ort 03', meta: 'Pause · 30 Min.' },
-    { time: '12:12', place: 'Demo Ort 47', meta: 'Fahrzeugwechsel' },
-    { time: '14:24', place: 'Demo Ort 02', meta: 'Ankunft · Ende' },
+    { time: '06:56', place: 'Usch', meta: 'Abfahrt · Start' },
+    { time: '07:28', place: 'Gerolstein', meta: 'Ankunft · Ende' },
   ];
 
   protected readonly selectedShift = computed(
@@ -672,6 +652,13 @@ export class App {
     () => this.specialTrips.find((trip) => trip.id === this.selectedSpecialTripId()) ?? this.specialTrips[0],
   );
 
+  protected readonly specialTripCounts = computed(() => ({
+    total: this.specialTrips.length,
+    planned: this.specialTrips.filter((trip) => trip.status === 'Geplant').length,
+    open: this.specialTrips.filter((trip) => trip.status === 'Offen').length,
+    passengers: this.specialTrips.reduce((total, trip) => total + trip.passengers, 0),
+  }));
+
   protected readonly unreadMessageCount = computed(() => this.unreadMessageIds().length);
 
   protected readonly filteredMessageThreads = computed(() => {
@@ -690,6 +677,12 @@ export class App {
   protected readonly selectedMessage = computed(
     () => this.messageThreads.find((thread) => thread.id === this.selectedMessageId()) ?? this.messageThreads[0],
   );
+
+  protected readonly messageCounts = computed(() => ({
+    total: this.messageThreads.length,
+    drivers: this.messageThreads.filter((thread) => thread.category === 'Fahrer').length,
+    customers: this.messageThreads.filter((thread) => thread.category === 'Kunde').length,
+  }));
 
   protected readonly canStartDriverShift = computed(
     () => Number(this.driverStartMileage()) > 0 && this.driverVehicleChecked() && this.driverDocumentsChecked(),
@@ -890,10 +883,6 @@ export class App {
 
   protected planningDutyPlanLabel(vehicle: PlanningVehicle): string {
     return this.dutyPlans.find((plan) => plan.id === vehicle.dutyPlanId)?.name ?? '';
-  }
-
-  protected planningDutyPlanFor(vehicle: PlanningVehicle): DutyPlan | undefined {
-    return this.dutyPlans.find((plan) => plan.id === vehicle.dutyPlanId);
   }
 
   protected currentWeekVehicleAssignments(vehicleId: string): VehicleWeekAssignment[] {
@@ -1503,7 +1492,6 @@ export class App {
       : this.findFirstEmptyCell();
     const linkedDutyPlanId = this.vehicles.find((item) => item.id === target.vehicle)?.dutyPlanId;
     const suggestedPlan = this.dutyPlans.find((plan) => plan.id === linkedDutyPlanId)
-      ?? this.dutyPlans.find((plan) => plan.name.includes(target.vehicle.replace('DEMO-', 'L ')))
       ?? this.dutyPlans.find((plan) => plan.status === 'Aktiv')
       ?? this.dutyPlans[0];
 
@@ -2739,7 +2727,7 @@ export class App {
     document.body.scrollTop = 0;
   }
 
-  protected resetDriverShiftDemo(): void {
+  protected resetDriverShift(): void {
     this.driverShiftState.set('ready');
     this.driverReportMode.set('none');
     this.driverEndMileage.set('');

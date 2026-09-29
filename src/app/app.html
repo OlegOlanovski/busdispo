@@ -114,33 +114,33 @@
       <section class="driver-portal">
         <header class="driver-portal-header">
           <div class="driver-portal-brand"><div class="brand__mark" aria-hidden="true"><span></span><span></span><span></span></div><div><strong>BusDispo</strong><small>Fahrerportal</small></div></div>
-          <div class="driver-portal-user"><span>10</span><div><b>Fahrer 10</b><small>Fahrer</small></div><button (click)="showView('drivers')" aria-label="Fahrerportal verlassen">Abmelden</button></div>
+          <div class="driver-portal-user"><span>OO</span><div><b>Oleg Olanovski</b><small>Fahrer</small></div><button (click)="showView('drivers')" aria-label="Fahrerportal verlassen">Abmelden</button></div>
         </header>
 
         <main class="driver-portal-content">
           <div class="driver-portal-welcome">
-            <div><span>Donnerstag, 23. Juli 2026</span><h1>Guten Morgen, Fahrer 10</h1><p>Hier ist Ihr heutiger Einsatz.</p></div>
+            <div><span>{{ currentDateLabel }}</span><h1>Guten Morgen, Oleg Olanovski</h1><p>Hier ist Ihr heutiger Einsatz.</p></div>
             <span class="driver-shift-status driver-shift-status--{{ driverShiftState() }}"><i></i>{{ driverShiftState() === 'ready' ? 'Bereit' : driverShiftState() === 'active' ? 'Schicht aktiv' : 'Abgeschlossen' }}</span>
           </div>
 
           <section class="driver-assignment-card">
-            <div class="driver-assignment-date"><span>23</span><small>JUL</small></div>
-            <div class="driver-assignment-main"><span>HEUTIGER EINSATZ</span><h2>Tagesplan L 91</h2><p>Demo Ort 01 → Demo Ort 02</p></div>
-            <div class="driver-assignment-facts"><div><span>◷</span><p><small>Arbeitszeit</small><b>06:05 – 14:24</b></p></div><div><span><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span><p><small>Fahrzeug</small><b>DEMO-91</b></p></div><div><span>↗</span><p><small>Strecke</small><b>167 km geplant</b></p></div></div>
+            <div class="driver-assignment-date"><span>{{ calendarToday | date:'dd' }}</span><small>{{ calendarToday | date:'MMM' | uppercase }}</small></div>
+            <div class="driver-assignment-main"><span>HEUTIGER EINSATZ</span><h2>SEV Usch – Gerolstein</h2><p>Usch → Gerolstein</p></div>
+            <div class="driver-assignment-facts"><div><span>◷</span><p><small>Arbeitszeit</small><b>06:56 – 07:28</b></p></div><div><span><img class="bus-icon" src="bus-icon.png" alt="" aria-hidden="true" /></span><p><small>Fahrzeug</small><b>DAU RH 91</b></p></div><div><span>↗</span><p><small>Fahrtart</small><b>SEV</b></p></div></div>
           </section>
 
           @if (driverShiftState() === 'ready') {
             <section class="driver-form-card driver-start-card">
               <div class="driver-card-heading"><span>1</span><div><h2>Schicht starten</h2><p>Bitte prüfen Sie Fahrzeug und Dokumente vor der Abfahrt.</p></div></div>
-              <label class="driver-field"><span>Aktueller Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverStartMileage()" (ngModelChange)="driverStartMileage.set($event); persistDriverPortalState()" /><em>km</em></div><small>Letzter Stand: 221.450 km</small></label>
+              <label class="driver-field"><span>Aktueller Kilometerstand *</span><div class="driver-mileage-input"><input type="number" inputmode="numeric" [ngModel]="driverStartMileage()" (ngModelChange)="driverStartMileage.set($event); persistDriverPortalState()" /><em>km</em></div></label>
               <div class="driver-checklist"><h3>Abfahrtskontrolle</h3><label><input type="checkbox" [ngModel]="driverVehicleChecked()" (ngModelChange)="driverVehicleChecked.set($event); persistDriverPortalState()" /><span>✓</span><p><b>Fahrzeug kontrolliert</b><small>Licht, Reifen und sichtbare Schäden geprüft</small></p></label><label><input type="checkbox" [ngModel]="driverDocumentsChecked()" (ngModelChange)="driverDocumentsChecked.set($event); persistDriverPortalState()" /><span>✓</span><p><b>Dokumente vorhanden</b><small>Führerschein und Fahrzeugpapiere geprüft</small></p></label></div>
               <button class="driver-primary-action" [disabled]="!canStartDriverShift()" (click)="startDriverShift()"><span>▶</span> Schicht starten</button>
             </section>
           } @else if (driverShiftState() === 'active') {
-            <section class="driver-active-banner"><span>▶</span><div><b>Ihre Schicht läuft</b><small>Gestartet um 06:05 Uhr · Kilometerstand {{ driverStartMileage() | number:'1.0-0' }} km</small></div><em>AKTIV</em></section>
+            <section class="driver-active-banner"><span>▶</span><div><b>Ihre Schicht läuft</b><small>Gestartet um 06:56 Uhr · Kilometerstand {{ driverStartMileage() | number:'1.0-0' }} km</small></div><em>AKTIV</em></section>
 
             <section class="driver-form-card driver-route-card">
-              <div class="driver-card-heading"><span>↗</span><div><h2>Heutiger Routenverlauf</h2><p>Tagesplan L 91 · 6 Stationen</p></div></div>
+              <div class="driver-card-heading"><span>↗</span><div><h2>Heutiger Routenverlauf</h2><p>SEV Usch – Gerolstein · 2 Stationen</p></div></div>
               <div class="driver-route-list">@for (stop of driverPortalStops; track stop.time; let first = $first; let last = $last) { <div [class.driver-route-stop--edge]="first || last"><time>{{ stop.time }}</time><span></span><p><b>{{ stop.place }}</b><small>{{ stop.meta }}</small></p></div> }</div>
             </section>
 
@@ -161,9 +161,9 @@
           } @else {
             <section class="driver-complete-card">
               <span class="driver-complete-check">✓</span><h2>Schicht erfolgreich abgeschlossen</h2><p>Ihr Bericht wurde an die Disposition übermittelt.</p>
-              <div class="driver-complete-summary"><div><small>Arbeitszeit</small><b>8h 19m</b></div><div><small>Gefahrene Strecke</small><b>{{ drivenDistance() }} km</b></div><div><small>Fahrzeug</small><b>DEMO-91</b></div><div><small>Endstand</small><b>{{ driverEndMileage() | number:'1.0-0' }} km</b></div></div>
+              <div class="driver-complete-summary"><div><small>Arbeitszeit</small><b>0h 32m</b></div><div><small>Gefahrene Strecke</small><b>{{ drivenDistance() }} km</b></div><div><small>Fahrzeug</small><b>DAU RH 91</b></div><div><small>Endstand</small><b>{{ driverEndMileage() | number:'1.0-0' }} km</b></div></div>
               <div class="driver-complete-notice"><span>✉</span><div><b>Disposition informiert</b><small>Der Kilometerstand und Ihre Angaben fließen nach Prüfung in die Statistik ein.</small></div></div>
-              <button class="driver-secondary-action" (click)="resetDriverShiftDemo()">Demo erneut starten</button>
+              <button class="driver-secondary-action" (click)="resetDriverShift()">Schicht zurücksetzen</button>
             </section>
           }
         </main>
@@ -172,7 +172,7 @@
       <section class="overview-page">
         <div class="overview-intro">
           <div>
-            <span class="eyebrow">Donnerstag, 23. Juli 2026</span>
+            <span class="eyebrow">{{ currentDateLabel }}</span>
             <h2>Guten Morgen{{ currentUser() ? ', ' + currentUser()!.name : '' }}</h2>
             <p>Hier ist der aktuelle Stand Ihrer Disposition.</p>
           </div>
@@ -190,7 +190,7 @@
           </article>
           <article class="metric-card">
             <div class="metric-icon metric-icon--green">✓</div>
-            <div><span>Geplante Einsätze</span><strong>{{ shifts.length }}</strong><em class="positive">Beispieldaten</em></div>
+            <div><span>Geplante Einsätze</span><strong>{{ shifts.length }}</strong><em class="positive">Aktueller Wochenplan</em></div>
           </article>
           <article class="metric-card">
             <div class="metric-icon metric-icon--orange">!</div>
@@ -219,8 +219,11 @@
 
           <section class="dashboard-card upcoming-card">
             <div class="dashboard-heading"><div><h3>Nächste Sonderfahrten</h3><p>Diese Woche</p></div><button (click)="showView('trips')">Alle anzeigen&nbsp; →</button></div>
-            <article><time><b>01</b><span>AUG</span></time><div><strong>Vereinsfahrt</strong><p>Demo Ort 04 → Demo Ort 47</p></div><em>08:30</em></article>
-            <article><time><b>18</b><span>JUL</span></time><div><strong>Tagesfahrt</strong><p>Demo Ort 10 → Demo Ort 08</p></div><em>09:00</em></article>
+            @for (trip of specialTrips.slice(0, 2); track trip.id) {
+              <article><time><b>{{ trip.date.slice(0, 2) }}</b><span>{{ trip.date.slice(3, 5) }}</span></time><div><strong>{{ trip.type }}</strong><p>{{ trip.from }} → {{ trip.to }}</p></div><em>{{ trip.start }}</em></article>
+            } @empty {
+              <article><div><strong>Keine Sonderfahrten</strong><p>Für diese Woche sind keine Sonderfahrten geplant.</p></div></article>
+            }
           </section>
         </div>
 
@@ -235,8 +238,11 @@
           </section>
           <section class="dashboard-card overview-absence-card">
             <div class="dashboard-heading"><div><h3>Abwesenheiten</h3><p>Heute und demnächst</p></div><button (click)="showView('absence')">Alle anzeigen&nbsp; →</button></div>
-            <div><span class="absence-avatar absence-avatar--green">07</span><p><b>Fahrer 07</b><small>03.08. – 04.08. · Fortbildung</small></p><em>2 Tage</em></div>
-            <div><span class="absence-avatar absence-avatar--blue">10</span><p><b>Fahrer 10</b><small>10.08. – 14.08. · Urlaub</small></p><em>5 Tage</em></div>
+            @for (absence of absences.slice(0, 2); track absence.id) {
+              <div><span class="absence-avatar absence-avatar--{{ absence.color }}">{{ absence.initials }}</span><p><b>{{ absence.driver }}</b><small>{{ absence.start }} – {{ absence.end }} · {{ absence.type }}</small></p><em>{{ absence.duration }}</em></div>
+            } @empty {
+              <div><p><b>Keine Abwesenheiten</b><small>Aktuell sind keine Abwesenheiten eingetragen.</small></p></div>
+            }
           </section>
         </div>
       </section>
@@ -386,7 +392,7 @@
                   <div class="inspection-item">
                     <span class="inspection-icon">HU</span>
                     <div><b>Nächste HU</b><small>Hauptuntersuchung</small></div>
-                    <div><em>{{ vehicle.inspection }}</em><small [class.due-soon]="vehicle.id === 'DEMO-91'">{{ vehicle.id === 'DEMO-91' ? 'In 18 Tagen' : 'Fristgerecht' }}</small></div>
+                    <div><em>{{ vehicle.inspection }}</em><small>{{ vehicle.inspection === '–' ? 'Nicht hinterlegt' : 'Fristgerecht' }}</small></div>
                   </div>
                   <div class="inspection-item">
                     <span class="inspection-icon inspection-icon--sp">SP</span>
@@ -645,7 +651,7 @@
               <div class="driver-create-grid">
                 <label class="driver-create-field driver-create-field--wide">
                   <span>Name / Nachname *</span>
-                  <input name="driverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Demo Fahrer 20" required />
+                  <input name="driverName" [(ngModel)]="newDriver.name" autocomplete="name" placeholder="z. B. Max Mustermann" required />
                 </label>
                 <label class="driver-create-field">
                   <span>Telefon *</span>
@@ -927,10 +933,10 @@
         </div>
 
         <div class="special-trip-metrics">
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--blue">♧</span><div><b>2</b><small>Fahrten gesamt</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--green">✓</span><div><b>1</b><small>Geplant</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--orange">!</span><div><b>0</b><small>Zuweisung offen</small></div></article>
-          <article><span class="special-trip-metric-icon special-trip-metric-icon--violet">♙</span><div><b>90</b><small>Fahrgäste gesamt</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--blue">♧</span><div><b>{{ specialTripCounts().total }}</b><small>Fahrten gesamt</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--green">✓</span><div><b>{{ specialTripCounts().planned }}</b><small>Geplant</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--orange">!</span><div><b>{{ specialTripCounts().open }}</b><small>Zuweisung offen</small></div></article>
+          <article><span class="special-trip-metric-icon special-trip-metric-icon--violet">♙</span><div><b>{{ specialTripCounts().passengers }}</b><small>Fahrgäste gesamt</small></div></article>
         </div>
 
         <div class="special-trip-layout">
@@ -959,6 +965,7 @@
             <footer class="special-trip-footer"><span>{{ filteredSpecialTrips().length }} von {{ specialTrips.length }} Sonderfahrten</span><div><button disabled>‹</button><b>1</b><button disabled>›</button></div></footer>
           </section>
 
+          @if (selectedSpecialTrip()) {
           <aside class="dashboard-card special-trip-detail-card">
             <div class="special-trip-detail-head">
               <span class="special-trip-detail-icon special-trip-type-icon--{{ selectedSpecialTrip().tone }}">♧</span>
@@ -1003,6 +1010,9 @@
               </div>
             </div>
           </aside>
+          } @else {
+            <aside class="dashboard-card special-trip-detail-card special-trip-empty"><span>♧</span><strong>Noch keine Sonderfahrten</strong><small>Legen Sie die erste Sonderfahrt an.</small></aside>
+          }
         </div>
       </section>
     } @else if (activeView() === 'messages') {
@@ -1017,10 +1027,10 @@
         </div>
 
         <div class="message-metrics">
-          <article><span class="message-metric-icon message-metric-icon--blue">✉</span><div><b>2</b><small>Nachrichten gesamt</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--blue">✉</span><div><b>{{ messageCounts().total }}</b><small>Nachrichten gesamt</small></div></article>
           <article><span class="message-metric-icon message-metric-icon--orange">●</span><div><b>{{ unreadMessageCount() }}</b><small>Ungelesen</small></div></article>
-          <article><span class="message-metric-icon message-metric-icon--violet">♙</span><div><b>1</b><small>Von Fahrern</small></div></article>
-          <article><span class="message-metric-icon message-metric-icon--green">♧</span><div><b>1</b><small>Kundenanfragen</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--violet">♙</span><div><b>{{ messageCounts().drivers }}</b><small>Von Fahrern</small></div></article>
+          <article><span class="message-metric-icon message-metric-icon--green">♧</span><div><b>{{ messageCounts().customers }}</b><small>Kundenanfragen</small></div></article>
         </div>
 
         <div class="message-layout">
@@ -1051,6 +1061,7 @@
             <footer class="message-footer">{{ filteredMessageThreads().length }} von {{ messageThreads.length }} Nachrichten</footer>
           </section>
 
+          @if (selectedMessage()) {
           <section class="dashboard-card message-detail-card">
             <header class="message-detail-head">
               <div><span>{{ selectedMessage().category }}</span><h3>{{ selectedMessage().subject }}</h3></div>
@@ -1078,6 +1089,9 @@
               @if (messageSent()) { <div class="message-sent"><span>✓</span> Antwort wurde gesendet.</div> }
             </div>
           </section>
+          } @else {
+            <section class="dashboard-card message-detail-card message-empty"><span>✉</span><strong>Noch keine Nachrichten</strong><small>Neue Nachrichten werden hier angezeigt.</small></section>
+          }
         </div>
       </section>
     } @else {
@@ -1205,7 +1219,7 @@
             </label>
             <label class="driver-create-field"><span>Beginn *</span><input name="planningTripStart" type="time" [(ngModel)]="planningTripDraft.start" required /></label>
             <label class="driver-create-field"><span>Ende *</span><input name="planningTripEnd" type="time" [(ngModel)]="planningTripDraft.end" required /></label>
-            <label class="driver-create-field driver-create-field--wide"><span>Route / Beschreibung *</span><input name="planningTripRoute" [(ngModel)]="planningTripDraft.route" placeholder="z. B. Demo Ort 01 → Demo Ort 02" required /></label>
+            <label class="driver-create-field driver-create-field--wide"><span>Route / Beschreibung *</span><input name="planningTripRoute" [(ngModel)]="planningTripDraft.route" placeholder="z. B. Usch → Gerolstein" required /></label>
           </div>
           @if (planningTripError()) { <div class="driver-create-error" role="alert"><span>!</span>{{ planningTripError() }}</div> }
           <footer class="driver-create-actions">
@@ -1293,13 +1307,6 @@
                 (dragleave)="leavePlanningTripDropTarget($event, vehicle.id)"
                 (drop)="dropPlanningTrip($event, vehicle.id)"
               >
-                @if (planningDutyPlanFor(vehicle); as dutyPlan) {
-                  <div class="planning-trip-card planning-trip-card--{{ vehicle.tone }} planning-duty-plan-card" role="group" [attr.aria-label]="'Linienfahrt, ' + dutyPlan.start + ' bis ' + dutyPlan.end + ', ' + dutyPlan.route">
-                    <span>Linienfahrt</span>
-                    <strong>{{ dutyPlan.start }} – {{ dutyPlan.end }}</strong>
-                    <p>{{ dutyPlan.route }}</p>
-                  </div>
-                }
                 @for (trip of planningTripsFor(vehicle.id); track trip.id) {
                   <div
                     class="planning-trip-card planning-trip-card--{{ trip.tone }}"

@@ -1,9 +1,54 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 
+const legacyTestState = {
+  version: 1,
+  vehicles: [
+    { id: 'DEMO-91', displayLabel: 'DEMO 91', lineLabel: 'L 91', seats: 0, tone: 'violet', start: '07:04', end: '16:56' },
+    { id: 'DEMO-102', displayLabel: 'DEMO 102', lineLabel: 'L 102', seats: 0, tone: 'green', start: '06:05', end: '14:20' },
+  ],
+  fleetVehicles: [
+    { id: 'DEMO-91', seats: 52, model: 'Mercedes-Benz Intouro', year: 2020, mileage: '221.450 km', status: 'Einsatz', driver: 'Fahrer 10', inspection: '18.08.2026', safetyInspection: '18.11.2026' },
+    { id: 'DEMO-102', seats: 52, model: 'Mercedes-Benz Intouro', year: 2021, mileage: '184.320 km', status: 'Einsatz', driver: 'Fahrer 07', inspection: '14.11.2026', safetyInspection: '14.08.2026' },
+  ],
+  dutyPlans: [
+    { id: 'demo-plan-91', name: 'Tagesplan L 91', route: 'Demo Ort 01 → Demo Ort 02', start: '06:05', end: '14:24', duration: '8h 19m', breakTime: '30m', stops: ['Demo Ort 01', 'Demo Halt A', 'Demo Ort 13', 'Demo Ort 03', 'Demo Ort 47', 'Demo Ort 02'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'violet' },
+    { id: 'demo-plan-102', name: 'Tagesplan L 102', route: 'Demo Ort 03 → Demo Ort 04', start: '06:05', end: '14:20', duration: '8h 15m', breakTime: '30m', stops: ['Demo Ort 03', 'Demo Ort 12', 'Demo Ort 13', 'Demo Ort 04 ZOB'], weekdays: 'Mo – Fr', assignedVehicles: 1, status: 'Aktiv', tone: 'green' },
+  ],
+  drivers: [
+    { id: 'fahrer-10', name: 'Fahrer 10', initials: '10', phone: '0000 000 0110', email: 'fahrer10@example.com', status: 'Im Einsatz', vehicle: 'DEMO-91', shift: '06:05 – 14:24', weeklyHours: 33.3, targetHours: 40, overtime: '+3h 05m', license: 'D, DE', licenseExpiry: '16.12.2027', medicalCheck: '18.09.2026', color: 'violet' },
+    { id: 'fahrer-07', name: 'Fahrer 07', initials: '07', phone: '0000 000 0107', email: 'fahrer07@example.com', status: 'Im Einsatz', vehicle: 'DEMO-102', shift: '06:05 – 14:20', weeklyHours: 32, targetHours: 40, overtime: '+2h 15m', license: 'D, DE', licenseExpiry: '18.03.2028', medicalCheck: '12.01.2027', color: 'green' },
+  ],
+  absences: [
+    { id: 'fahrer-07-training', driver: 'Fahrer 07', initials: '07', type: 'Fortbildung', start: '03.08.2026', end: '04.08.2026', duration: '2 Tage', workingDays: 2, status: 'Geplant', note: 'Schulung Fahrgastsicherheit.', conflicts: 2, color: 'green' },
+    { id: 'fahrer-10-vacation', driver: 'Fahrer 10', initials: '10', type: 'Urlaub', start: '10.08.2026', end: '14.08.2026', duration: '5 Tage', workingDays: 5, status: 'Geplant', note: 'Genehmigter Erholungsurlaub.', conflicts: 0, color: 'violet' },
+  ],
+  specialTrips: [
+    { id: 'demo-trip-03', title: 'Vereinsausflug Demo Ort 47', type: 'Vereinsfahrt', date: '01.08.2026', start: '08:30', end: '20:45', from: 'Demo Ort 04 ZOB', to: 'Demo Ort 47 Porta Nigra', stops: ['Demo Ort 04 ZOB', 'Demo Ort 03 Bahnhof', 'Demo Ort 47 Porta Nigra'], driver: 'Fahrer 10', vehicle: 'DEMO-91', passengers: 49, customer: 'Demo-Kunde 03', contact: 'Kontakt 03', phone: '0000 000 0203', status: 'Geplant', note: 'Ein Zustieg in Demo Ort 03. Rückfahrt um 19:00 Uhr.', tone: 'violet' },
+    { id: 'demo-trip-06', title: 'Seniorenfahrt Demo Ort 08', type: 'Tagesfahrt', date: '18.07.2026', start: '09:00', end: '17:10', from: 'Demo Ort 10 Rathaus', to: 'Demo Ort 08 Marktplatz', stops: ['Demo Ort 10 Rathaus', 'Demo Ort 56 Kirche', 'Demo Ort 08 Marktplatz'], driver: 'Fahrer 07', vehicle: 'DEMO-102', passengers: 41, customer: 'Demo-Kunde 06', contact: 'Kontakt 06', phone: '0000 000 0206', status: 'Abgeschlossen', note: 'Fahrt planmäßig und ohne Vorkommnisse abgeschlossen.', tone: 'green' },
+  ],
+  messageThreads: [
+    { id: 'fahrer-10-delay', sender: 'Fahrer 10', initials: '10', role: 'Fahrer · DEMO-91', subject: 'Verspätung auf der Demo-Straße', preview: 'Wegen einer Baustelle komme ich voraussichtlich 15 Minuten später in Demo Ort 02 an.', date: 'Heute', time: '11:42', category: 'Fahrer', body: ['Hallo Demo Admin,', 'Wegen einer kurzfristigen Baustelle verzögert sich die Fahrt.'], relatedLabel: 'Einsatz in Wochenplanung öffnen', relatedView: 'planning', tone: 'violet' },
+    { id: 'demo-trip-passengers', sender: 'Kontakt 03', initials: 'C3', role: 'Kundin · Demo-Kunde 03', subject: 'Teilnehmerzahl für Demo Ort 47', preview: 'Die endgültige Teilnehmerzahl beträgt 49 Personen.', date: 'Heute', time: '10:18', category: 'Kunde', body: ['Guten Morgen,', 'Die endgültige Teilnehmerzahl beträgt 49 Personen.'], relatedLabel: 'Sonderfahrt anzeigen', relatedView: 'trips', tone: 'green' },
+  ],
+  shifts: Array.from({ length: 5 }, (_, day) => [
+    { id: `xls-${day}-demo-91`, vehicle: 'DEMO-91', day, driver: 'Fahrer 10', start: '07:04', end: '16:56', plan: 'Linie L 91', tone: 'violet', status: 'Geplant' },
+    { id: `xls-${day}-demo-102`, vehicle: 'DEMO-102', day, driver: 'Fahrer 07', start: '06:05', end: '14:20', plan: 'Linie L 102', tone: 'green', status: 'Geplant' },
+  ]).flat(),
+  planningTrips: [
+    { id: 'rh91-1', vehicle: 'DEMO-91', time: '07:04 – 07:28', route: 'Demo Ort 01 → Demo Ort 03', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh91-2', vehicle: 'DEMO-91', time: '15:16 – 16:00', route: 'Demo Ort 03 → Demo Ort 02', label: 'Linienfahrt', tone: 'violet' },
+    { id: 'rh102-1', vehicle: 'DEMO-102', time: '07:07 – 07:35', route: 'Demo Ort 03 → Demo Ort 13', label: 'Linienfahrt', tone: 'green' },
+    { id: 'rh102-2', vehicle: 'DEMO-102', time: '13:15 – 13:48', route: 'Demo Ort 13 → Demo Ort 04', label: 'Linienfahrt', tone: 'green' },
+  ],
+  unreadMessageIds: ['fahrer-10-delay', 'demo-trip-passengers'],
+  driverPortal: { shiftState: 'ready', startMileage: '221450', endMileage: '', vehicleChecked: false, documentsChecked: false, delay: 'Keine Verspätung', issue: 'Keine Mängel', note: '' },
+};
+
 describe('App', () => {
   beforeEach(async () => {
     window.localStorage.clear();
+    window.localStorage.setItem('busdispo.state.v1', JSON.stringify(legacyTestState));
     window.sessionStorage.clear();
     window.history.replaceState(null, '', '#planning');
     await TestBed.configureTestingModule({
@@ -15,6 +60,38 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
+  });
+
+  it('should start with only the requested driver, bus and line when local storage is empty', async () => {
+    window.localStorage.removeItem('busdispo.state.v1');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const app = fixture.componentInstance as any;
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(app.drivers.map((driver: { name: string }) => driver.name)).toEqual(['Oleg Olanovski']);
+    expect(app.fleetVehicles.map((vehicle: { id: string }) => vehicle.id)).toEqual(['DAU RH 91']);
+    expect(app.planningTrips).toHaveLength(1);
+    expect(app.planningTrips[0]).toMatchObject({
+      time: '06:56 – 07:28',
+      label: 'SEV',
+      route: 'Usch → Gerolstein',
+    });
+    expect(app.absences).toEqual([]);
+    expect(app.specialTrips).toEqual([]);
+    expect(app.messageThreads).toEqual([]);
+    expect(compiled.textContent).not.toContain('Demo Ort');
+    expect(compiled.querySelectorAll('.planning-trip-card')).toHaveLength(1);
+    expect(compiled.querySelector('.planning-trip-card')?.getAttribute('draggable')).toBe('true');
+    expect(compiled.querySelector('.planning-duty-plan-card')).toBeFalsy();
+
+    app.showView('trips');
+    fixture.detectChanges();
+    expect(compiled.querySelector('.special-trip-detail-card')?.textContent).toContain('Noch keine Sonderfahrten');
+
+    app.showView('messages');
+    fixture.detectChanges();
+    expect(compiled.querySelector('.message-detail-card')?.textContent).toContain('Noch keine Nachrichten');
   });
 
   it('should open the login form and sign in with the demo account', async () => {
@@ -173,10 +250,8 @@ describe('App', () => {
     expect(compiled.querySelector('.line-heading[data-vehicle="BUS-200"]')?.textContent).toContain('Tagesplan L 102');
 
     const createdColumn = compiled.querySelector('.trip-column[data-vehicle="BUS-200"]') as HTMLElement;
-    const dutyPlanCards = createdColumn.querySelectorAll('.planning-duty-plan-card');
-    expect(dutyPlanCards).toHaveLength(1);
-    expect(dutyPlanCards[0].textContent).toContain('06:05 – 14:20');
-    expect(dutyPlanCards[0].textContent).toContain('Demo Ort 03 → Demo Ort 04');
+    expect(createdColumn.querySelector('.planning-duty-plan-card')).toBeFalsy();
+    expect(createdColumn.querySelector('.planning-trip-card')).toBeFalsy();
 
     app.openNewAssignment('BUS-200', 0);
     expect(app.newAssignment.plan).toBe('Tagesplan L 102');
@@ -1350,7 +1425,7 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(compiled.querySelector('.driver-portal')).toBeTruthy();
-    expect(compiled.querySelector('.driver-portal')?.textContent).toContain('Guten Morgen, Fahrer 10');
+    expect(compiled.querySelector('.driver-portal')?.textContent).toContain('Guten Morgen, Oleg Olanovski');
     expect(window.location.hash).toBe('#driver-portal');
   });
 
